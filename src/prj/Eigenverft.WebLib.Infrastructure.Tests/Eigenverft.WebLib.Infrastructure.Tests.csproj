@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Eigenverft.NetLib.Infrastructure\Eigenverft.NetLib.Infrastructure.csproj" />
+    <ProjectReference Include="..\Eigenverft.WebLib.Infrastructure\Eigenverft.WebLib.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

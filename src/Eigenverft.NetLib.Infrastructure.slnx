@@ -1,6 +1,0 @@
-<Solution>
-  <Folder Name="/prj/">
-    <Project Path="prj/Eigenverft.NetLib.Infrastructure/Eigenverft.NetLib.Infrastructure.csproj" />
-    <Project Path="prj/Eigenverft.NetLib.Infrastructure.Tests/Eigenverft.NetLib.Infrastructure.Tests.csproj" />
-  </Folder>
-</Solution>

@@ -1,7 +1,7 @@
-# Eigenverft.NetLib.Infrastructure
+# Eigenverft.WebLib.Infrastructure
 
-Modern .NET library for reusable Eigenverft infrastructure contracts and
-orchestration primitives.
+Modern ASP.NET Core library for reusable Eigenverft web-infrastructure
+contracts and orchestration primitives.
 
 The initial product boundary follows the infrastructure described by
 `Eigenverft.Web.EdgeReverseProxy`: deploy a new component version into the
@@ -20,9 +20,9 @@ slot for a fast rollback.
 
 ## Boundaries
 
-This library is transport-neutral. MCP tools, HTTP endpoints, reverse-proxy
-middleware, authentication, and user-facing administration belong in their
-respective host projects.
+This library provides reusable web and hosting contracts. Concrete MCP tools,
+product-specific endpoints, authentication policy, and user-facing
+administration remain in their respective host projects.
 
 The core contract also avoids a generic remote shell. Platform-specific
 filesystem, process, service-manager, and routing integrations should be
@@ -35,7 +35,7 @@ independently testable.
 Eigenverft.Web.ControlPlaneMcp
                │
                ▼
-Eigenverft.NetLib.Infrastructure
+Eigenverft.WebLib.Infrastructure
                │
                ├── deployment storage adapter
                ├── process or service adapter
@@ -50,8 +50,8 @@ this library.
 ## Build and test
 
 ```powershell
-dotnet build src/Eigenverft.NetLib.Infrastructure.slnx
-dotnet test src/Eigenverft.NetLib.Infrastructure.slnx
+dotnet build src/Eigenverft.WebLib.Infrastructure.slnx
+dotnet test src/Eigenverft.WebLib.Infrastructure.slnx
 ```
 
 The initial scaffold establishes the product identity and the fundamental slot

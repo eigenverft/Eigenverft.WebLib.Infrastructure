@@ -13,17 +13,21 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>$(AssemblyName)</PackageId>
     <Authors>$(Branding)</Authors>
-    <RepositoryUrl>https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure</RepositoryUrl>
+    <RepositoryUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Description>Modern .NET infrastructure contracts and orchestration primitives, initially for safe blue-green deployment, health validation, activation, and rollback of local services.</Description>
-    <PackageTags>dotnet;infrastructure;deployment;blue-green;health-check;rollback;control-plane</PackageTags>
+    <Description>Modern ASP.NET Core web-infrastructure contracts and orchestration primitives, initially for safe blue-green deployment, health validation, activation, and rollback of local services.</Description>
+    <PackageTags>dotnet;aspnet-core;web;infrastructure;deployment;blue-green;health-check;rollback;control-plane</PackageTags>
     <Copyright>Copyright (c) 2026 $(Branding)</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="../../../README.md" Pack="true" PackagePath="/" Link="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
 </Project>

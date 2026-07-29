@@ -1,6 +1,6 @@
 using System;
 
-namespace Eigenverft.NetLib.Infrastructure;
+namespace Eigenverft.WebLib.Infrastructure;
 
 /// <summary>
 /// Provides operations over the fixed blue-green slot pair.

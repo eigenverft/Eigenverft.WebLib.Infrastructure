@@ -1,6 +1,6 @@
 using System;
 
-namespace Eigenverft.NetLib.Infrastructure.Tests;
+namespace Eigenverft.WebLib.Infrastructure.Tests;
 
 [TestClass]
 public sealed class DeploymentSlotExtensionsTests

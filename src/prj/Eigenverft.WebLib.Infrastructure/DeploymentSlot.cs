@@ -1,4 +1,4 @@
-namespace Eigenverft.NetLib.Infrastructure;
+namespace Eigenverft.WebLib.Infrastructure;
 
 /// <summary>
 /// Identifies one of the two independently deployable service slots.

@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/prj/">
+    <Project Path="prj/Eigenverft.WebLib.Infrastructure/Eigenverft.WebLib.Infrastructure.csproj" />
+    <Project Path="prj/Eigenverft.WebLib.Infrastructure.Tests/Eigenverft.WebLib.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>
