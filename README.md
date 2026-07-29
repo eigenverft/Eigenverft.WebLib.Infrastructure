@@ -10,6 +10,7 @@ slot for a fast rollback.
 
 ## Intended responsibilities
 
+- expose shared ASP.NET Core health and infrastructure endpoints;
 - model blue and green deployment slots and their state;
 - inventory installed and active component versions;
 - stage releases into an inactive slot without overwriting a running version;
@@ -55,8 +56,9 @@ dotnet test src/Eigenverft.WebLib.Infrastructure.slnx
 ```
 
 The initial scaffold establishes the product identity and the fundamental slot
-invariant. Deployment orchestration will be added as the control-plane
-contracts are implemented.
+invariant. It also provides `MapInfrastructureLiveness`, the common
+process-liveness endpoint used by infrastructure hosts. Deployment
+orchestration will be added as the control-plane contracts are implemented.
 
 ## License
 
