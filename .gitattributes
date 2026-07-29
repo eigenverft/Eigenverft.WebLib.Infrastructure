@@ -1,0 +1,5 @@
+# Normalize text files while preserving automatic binary detection.
+* text=auto
+
+# Keep C# language detection explicit.
+*.cs linguist-language=C#
