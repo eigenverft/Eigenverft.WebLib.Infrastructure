@@ -11,6 +11,7 @@ slot for a fast rollback.
 ## Intended responsibilities
 
 - expose shared ASP.NET Core health and infrastructure endpoints;
+- provide an executable-rooted, writable application directory layout for self-contained hosts;
 - model blue and green deployment slots and their state;
 - inventory installed and active component versions;
 - stage releases into an inactive slot without overwriting a running version;
@@ -29,6 +30,16 @@ The core contract also avoids a generic remote shell. Platform-specific
 filesystem, process, service-manager, and routing integrations should be
 provided through narrow adapters so the deployment state machine remains
 independently testable.
+
+## Self-contained host directories
+
+`WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` creates a host rooted at
+`AppContext.BaseDirectory`, assigns `ContentRootPath` and `WebRootPath`, creates the
+configured direct-child folders, verifies that they are writable, and registers the
+resolved `AppDirectoryLayout` for access before and after `Build()`.
+
+The library targets `net8.0` and `net10.0`. A `net9.0` consumer uses the compatible
+`net8.0` asset; preview target frameworks are intentionally excluded.
 
 ## Infrastructure role
 
