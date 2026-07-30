@@ -44,23 +44,42 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting
     /// </remarks>
     public static class WebApplicationBuilderFactory
     {
-        private const string WebKey = "Web";
-        private const string StandardWebFolderName = "wwwroot";
+        private static readonly string WebKey = DefaultDirectory.Web.GetKey();
+        private static readonly string StandardWebFolderName = DefaultDirectory.Web.GetDefaultFolderName();
 
         /// <summary>
-        /// Creates a <see cref="WebApplicationBuilder"/> using an executable-folder rooted directory layout.
+        /// Creates a <see cref="WebApplicationBuilder"/> using the standard directory set with typed overrides.
         /// </summary>
-        /// <param name="folderMap">
-        /// Semantic key to direct-child folder name mapping under the executable folder.
-        /// Folder names must be a single segment (no separators).
-        /// </param>
-        /// <param name="includeCommandLineArgs">
-        /// If true, includes command line args (excluding index 0) when creating the builder.
-        /// </param>
-        /// <param name="strictWwwrootName">
-        /// If true (default), throws a hard-warn when the key "Web" is present but does not map to "wwwroot".
-        /// This is an explicit guard against Visual Studio / build-target dependent static file behavior.
-        /// </param>
+        /// <param name="directoryOverrides">Folder-name overrides; unspecified standard entries retain their defaults.</param>
+        /// <param name="includeCommandLineArgs">Whether command-line arguments are included.</param>
+        /// <param name="strictWwwrootName">Whether the web directory must remain named <c>wwwroot</c>.</param>
+        /// <returns>A configured <see cref="WebApplicationBuilder"/>.</returns>
+        public static WebApplicationBuilder CreateWithDefaultDirectory(
+            IReadOnlyDictionary<DefaultDirectory, string> directoryOverrides,
+            bool includeCommandLineArgs = true,
+            bool strictWwwrootName = true)
+        {
+            if (directoryOverrides is null)
+            {
+                throw new ArgumentNullException(nameof(directoryOverrides));
+            }
+
+            var folderMap = new Dictionary<string, string>(BuildDefaultMap(), StringComparer.OrdinalIgnoreCase);
+
+            foreach (var entry in directoryOverrides)
+            {
+                folderMap[entry.Key.GetKey()] = entry.Value;
+            }
+
+            return CreateWithDefaultDirectory(folderMap, includeCommandLineArgs, strictWwwrootName);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="WebApplicationBuilder"/> using either the library defaults or a custom semantic-key map.
+        /// </summary>
+        /// <param name="folderMap">Custom semantic keys and direct-child folder names, or <c>null</c> for the standard set.</param>
+        /// <param name="includeCommandLineArgs">Whether command-line arguments are included.</param>
+        /// <param name="strictWwwrootName">Whether an explicit web mapping must remain named <c>wwwroot</c>.</param>
         /// <returns>A configured <see cref="WebApplicationBuilder"/>.</returns>
         public static WebApplicationBuilder CreateWithDefaultDirectory(
             IReadOnlyDictionary<string, string>? folderMap = null,
@@ -100,14 +119,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting
 
         private static IReadOnlyDictionary<string, string> BuildDefaultMap()
         {
-            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (DefaultDirectory directory in Enum.GetValues(typeof(DefaultDirectory)))
             {
-                ["Logs"] = "Logs",
-                ["Data"] = "Data",
-                ["Certs"] = "Certs",
-                ["Settings"] = "Settings",
-                [WebKey] = StandardWebFolderName,
-            };
+                result[directory.GetKey()] = directory.GetDefaultFolderName();
+            }
+
+            return result;
         }
 
         private static string GetExecutableRootDirectory()
@@ -122,7 +141,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting
 
         private static string[] GetCommandLineArgsWithoutExePath()
         {
-            // Environment.GetCommandLineArgs includes the executable path at index 0; ASP.NET expects args without it.
             return Environment.GetCommandLineArgs().Skip(1).ToArray();
         }
 

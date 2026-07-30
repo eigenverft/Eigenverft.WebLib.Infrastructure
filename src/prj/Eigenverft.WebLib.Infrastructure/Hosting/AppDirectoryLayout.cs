@@ -5,17 +5,15 @@ using System.IO;
 namespace Eigenverft.WebLib.Infrastructure.Hosting
 {
     /// <summary>
-    /// Resolved writable root plus named directory paths under that root.
+    /// Represents a resolved executable-root directory layout with named writable child directories.
     /// </summary>
     public sealed class AppDirectoryLayout
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AppDirectoryLayout"/>.
         /// </summary>
-        /// <param name="rootPath">Writable per-executable root directory path.</param>
-        /// <param name="directoriesByKey">Resolved directory paths by semantic key (case-insensitive).</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="directoriesByKey"/> is <c>null</c>.</exception>
-        /// <exception cref="ArgumentException">Thrown when <paramref name="rootPath"/> is <c>null</c>, empty, or whitespace.</exception>
+        /// <param name="rootPath">The executable-root directory path.</param>
+        /// <param name="directoriesByKey">Resolved directory paths by semantic key.</param>
         public AppDirectoryLayout(string rootPath, IReadOnlyDictionary<string, string> directoriesByKey)
         {
             if (string.IsNullOrWhiteSpace(rootPath))
@@ -27,46 +25,31 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting
             GetByKey = directoriesByKey ?? throw new ArgumentNullException(nameof(directoriesByKey));
         }
 
-        /// <summary>
-        /// Writable per-executable root directory path.
-        /// </summary>
+        /// <summary>Gets the executable-root directory path.</summary>
         public string RootPath { get; }
 
-        /// <summary>
-        /// Resolved directory paths by semantic key (case-insensitive).
-        /// </summary>
+        /// <summary>Gets resolved directory paths by semantic key.</summary>
         public IReadOnlyDictionary<string, string> GetByKey { get; }
 
-        /// <summary>
-        /// Gets a directory path by semantic key.
-        /// </summary>
+        /// <summary>Gets a directory path by custom semantic key.</summary>
         /// <param name="key">The semantic key.</param>
-        /// <returns>The resolved directory path.</returns>
-        /// <remarks>
-        /// This indexer is equivalent to calling <see cref="Get(string)"/>.
-        /// </remarks>
-        /// <example>
-        /// <code>
-        /// var logsPath = layout["Logs"];
-        /// </code>
-        /// </example>
         public string this[string key] => Get(key);
 
+        /// <summary>Gets a directory path by standard typed key.</summary>
+        /// <param name="directory">The standard directory key.</param>
+        public string this[DefaultDirectory directory] => Get(directory);
+
         /// <summary>
-        /// Tries to find a directory whose leaf folder name is <c>wwwroot</c> (case-insensitive).
+        /// Tries to find the mapped static-web directory by its conventional <c>wwwroot</c> leaf name.
         /// </summary>
-        /// <param name="directoryPath">The resolved directory path if present.</param>
-        /// <returns><c>true</c> if a web root directory exists in the layout; otherwise <c>false</c>.</returns>
-        /// <remarks>
-        /// Convention: if any mapped directory ends with "wwwroot", treat it as web root.
-        /// The check uses the leaf folder name to support mappings like <c>Static\wwwroot</c> as well.
-        /// </remarks>
+        /// <param name="directoryPath">The resolved web-root path if present.</param>
+        /// <returns><c>true</c> when a web-root directory is present; otherwise <c>false</c>.</returns>
         public bool TryGetWebRoot(out string directoryPath)
         {
-            foreach (var path in GetByKey.Values)
+            foreach (string path in GetByKey.Values)
             {
-                var trimmed = Path.TrimEndingDirectorySeparator(path);
-                var leaf = Path.GetFileName(trimmed);
+                string trimmed = Path.TrimEndingDirectorySeparator(path);
+                string leaf = Path.GetFileName(trimmed);
 
                 if (string.Equals(leaf, "wwwroot", StringComparison.OrdinalIgnoreCase))
                 {
@@ -79,17 +62,19 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting
             return false;
         }
 
-        /// <summary>
-        /// Gets a directory path by key.
-        /// </summary>
+        /// <summary>Gets a directory path by standard typed key.</summary>
+        /// <param name="directory">The standard directory key.</param>
+        /// <returns>The resolved directory path.</returns>
+        public string Get(DefaultDirectory directory)
+        {
+            return Get(directory.GetKey());
+        }
+
+        /// <summary>Gets a directory path by custom semantic key.</summary>
         /// <param name="key">The semantic key.</param>
         /// <returns>The resolved directory path.</returns>
-        /// <exception cref="ArgumentException">
-        /// Thrown when <paramref name="key"/> is <c>null</c>, empty, or whitespace.
-        /// </exception>
-        /// <exception cref="KeyNotFoundException">
-        /// Thrown when the key is not present in <see cref="GetByKey"/>.
-        /// </exception>
+        /// <exception cref="ArgumentException">The key is null, empty, or whitespace.</exception>
+        /// <exception cref="KeyNotFoundException">The key is not configured.</exception>
         public string Get(string key)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -97,20 +82,28 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting
                 throw new ArgumentException("Key must not be null/empty.", nameof(key));
             }
 
-            if (!GetByKey.TryGetValue(key, out var path))
+            if (!GetByKey.TryGetValue(key, out string? path))
             {
-                throw new KeyNotFoundException($"Directory key '{key}' is not configured. Known keys: {string.Join(", ", GetByKey.Keys)}");
+                throw new KeyNotFoundException(
+                    $"Directory key '{key}' is not configured. Known keys: {string.Join(", ", GetByKey.Keys)}");
             }
 
             return path;
         }
 
-        /// <summary>
-        /// Tries to get a directory path by key.
-        /// </summary>
+        /// <summary>Tries to get a directory path by standard typed key.</summary>
+        /// <param name="directory">The standard directory key.</param>
+        /// <param name="directoryPath">The resolved directory path if found.</param>
+        /// <returns><c>true</c> when the directory is present; otherwise <c>false</c>.</returns>
+        public bool TryGet(DefaultDirectory directory, out string directoryPath)
+        {
+            return TryGet(directory.GetKey(), out directoryPath);
+        }
+
+        /// <summary>Tries to get a directory path by custom semantic key.</summary>
         /// <param name="key">The semantic key.</param>
         /// <param name="directoryPath">The resolved directory path if found.</param>
-        /// <returns><c>true</c> if the key is present; otherwise <c>false</c>.</returns>
+        /// <returns><c>true</c> when the key is present; otherwise <c>false</c>.</returns>
         public bool TryGet(string key, out string directoryPath)
         {
             directoryPath = string.Empty;
@@ -120,7 +113,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting
                 return false;
             }
 
-            if (GetByKey.TryGetValue(key, out var found) && !string.IsNullOrEmpty(found))
+            if (GetByKey.TryGetValue(key, out string? found) && !string.IsNullOrEmpty(found))
             {
                 directoryPath = found;
                 return true;

@@ -14,7 +14,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests;
 public sealed class DirectoryLayoutTests
 {
     [TestMethod]
-    public void FactoryUsesExecutableRootAndCreatesConfiguredDirectories()
+    public void FactoryUsesExecutableRootAndCreatesDefaultDirectories()
     {
         WebApplicationBuilder builder = CreateBuilder();
         AppDirectoryLayout layout = builder.GetDirectoryLayout();
@@ -23,11 +23,11 @@ public sealed class DirectoryLayoutTests
         Assert.AreEqual(expectedRoot, layout.RootPath);
         Assert.AreEqual(expectedRoot, builder.Environment.ContentRootPath);
         Assert.AreEqual(Path.Combine(expectedRoot, "wwwroot"), builder.Environment.WebRootPath);
-        Assert.AreEqual(Path.Combine(expectedRoot, "AppLogs"), layout["ApplicationLogFiles"]);
-        Assert.AreEqual(Path.Combine(expectedRoot, "AppData"), layout["ApplicationData"]);
-        Assert.AreEqual(Path.Combine(expectedRoot, "AppCerts"), layout["ApplicationCerts"]);
-        Assert.AreEqual(Path.Combine(expectedRoot, "AppSettings"), layout["ApplicationSettings"]);
-        Assert.AreEqual(Path.Combine(expectedRoot, "wwwroot"), layout["Web"]);
+        Assert.AreEqual(Path.Combine(expectedRoot, "AppLogs"), layout[DefaultDirectory.ApplicationLogFiles]);
+        Assert.AreEqual(Path.Combine(expectedRoot, "AppData"), layout[DefaultDirectory.ApplicationData]);
+        Assert.AreEqual(Path.Combine(expectedRoot, "AppCerts"), layout[DefaultDirectory.ApplicationCerts]);
+        Assert.AreEqual(Path.Combine(expectedRoot, "AppSettings"), layout[DefaultDirectory.ApplicationSettings]);
+        Assert.AreEqual(Path.Combine(expectedRoot, "wwwroot"), layout[DefaultDirectory.Web]);
 
         foreach (string directoryPath in layout.GetByKey.Values)
         {
@@ -48,27 +48,38 @@ public sealed class DirectoryLayoutTests
     }
 
     [TestMethod]
+    public void TypedOverridesRetainUnspecifiedDefaults()
+    {
+        WebApplicationBuilder builder = WebApplicationBuilderFactory.CreateWithDefaultDirectory(
+            new Dictionary<DefaultDirectory, string>
+            {
+                [DefaultDirectory.ApplicationData] = "State",
+            },
+            includeCommandLineArgs: false);
+
+        AppDirectoryLayout layout = builder.GetDirectoryLayout();
+
+        Assert.AreEqual("State", Path.GetFileName(layout[DefaultDirectory.ApplicationData]));
+        Assert.AreEqual("AppLogs", Path.GetFileName(layout[DefaultDirectory.ApplicationLogFiles]));
+        Assert.AreEqual("AppCerts", Path.GetFileName(layout[DefaultDirectory.ApplicationCerts]));
+        Assert.AreEqual("AppSettings", Path.GetFileName(layout[DefaultDirectory.ApplicationSettings]));
+        Assert.AreEqual("wwwroot", Path.GetFileName(layout[DefaultDirectory.Web]));
+    }
+
+    [TestMethod]
     public void FactoryRejectsNestedFolderMappings()
     {
         Assert.ThrowsExactly<ArgumentException>(() =>
             WebApplicationBuilderFactory.CreateWithDefaultDirectory(
-                new Dictionary<string, string>
+                new Dictionary<DefaultDirectory, string>
                 {
-                    ["ApplicationData"] = Path.Combine("nested", "AppData"),
+                    [DefaultDirectory.ApplicationData] = Path.Combine("nested", "AppData"),
                 },
                 includeCommandLineArgs: false));
     }
 
     private static WebApplicationBuilder CreateBuilder()
     {
-        return WebApplicationBuilderFactory.CreateWithDefaultDirectory(
-            new Dictionary<string, string>
-            {
-                ["ApplicationLogFiles"] = "AppLogs",
-                ["ApplicationData"] = "AppData",
-                ["ApplicationCerts"] = "AppCerts",
-                ["ApplicationSettings"] = "AppSettings",
-            },
-            includeCommandLineArgs: false);
+        return WebApplicationBuilderFactory.CreateWithDefaultDirectory(includeCommandLineArgs: false);
     }
 }
