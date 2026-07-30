@@ -5,3 +5,11 @@
 *.suo
 TestResults/
 artifacts/
+
+# Agent run-once required local coverage
+*[Ss][Ee][Cc][Rr][Ee][Tt]*
+AGENTS.md
+AGENTS/
+.agents/**/*
+[Dd]ebug/
+[Rr]elease/
