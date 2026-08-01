@@ -18,8 +18,8 @@
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Description>Modern ASP.NET Core web-infrastructure contracts and orchestration primitives, initially for safe blue-green deployment, health validation, activation, and rollback of local services.</Description>
-    <PackageTags>dotnet;aspnet-core;web;infrastructure;deployment;blue-green;health-check;rollback;control-plane</PackageTags>
+    <Description>Shared ASP.NET Core hosting infrastructure for self-contained Eigenverft web applications.</Description>
+    <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;directories</PackageTags>
     <Copyright>Copyright (c) 2026 $(Branding)</Copyright>
   </PropertyGroup>
 
