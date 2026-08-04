@@ -49,6 +49,15 @@ This library is developed library-first to keep reusable web infrastructure
 consistent across independent Eigenverft applications and other codebases.
 Application-specific behavior remains in each application.
 
+The repositories listed below are context and source references only. When
+work is requested in `Eigenverft.WebLib.Infrastructure`, every related
+repository is read-only unless the request explicitly names that repository
+and explicitly asks for a change there. Inspecting an implementation,
+identifying reusable source, or migrating a feature into this library does not
+authorize changes, commits, or pushes in the source or consumer repositories.
+Likewise, an unqualified request to commit or push applies only to
+`Eigenverft.WebLib.Infrastructure`.
+
 - [`Eigenverft.Web.EdgeReverseProxy`](https://github.com/eigenverft/Eigenverft.Web.EdgeReverseProxy)
   currently consumes this library directly as a sibling project. It is an
   intentionally limited host for a different use case.
