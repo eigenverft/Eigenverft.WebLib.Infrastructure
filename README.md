@@ -36,12 +36,149 @@ configuration loading. Its JSON providers are appended and therefore override
 configuration sources already present. Base64 is available for encoding only;
 Windows DPAPI machine scope is available for machine-bound protection.
 
+The `Eigenverft.WebLib.Infrastructure.Security.Certificates` namespace provides
+certificate functionality independently from Kestrel and configuration:
+
+- `SelfSignedCertificateFactory.Create(...)` creates caller-owned self-signed
+  certificates for TLS server, TLS client, combined TLS, code-signing, or email
+  protection purposes. RSA and ECDSA key profiles as well as separately typed
+  DNS and IP subject alternative names are supported.
+- `ManagedCertificateFile.LoadOrCreate(...)` loads a valid managed PFX or
+  creates a self-signed recovery certificate when the file is missing, outside
+  its validity period, unreadable, password-mismatched, or lacks a private key.
+  `CertificateRecoveryMode` controls whether that recovery may replace an
+  existing PFX.
+
+Managed PFX replacement is written to a temporary file in the target directory,
+loaded and validated, and only then moved over the target. If certificate
+creation succeeds but persistence fails, the result exposes the file exception
+and returns the usable certificate in memory with `Persisted == false`.
+`LoadException` retains a read, access, or import error that caused recovery;
+`ExistingFilePreserved` distinguishes deliberate protection from a failed
+persistence attempt.
+`ManagedCertificateResult.Certificate` is always owned and disposed by the
+caller. The certificate feature has no dependency on ASP.NET Core hosting,
+Kestrel, SNI matching, configuration reload, or logging.
+
+`ConfigureKestrelSniFromConfiguration(...)` from the
+`Eigenverft.WebLib.Infrastructure.Hosting.Kestrel` namespace configures HTTP
+and HTTPS listeners, binding scope, HTTP protocols, the Kestrel Server header,
+TLS protocol policy, and reloadable SNI certificate selection. It retains the
+existing configuration contract used by the source applications:
+
+```json
+{
+  "CertificatesDirectory": "certs",
+  "KestrelSettings": {
+    "HTTP_PORT": 8080,
+    "HTTPS_PORT": 8443,
+    "ListenScope": "Localhost",
+    "AddServerHeader": false,
+    "Protocols": "Http1AndHttp2AndHttp3",
+    "PreferLongestSuffixMatch": true,
+    "TlsProtocolPolicy": "Default"
+  },
+  "CertificatesMappingSettings": [
+    {
+      "SNI": "localhost",
+      "FileName": "localhost.pfx",
+      "Password": "yourPassword",
+      "CertificateRecoveryMode": "PreserveExisting",
+      "AdditionalSelfSignedCertificateDnsNames": [
+        "*.localhost"
+      ],
+      "AdditionalSelfSignedCertificateIpAddresses": [
+        "127.0.0.1"
+      ]
+    }
+  ]
+}
+```
+
+An application can override the configured certificate directory explicitly:
+
+```csharp
+builder.WebHost.ConfigureKestrelSniFromConfiguration(
+    certDirOverride: defaultDirs["ApplicationCerts"]);
+```
+
+The three existing top-level configuration areas also define their lifecycle:
+
+- `CertificatesDirectory` is resolved once during startup.
+- `KestrelSettings` is startup-fixed, including ports, binding, protocols, TLS
+  policy, Server header, and the SNI matching strategy.
+- `CertificatesMappingSettings` is the complete hot-reload boundary.
+
+On configuration reload, the normalized certificate mappings, managed PFX
+content fingerprints, and active certificate validity are compared with the
+current snapshot.
+A fully unchanged and usable generation is a no-op. A changed generation is
+loaded fully before one immutable selection snapshot is published. This also
+allows a configuration reload to pick up an externally replaced PFX even when
+its mapping did not change. If the new generation cannot be built, the running
+host retains its last-known-good snapshot. A candidate that needs a memory-only
+recovery certificate also leaves a still-usable last-known-good snapshot active;
+the memory-only candidate is published only when no complete usable generation
+remains. Old published snapshots remain owned until host shutdown because a
+certificate may still be used by a TLS handshake that began before the swap.
+Each configured host owns its own state; there is no static process-wide
+certificate selection state. PFX files do not receive a separate file watcher;
+their state is reevaluated on configuration reload and host restart.
+
+The mapping's `SNI` value is always included as a DNS SAN when a self-signed
+certificate is generated, or as an IP SAN when the value is an IP address.
+`AdditionalSelfSignedCertificateDnsNames` and
+`AdditionalSelfSignedCertificateIpAddresses` add further SANs only to
+automatically generated certificates; an existing valid PFX retains its own
+certificate contents. IP values found in the DNS-name list are normalized to
+IP SANs for tolerant handling of existing configuration.
+
+SNI matching accepts an exact configured name or a suffix beginning at a DNS
+label boundary. For example, `api.example.com` matches `example.com`, while
+`notexample.com` does not. When no configured suffix matches or a client sends
+no SNI value, the first usable mapping in configuration order is the fallback.
+`PreferLongestSuffixMatch` changes only match precedence; the fallback remains
+the first configured usable mapping.
+
+Certificate recovery remains availability-oriented but is not implicitly
+destructive. `CertificateRecoveryMode` is configured per mapping and is part of
+the hot-reloadable mapping plan:
+
+- `PreserveExisting` is the default. A genuinely missing PFX is created, while
+  every existing unusable PFX remains unchanged and the generated recovery
+  certificate is returned only in memory.
+- `ReplaceExpired` additionally replaces a PFX that was successfully imported
+  and found to be expired. It does not replace a not-yet-valid, unreadable,
+  access-denied, corrupt, or password-mismatched file.
+- `ReplaceAnyUnusable` explicitly allows the previous full self-healing
+  behavior. It can overwrite an externally managed PFX after import, password,
+  read, or access failures and should therefore be enabled only for mappings
+  whose files the library is allowed to replace.
+
+Missing files are finalized without overwrite, so a PFX placed concurrently by
+another writer wins. Any generated self-signed certificate can keep HTTPS
+cryptographically available, but it is not automatically trusted by clients.
+
+`CertificatesDirectory` and `certDirOverride` accept either fully qualified
+paths such as `D:\certs` or paths relative to the host content root such as
+`certs`. Without either setting, the directory defaults to
+`{ContentRoot}/certs`; `AppContext.BaseDirectory` is the root fallback when the
+host supplies no content root.
+
+`TlsProtocolPolicy: Default` is the recommended policy and enables TLS 1.2 and
+TLS 1.3. `Strict` permits only TLS 1.3, `MaximumTlsCompatibility` additionally
+permits TLS 1.0 and TLS 1.1, and `Legacy` also enables obsolete SSL protocols.
+The policy is applied directly to the HTTPS endpoint created by this method.
+An unknown `Protocols`, `TlsProtocolPolicy`, or `ListenScope` string uses the
+safe default instead of preventing development startup. The plaintext listener
+is intentionally HTTP/1; the HTTPS listener defaults to HTTP/1 and HTTP/2.
+
 The library targets `net8.0` and `net10.0`. A `net9.0` consumer uses the
 compatible `net8.0` asset; preview target frameworks are intentionally
 excluded.
 
 The current package surface is limited to these hosting-directory,
-configuration-source, and JSON-settings primitives.
+configuration-source, JSON-settings, certificate, and Kestrel SNI primitives.
 
 ## Related repositories
 
