@@ -22,12 +22,26 @@ default and optionally the current process command-line arguments. Call it
 before adding other configuration providers because it clears the existing
 source collection.
 
+The `Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings`
+namespace separates two related capabilities:
+
+- `AddEnvironmentJsonSettings(...)` loads a common JSON file followed by its
+  `.{Environment}` override.
+- `JsonSettingsFileEncoder` and `AddJsonFileWithDecodedValues(...)` encode
+  selected values on disk and decode recognized values only in memory.
+
+`EncodeAndAddEnvironmentJsonSettings(...)` composes both capabilities when an
+application intentionally wants startup-time file encoding followed by decoded
+configuration loading. Its JSON providers are appended and therefore override
+configuration sources already present. Base64 is available for encoding only;
+Windows DPAPI machine scope is available for machine-bound protection.
+
 The library targets `net8.0` and `net10.0`. A `net9.0` consumer uses the
 compatible `net8.0` asset; preview target frameworks are intentionally
 excluded.
 
-The current package surface is limited to these hosting-directory and
-configuration-source primitives.
+The current package surface is limited to these hosting-directory,
+configuration-source, and JSON-settings primitives.
 
 ## Related repositories
 

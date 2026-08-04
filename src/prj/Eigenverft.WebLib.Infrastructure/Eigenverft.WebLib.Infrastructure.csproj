@@ -19,7 +19,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>Shared ASP.NET Core hosting infrastructure for self-contained Eigenverft web applications.</Description>
-    <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;directories</PackageTags>
+    <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;directories;configuration;json</PackageTags>
     <Copyright>Copyright (c) 2026 $(Branding)</Copyright>
   </PropertyGroup>
 
@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.1" />
   </ItemGroup>
 
 </Project>
