@@ -67,6 +67,49 @@ Consumers that want a Serilog-backed bootstrap channel must assign
 `Serilog.Log.Logger` before the first actual `BootstrapLogger` access. Merely
 referencing Serilog and Console packages does not initialize either provider.
 
+There are therefore two deliberately different bootstrap modes:
+
+```csharp
+private static readonly ILogger<Program> Logger =
+    BootstrapLogger<Program>.CreateLogger();
+```
+
+`CreateLogger(...)` is the automatic best-effort mode. It captures an already
+initialized Serilog global logger when available and otherwise uses Microsoft
+logging. It does not create or configure Serilog itself.
+
+```csharp
+private static readonly ILogger<Program> Logger =
+    BootstrapLogger<Program>.CreateRequiredSerilogLogger();
+```
+
+`CreateRequiredSerilogLogger(...)` is the explicit fail-fast mode. It creates an
+isolated Serilog bootstrap pipeline from
+`AppContext.BaseDirectory/AppSettings/BootstrapLoggerSettings.json`, assigns the
+created instance to `Serilog.Log.Logger`, and exposes it through the same
+provider-neutral `ILogger<TCategoryName>` surface. The consumer must reference
+Serilog core, `Serilog.Settings.Configuration`,
+`Serilog.Extensions.Logging`, and every sink or enricher named by the JSON file.
+The WebLib continues to access all Serilog APIs exclusively through reflection.
+Missing packages, a missing or invalid file, or an incompatible Serilog API are
+startup errors; this mode never falls back to Microsoft logging.
+
+The required mode accepts optional `configurationFile`, `baseDirectory`,
+`sectionName`, and `reloadOnChange` arguments. The first three select the exact
+isolated configuration source. `reloadOnChange` defaults to `false`; when enabled,
+existing minimum-level overrides and level switches can follow JSON changes, but
+the sink pipeline is not reconstructed. Environment-specific files, environment
+variables, command-line arguments, DPAPI decoding, and the later application
+logger configuration are intentionally not loaded by this API.
+
+Both modes initialize the same process-wide bootstrap cache. Required Serilog
+initialization must therefore be the first BootstrapLogger operation. Repeating
+the required call with the same file, section, and reload setting reuses the
+factory; requesting a different required identity or invoking it after automatic
+initialization throws. When used in a static field initializer, a required-mode
+failure can occur before the `Main` method body and may surface as a type
+initialization failure. This strict behavior is intentional.
+
 The `Eigenverft.WebLib.Infrastructure.Security.Certificates` namespace provides
 certificate functionality independently from Kestrel and configuration:
 
