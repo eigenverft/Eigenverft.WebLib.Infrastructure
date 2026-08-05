@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
-using Eigenverft.WebLib.Infrastructure.Hosting;
+using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;

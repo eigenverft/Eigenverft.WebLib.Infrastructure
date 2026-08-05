@@ -5,6 +5,8 @@ applications.
 
 ## Current scope
 
+The `Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout` namespace contains the executable-rooted directory-layout contract.
+
 `WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` creates a host
 rooted at `AppContext.BaseDirectory`, assigns `ContentRootPath` and
 `WebRootPath`, creates the configured direct-child folders, verifies that they
@@ -16,7 +18,7 @@ logs, data, certificates, settings, and static web content. Callers can retain
 the defaults or provide explicit overrides.
 
 `ResetToMinimalConfigurationSources(...)` from the
-`Eigenverft.WebLib.Infrastructure.Hosting.Configuration` namespace replaces the
+`Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Sources` namespace replaces the
 builder's configuration sources with a minimal stack: environment variables by
 default and optionally the current process command-line arguments. Call it
 before adding other configuration providers because it clears the existing

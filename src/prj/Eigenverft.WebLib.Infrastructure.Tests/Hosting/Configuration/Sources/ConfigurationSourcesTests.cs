@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-using Eigenverft.WebLib.Infrastructure.Hosting.Configuration;
+using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Sources;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;

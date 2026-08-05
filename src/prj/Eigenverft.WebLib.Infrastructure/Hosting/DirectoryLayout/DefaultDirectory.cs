@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-namespace Eigenverft.WebLib.Infrastructure.Hosting
+namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
 {
     /// <summary>
     /// Identifies the standard directories used by a self-contained Eigenverft web host.

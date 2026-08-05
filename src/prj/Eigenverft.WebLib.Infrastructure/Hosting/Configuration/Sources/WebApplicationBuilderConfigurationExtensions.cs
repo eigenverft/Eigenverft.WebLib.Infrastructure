@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 
-namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration
+namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Sources
 {
     /// <summary>
     /// Provides configuration-source operations for <see cref="WebApplicationBuilder"/>.

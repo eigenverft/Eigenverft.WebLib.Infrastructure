@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace Eigenverft.WebLib.Infrastructure.Hosting
+namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
 {
     /// <summary>
     /// Represents a resolved executable-root directory layout with named writable child directories.

@@ -6,7 +6,7 @@ using System.Linq;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Eigenverft.WebLib.Infrastructure.Hosting
+namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
 {
     /// <summary>
     /// Creates a <see cref="WebApplicationBuilder"/> and applies project-wide defaults.

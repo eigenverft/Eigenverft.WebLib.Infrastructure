@@ -1,7 +1,7 @@
 using System;
 using Microsoft.AspNetCore.Builder;
 
-namespace Eigenverft.WebLib.Infrastructure.Hosting
+namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
 {
     /// <summary>
     /// Extensions to attach and retrieve an <see cref="AppDirectoryLayout"/> from a <see cref="WebApplicationBuilder"/>.
