@@ -36,6 +36,37 @@ configuration loading. Its JSON providers are appended and therefore override
 configuration sources already present. Base64 is available for encoding only;
 Windows DPAPI machine scope is available for machine-bound protection.
 
+`BootstrapLogger<TCategoryName>.CreateLogger(...)` from the
+`Eigenverft.WebLib.Infrastructure.Hosting.Logging.BootstrapLogger` namespace
+provides a pre-host `Microsoft.Extensions.Logging.ILogger<TCategoryName>` before
+the application DI container and host logging pipeline exist. Its public surface
+remains provider-neutral. The production library has no Serilog package or
+assembly reference; optional Serilog support is discovered exclusively through
+reflection at runtime.
+
+The bootstrap logger is intentionally a separate, stable process-wide diagnostic
+channel rather than a live view of the later application logger. The first call
+creates and caches one factory for all categories. When Serilog and its Microsoft
+logging bridge are available, an explicitly initialized global
+`Serilog.Log.Logger` present at that moment is captured. Serilog's built-in
+`Logger.None`/`SilentLogger` is treated as not initialized and therefore selects
+the Microsoft fallback instead. This keeps early diagnostics visible when the
+Console provider is available. Every explicitly assigned Serilog logger remains
+valid, even if it intentionally has no sinks; the library does not inspect sink
+configuration. Replacing `Serilog.Log.Logger` later does not rebind existing
+bootstrap loggers. The Microsoft fallback applies Console and the `Logging`
+configuration section when their extensions are available. Configuration passed
+after the first factory creation is intentionally ignored.
+
+This separation allows startup diagnostics, including configuration-provider
+precedence and collision checks, to report on the application logging
+configuration without depending on that same configuration for their output.
+The cached factory is process-owned; callers may create loggers from it but must
+not dispose it.
+Consumers that want a Serilog-backed bootstrap channel must assign
+`Serilog.Log.Logger` before the first actual `BootstrapLogger` access. Merely
+referencing Serilog and Console packages does not initialize either provider.
+
 The `Eigenverft.WebLib.Infrastructure.Security.Certificates` namespace provides
 certificate functionality independently from Kestrel and configuration:
 
@@ -178,7 +209,8 @@ compatible `net8.0` asset; preview target frameworks are intentionally
 excluded.
 
 The current package surface is limited to these hosting-directory,
-configuration-source, JSON-settings, certificate, and Kestrel SNI primitives.
+configuration-source, JSON-settings, bootstrap-logging, certificate, and Kestrel
+SNI primitives.
 
 ## Related repositories
 
