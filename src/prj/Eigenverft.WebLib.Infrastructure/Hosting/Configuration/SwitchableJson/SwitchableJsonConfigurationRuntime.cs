@@ -36,6 +36,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         // provider rebuild, effective watcher reload and any successful source switch. Prepared commits require the same version.
         private long _watcherGeneration;
         private long _stateVersion;
+
+        // Lifecycle callbacks intentionally execute outside _operationGate, so concurrent operations can finish callback delivery
+        // in a different order than they committed. Assign this sequence while still under the gate; consumers can then distinguish
+        // the newer outcome without turning notification callbacks back into transaction participants.
+        private long _lifecycleSequence;
         private ActiveSourceWatcher? _activeWatcher;
         private SwitchableJsonConfigurationProvider? _activeProvider;
         private bool _disposed;
@@ -715,6 +720,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 configurationChanged,
                 failureKind,
                 exception,
+                NextLifecycleSequenceLocked(),
                 DateTimeOffset.UtcNow);
         }
 
@@ -738,6 +744,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 result.ConfigurationChanged,
                 result.FailureKind,
                 result.Exception,
+                result.Sequence,
                 result.Timestamp);
         }
 
@@ -761,7 +768,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 configurationChanged,
                 failureKind,
                 exception,
+                NextLifecycleSequenceLocked(),
                 DateTimeOffset.UtcNow);
+        }
+
+        private long NextLifecycleSequenceLocked()
+        {
+            // Every call site represents a completed lifecycle outcome while _operationGate is held. Keep this independent from
+            // _stateVersion: rejected/no-op operations are observable outcomes too, while framework state changes can intentionally
+            // invalidate preparations without producing a lifecycle event.
+            return ++_lifecycleSequence;
         }
 
         private void ThrowIfDisposed()

@@ -9,8 +9,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
     /// The abstraction is intentionally source-agnostic: names and paths may represent profiles, blue/green layouts,
     /// tenants, application-settings folders, or any other caller-defined convention. The provider assigns no meaning to them.
     /// The underlying <see cref="Microsoft.Extensions.Configuration.IConfigurationProvider"/> remains an implementation detail.
-    /// The DI handle is stable even if ConfigurationManager rebuilds concrete providers after its Sources collection changes;
-    /// such framework rebuilds do not change this handle's identity or the provider's precedence position in the source stack.
+    /// The DI handle is stable even if ConfigurationManager rebuilds concrete providers after its Sources collection changes.
+    /// Runtime source switching itself never removes/re-adds the source and therefore never changes its configured precedence.
+    /// A caller that explicitly reorders the ConfigurationManager Sources collection is still intentionally changing precedence.
     /// </remarks>
     public interface ISwitchableJsonConfiguration
     {
@@ -33,8 +34,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// isolated after the provider snapshot has committed and does not turn a successful switch/reload into a rejected one.
         /// Consumers should not coordinate work by assuming ordering between this lifecycle channel and IConfiguration change-token
         /// callbacks; both describe an already committed provider state, while IConfiguration reload is emitted only for effective
-        /// data changes. Lifecycle handlers also run outside the provider state lock, so with concurrent callers the event payload
-        /// describes the completed operation and should be preferred over re-reading CurrentSourcePath to reconstruct that operation.
+        /// data changes. Lifecycle handlers also run outside the provider state lock, so concurrent operations can complete callback
+        /// delivery out of commit order. The event payload describes its completed operation, and its monotonically increasing
+        /// <see cref="SwitchableJsonConfigurationEventArgs.Sequence"/> identifies the newer lifecycle outcome for this runtime.
         /// A separate pre-I/O SwitchRequested event remains intentionally omitted from the minimal lifecycle contract.
         /// </remarks>
         event EventHandler<SwitchableJsonConfigurationEventArgs>? LifecycleChanged;

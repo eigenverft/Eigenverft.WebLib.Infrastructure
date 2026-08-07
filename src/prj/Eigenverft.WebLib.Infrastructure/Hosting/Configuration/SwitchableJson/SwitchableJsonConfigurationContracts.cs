@@ -104,6 +104,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             bool configurationChanged,
             SwitchableJsonFailureKind failureKind,
             Exception? exception,
+            long sequence,
             DateTimeOffset timestamp)
         {
             Name = name;
@@ -115,6 +116,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             ConfigurationChanged = configurationChanged;
             FailureKind = failureKind;
             Exception = exception;
+            Sequence = sequence;
             Timestamp = timestamp;
         }
 
@@ -145,6 +147,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// <summary>Gets the underlying failure exception for rejected switches, when available.</summary>
         public Exception? Exception { get; }
 
+        /// <summary>
+        /// Gets the monotonically increasing lifecycle sequence assigned by this runtime when the outcome committed.
+        /// </summary>
+        /// <remarks>
+        /// Notification callbacks intentionally run outside the provider state lock and may therefore arrive out of callback order
+        /// under concurrency. Consumers that maintain administrative state can compare this sequence instead of callback arrival time.
+        /// The sequence is scoped to one switchable runtime handle and is not a global process identifier.
+        /// </remarks>
+        public long Sequence { get; }
+
         /// <summary>Gets the UTC timestamp at which the outcome was completed.</summary>
         public DateTimeOffset Timestamp { get; }
 
@@ -165,6 +177,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             bool configurationChanged,
             SwitchableJsonFailureKind failureKind,
             Exception? exception,
+            long sequence,
             DateTimeOffset timestamp)
         {
             Kind = kind;
@@ -176,6 +189,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             ConfigurationChanged = configurationChanged;
             FailureKind = failureKind;
             Exception = exception;
+            Sequence = sequence;
             Timestamp = timestamp;
         }
 
@@ -205,8 +219,17 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// <summary>Gets the classified failure kind, or <see cref="SwitchableJsonFailureKind.None"/>.</summary>
         public SwitchableJsonFailureKind FailureKind { get; }
 
-        /// <summary>Gets the underlying load exception for rejected operations, when available.</summary>
+        /// <summary>Gets the underlying failure exception for rejected operations, when available.</summary>
         public Exception? Exception { get; }
+
+        /// <summary>
+        /// Gets the monotonically increasing lifecycle sequence assigned by this runtime when the outcome committed.
+        /// </summary>
+        /// <remarks>
+        /// Event callbacks can be delivered out of callback order when concurrent operations finish notification on different threads.
+        /// A larger sequence always represents a later lifecycle outcome for the same runtime handle.
+        /// </remarks>
+        public long Sequence { get; }
 
         /// <summary>Gets the UTC timestamp at which the lifecycle outcome completed.</summary>
         public DateTimeOffset Timestamp { get; }

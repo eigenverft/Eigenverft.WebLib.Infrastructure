@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -393,6 +394,53 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
             string expectedValue = currentFile == "B.json" ? "2" : "3";
             Assert.AreEqual(expectedMarker, builder.Configuration["Marker"]);
             Assert.AreEqual(expectedValue, builder.Configuration["Value"]);
+        }
+
+        [TestMethod]
+        public async Task ConcurrentLifecycleCallbacksCanArriveOutOfOrderButSequencePreservesCommitOrder()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"A\" }");
+            directory.Write("B.json", "{ \"Value\": \"B\" }");
+            directory.Write("C.json", "{ \"Value\": \"C\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("settings", "A.json");
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            using var bNotificationEntered = new ManualResetEventSlim(false);
+            using var releaseBNotification = new ManualResetEventSlim(false);
+            var callbackOrder = new ConcurrentQueue<(string FileName, long Sequence)>();
+
+            // Notifications intentionally run after the commit lock is released. Block B's first lifecycle observer so C can
+            // commit and finish notification first; Sequence must still identify B as the older committed outcome.
+            runtime.LifecycleChanged += (_, args) =>
+            {
+                if (Path.GetFileName(args.RequestedSourcePath) == "B.json")
+                {
+                    bNotificationEntered.Set();
+                    _ = releaseBNotification.Wait(TimeSpan.FromSeconds(3));
+                }
+            };
+            runtime.LifecycleChanged += (_, args) =>
+                callbackOrder.Enqueue((Path.GetFileName(args.RequestedSourcePath), args.Sequence));
+
+            Task<SwitchableJsonSwitchResult> bTask = Task.Run(() => runtime.TrySwitch("B.json"));
+            Assert.IsTrue(bNotificationEntered.Wait(TimeSpan.FromSeconds(3)));
+
+            Task<SwitchableJsonSwitchResult> cTask = Task.Run(() => runtime.TrySwitch("C.json"));
+            SwitchableJsonSwitchResult cResult = await cTask.WaitAsync(TimeSpan.FromSeconds(3));
+            releaseBNotification.Set();
+            SwitchableJsonSwitchResult bResult = await bTask.WaitAsync(TimeSpan.FromSeconds(3));
+
+            Assert.IsTrue(bResult.Sequence < cResult.Sequence);
+            (string FileName, long Sequence)[] observed = callbackOrder.ToArray();
+            Assert.AreEqual(2, observed.Length);
+            Assert.AreEqual("C.json", observed[0].FileName);
+            Assert.AreEqual(cResult.Sequence, observed[0].Sequence);
+            Assert.AreEqual("B.json", observed[1].FileName);
+            Assert.AreEqual(bResult.Sequence, observed[1].Sequence);
+            Assert.AreEqual("C", builder.Configuration["Value"]);
         }
 
         [TestMethod]
