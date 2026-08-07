@@ -20,12 +20,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// The required common JSON file path. Relative paths are resolved against the host content root.
         /// </param>
         /// <param name="keyPathPatterns">Case-insensitive glob patterns for complete configuration paths.</param>
-        /// <param name="encode">
-        /// The encoder applied to matching clear-text values. Use a member of
-        /// <see cref="JsonSettingsValueEncoders"/> for an idempotent, decodable result.
-        /// </param>
+        /// <param name="codec">The reversible codec used for persistence encoding and in-memory decoding.</param>
         /// <param name="optionalEnvironment">Whether the environment-specific file may be absent.</param>
-        /// <param name="reloadOnChange">Whether the providers reload their files after changes.</param>
+        /// <param name="reloadOnChange">
+        /// Whether the providers reload their files after changes. The default is <see langword="false"/> because this method
+        /// encodes matching values only during startup; enabling reload does not automatically re-encode later clear-text file edits.
+        /// </param>
         /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
         /// <returns>The builder's <see cref="ConfigurationManager"/> for chaining.</returns>
         /// <remarks>
@@ -38,15 +38,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             this WebApplicationBuilder builder,
             string commonJsonFilePath,
             IEnumerable<string> keyPathPatterns,
-            Func<string, string> encode,
+            JsonSettingsValueCodec codec,
             bool optionalEnvironment = true,
-            bool reloadOnChange = true,
+            bool reloadOnChange = false,
             bool nullAsEmpty = true)
         {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentException.ThrowIfNullOrWhiteSpace(commonJsonFilePath);
             ArgumentNullException.ThrowIfNull(keyPathPatterns);
-            ArgumentNullException.ThrowIfNull(encode);
+            ArgumentNullException.ThrowIfNull(codec);
 
             string[] patterns = keyPathPatterns.ToArray();
             string resolvedCommonPath = EnvironmentJsonFileResolver.ResolveCommonPath(
@@ -56,7 +56,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             _ = JsonSettingsFileEncoder.EncodeMatchingValuesInPlace(
                 resolvedCommonPath,
                 patterns,
-                encode,
+                codec,
                 nullAsEmpty);
 
             if (EnvironmentJsonFileResolver.TryResolve(
@@ -67,7 +67,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 _ = JsonSettingsFileEncoder.EncodeMatchingValuesInPlace(
                     environmentJsonFilePath,
                     patterns,
-                    encode,
+                    codec,
                     nullAsEmpty);
             }
 
@@ -77,10 +77,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                     builder.Environment,
                     optionalCommon: false,
                     optionalEnvironment: optionalEnvironment,
-                    reloadOnChange: reloadOnChange);
+                    reloadOnChange: reloadOnChange,
+                    decodeCodec: codec);
 
             return builder.Configuration;
         }
+
 
         /// <summary>
         /// Encodes matching values using one key-path pattern, then adds decoded providers.
@@ -90,18 +92,21 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// The required common JSON file path. Relative paths are resolved against the host content root.
         /// </param>
         /// <param name="keyPathPattern">A case-insensitive glob pattern for complete configuration paths.</param>
-        /// <param name="encode">The encoder applied to matching clear-text values.</param>
+        /// <param name="codec">The reversible codec used for persistence encoding and in-memory decoding.</param>
         /// <param name="optionalEnvironment">Whether the environment-specific file may be absent.</param>
-        /// <param name="reloadOnChange">Whether the providers reload their files after changes.</param>
+        /// <param name="reloadOnChange">
+        /// Whether the providers reload their files after changes. The default is <see langword="false"/> because this method
+        /// encodes matching values only during startup; enabling reload does not automatically re-encode later clear-text file edits.
+        /// </param>
         /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
         /// <returns>The builder's <see cref="ConfigurationManager"/> for chaining.</returns>
         public static ConfigurationManager EncodeAndAddEnvironmentJsonSettings(
             this WebApplicationBuilder builder,
             string commonJsonFilePath,
             string keyPathPattern,
-            Func<string, string> encode,
+            JsonSettingsValueCodec codec,
             bool optionalEnvironment = true,
-            bool reloadOnChange = true,
+            bool reloadOnChange = false,
             bool nullAsEmpty = true)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(keyPathPattern);
@@ -109,10 +114,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             return builder.EncodeAndAddEnvironmentJsonSettings(
                 commonJsonFilePath,
                 new[] { keyPathPattern },
-                encode,
+                codec,
                 optionalEnvironment,
                 reloadOnChange,
                 nullAsEmpty);
         }
+
     }
 }

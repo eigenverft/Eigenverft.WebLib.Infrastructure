@@ -19,16 +19,27 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <param name="path">The JSON file path.</param>
         /// <param name="optional">Whether the file may be absent.</param>
         /// <param name="reloadOnChange">Whether the provider reloads after file changes.</param>
+        /// <param name="decodeCodec">
+        /// Optional explicit codec used for decoding. When omitted, the built-in parameterless formats are decoded
+        /// as before. When supplied, this codec is authoritative for encoded values in this provider: parameterized or
+        /// composed values must use the same relevant context that encoded them, such as passwords, Data Protection
+        /// application/purpose isolation, and composed stage order.
+        /// </param>
         /// <returns>The same configuration builder for chaining.</returns>
         /// <remarks>
-        /// The file remains encoded on disk. Plain values and malformed or unavailable encoded values remain
-        /// unchanged in configuration; consumers can therefore report errors in their own configuration domain.
+        /// The file remains encoded on disk. Plain values and malformed or unavailable encoded values remain unchanged in
+        /// configuration; consumers can therefore report errors in their own configuration domain. Generic decoding is also
+        /// transactional across nested recognized wrappers: if an inner stage cannot be decoded with the available context,
+        /// successfully removed outer layers are rolled back. When an explicit codec is supplied, a failed decode does not fall
+        /// back to generic decoding. These rules avoid exposing a partially unwrapped intermediate value when an inner password,
+        /// key ring, purpose, or platform context is missing.
         /// </remarks>
         public static IConfigurationBuilder AddJsonFileWithDecodedValues(
             this IConfigurationBuilder builder,
             string path,
             bool optional = false,
-            bool reloadOnChange = false)
+            bool reloadOnChange = false,
+            JsonSettingsValueCodec? decodeCodec = null)
         {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -38,6 +49,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 Path = path,
                 Optional = optional,
                 ReloadOnChange = reloadOnChange,
+                DecodeCodec = decodeCodec,
             };
 
             source.ResolveFileProvider();
@@ -47,6 +59,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 
         private sealed class DecodingJsonConfigurationSource : JsonConfigurationSource
         {
+            public JsonSettingsValueCodec? DecodeCodec { get; init; }
+
             public override IConfigurationProvider Build(IConfigurationBuilder builder)
             {
                 EnsureDefaults(builder);
@@ -57,9 +71,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 
         private sealed class DecodingJsonConfigurationProvider : JsonConfigurationProvider
         {
-            public DecodingJsonConfigurationProvider(JsonConfigurationSource source)
+            private readonly JsonSettingsValueCodec? _decodeCodec;
+
+            public DecodingJsonConfigurationProvider(DecodingJsonConfigurationSource source)
                 : base(source)
             {
+                _decodeCodec = source.DecodeCodec;
             }
 
             public override void Load(Stream stream)
@@ -70,8 +87,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 {
                     string? value = Data[key];
 
-                    if (value is not null &&
-                        EncodedConfigurationValueDecoder.TryDecode(value, out string clearText))
+                    if (value is null)
+                    {
+                        continue;
+                    }
+
+                    bool decoded = _decodeCodec is null
+                        ? EncodedConfigurationValueDecoder.TryDecode(value, out string clearText)
+                        : _decodeCodec.TryDecode(value, out clearText);
+
+                    if (decoded)
                     {
                         Data[key] = clearText;
                     }

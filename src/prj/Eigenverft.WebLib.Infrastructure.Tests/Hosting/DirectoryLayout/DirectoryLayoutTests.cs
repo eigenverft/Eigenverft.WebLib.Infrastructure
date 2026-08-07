@@ -25,6 +25,7 @@ public sealed class DirectoryLayoutTests
         Assert.AreEqual(Path.Combine(expectedRoot, "wwwroot"), builder.Environment.WebRootPath);
         Assert.AreEqual(Path.Combine(expectedRoot, "AppLogs"), layout[DefaultDirectory.ApplicationLogFiles]);
         Assert.AreEqual(Path.Combine(expectedRoot, "AppData"), layout[DefaultDirectory.ApplicationData]);
+        Assert.AreEqual(Path.Combine(expectedRoot, "AppState"), layout[DefaultDirectory.ApplicationState]);
         Assert.AreEqual(Path.Combine(expectedRoot, "AppCerts"), layout[DefaultDirectory.ApplicationCerts]);
         Assert.AreEqual(Path.Combine(expectedRoot, "AppSettings"), layout[DefaultDirectory.ApplicationSettings]);
         Assert.AreEqual(Path.Combine(expectedRoot, "wwwroot"), layout[DefaultDirectory.Web]);
@@ -61,6 +62,7 @@ public sealed class DirectoryLayoutTests
 
         Assert.AreEqual("State", Path.GetFileName(layout[DefaultDirectory.ApplicationData]));
         Assert.AreEqual("AppLogs", Path.GetFileName(layout[DefaultDirectory.ApplicationLogFiles]));
+        Assert.AreEqual("AppState", Path.GetFileName(layout[DefaultDirectory.ApplicationState]));
         Assert.AreEqual("AppCerts", Path.GetFileName(layout[DefaultDirectory.ApplicationCerts]));
         Assert.AreEqual("AppSettings", Path.GetFileName(layout[DefaultDirectory.ApplicationSettings]));
         Assert.AreEqual("wwwroot", Path.GetFileName(layout[DefaultDirectory.Web]));

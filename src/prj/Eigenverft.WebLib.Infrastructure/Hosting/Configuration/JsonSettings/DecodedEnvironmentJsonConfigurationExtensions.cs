@@ -22,6 +22,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <param name="optionalCommon">Whether the common file may be absent.</param>
         /// <param name="optionalEnvironment">Whether the environment-specific file may be absent.</param>
         /// <param name="reloadOnChange">Whether the providers reload their files after changes.</param>
+        /// <param name="decodeCodec">Optional explicit codec used to decode parameterized or composed values.</param>
         /// <returns>The same configuration builder for chaining.</returns>
         /// <remarks>
         /// Providers are appended to the existing source collection. The environment-specific file therefore
@@ -33,7 +34,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             IHostEnvironment hostEnvironment,
             bool optionalCommon = false,
             bool optionalEnvironment = true,
-            bool reloadOnChange = true)
+            bool reloadOnChange = true,
+            JsonSettingsValueCodec? decodeCodec = null)
         {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentException.ThrowIfNullOrWhiteSpace(commonJsonFilePath);
@@ -46,7 +48,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             builder.AddJsonFileWithDecodedValues(
                 resolvedCommonPath,
                 optional: optionalCommon,
-                reloadOnChange: reloadOnChange);
+                reloadOnChange: reloadOnChange,
+                decodeCodec: decodeCodec);
 
             if (EnvironmentJsonFileResolver.TryResolve(
                     resolvedCommonPath,
@@ -56,7 +59,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 builder.AddJsonFileWithDecodedValues(
                     environmentJsonFilePath,
                     optional: false,
-                    reloadOnChange: reloadOnChange);
+                    reloadOnChange: reloadOnChange,
+                    decodeCodec: decodeCodec);
             }
             else if (!optionalEnvironment)
             {
