@@ -32,6 +32,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// A split configuration/service registration API is possible, but would make it easier to accidentally register only
         /// one half. The provider identity is otherwise completely agnostic and carries no profile, environment, or directory semantics.
         /// File watching is opt-in and independent from manual source switching.
+        /// <para>
+        /// The keyed DI object is a stable runtime handle, not the concrete IConfigurationProvider instance. ConfigurationManager
+        /// may rebuild concrete providers when its Sources collection changes; the source creates a fresh provider for every Build
+        /// while the runtime handle preserves the selected source, watcher and lifecycle subscriptions.
+        /// </para>
         /// </remarks>
         public static IHostApplicationBuilder AddSwitchableJsonFile(
             this IHostApplicationBuilder builder,
@@ -60,7 +65,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                     $"A switchable JSON configuration source named '{name}' is already registered.");
             }
 
-            var provider = new SwitchableJsonConfigurationProvider(
+            var runtime = new SwitchableJsonConfigurationRuntime(
                 name,
                 builder.Environment.ContentRootPath,
                 initialPath,
@@ -70,25 +75,23 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 runtimeFailurePolicy);
 
             IConfigurationBuilder configurationBuilder = builder.Configuration;
-            var source = new SwitchableJsonConfigurationSource(provider);
+            var source = new SwitchableJsonConfigurationSource(runtime);
 
-            // ConfigurationManager mutates Sources before it builds/loads the provider. If the initial Load throws, the source
-            // therefore remains in Sources unless we remove it ourselves. Treat the whole registration as a tiny transaction:
-            // publish both the configuration source and its keyed runtime alias, or publish neither. The provider is disposed on
-            // rollback because reloadOnChange may already have prepared a physical watcher before initial JSON loading failed.
+            // ConfigurationManager inserts a source before Build/Load. If initial loading fails, remove the inserted source so the
+            // registration remains all-or-nothing. Remove() can rebuild the remaining provider stack; that is safe because every
+            // switchable source now follows IConfigurationSource ownership and returns a fresh provider instance from Build().
             try
             {
                 configurationBuilder.Add(source);
 
-                // Keyed DI is used instead of a custom global registry so multiple independent sources remain addressable through
-                // the standard Microsoft DI container. Strongly typed handles or a registry can be layered on top later if a caller
-                // wants domain-specific identities. This registration is an alias to the same provider instance returned by Source.Build.
-                builder.Services.AddKeyedSingleton<ISwitchableJsonConfiguration>(name, provider);
+                // Keyed DI is used instead of a custom registry so multiple independent sources remain addressable through the
+                // standard Microsoft container. The runtime handle survives framework-driven concrete-provider rebuilds.
+                builder.Services.AddKeyedSingleton<ISwitchableJsonConfiguration>(name, runtime);
             }
             catch
             {
                 _ = configurationBuilder.Sources.Remove(source);
-                provider.Dispose();
+                runtime.Dispose();
                 throw;
             }
 

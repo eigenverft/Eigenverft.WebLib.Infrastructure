@@ -4,23 +4,20 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 {
     internal sealed class SwitchableJsonConfigurationSource : IConfigurationSource
     {
-        private readonly SwitchableJsonConfigurationProvider _provider;
+        private readonly SwitchableJsonConfigurationRuntime _runtime;
 
-        public SwitchableJsonConfigurationSource(SwitchableJsonConfigurationProvider provider)
+        public SwitchableJsonConfigurationSource(SwitchableJsonConfigurationRuntime runtime)
         {
-            _provider = provider;
+            _runtime = runtime;
         }
 
         public IConfigurationProvider Build(IConfigurationBuilder builder)
         {
-            // Registration creates exactly one provider instance because IConfiguration and the keyed runtime handle must
-            // observe the same CurrentSource/Data/generation/watcher state. Returning a fresh provider here would create two
-            // independent realities: IConfiguration could watch one file while the DI handle switches another.
-            //
-            // ConfigurationManager owns this returned IConfigurationProvider and disposes it with the host/configuration root.
-            // The keyed DI registration is only another reference to this same instance, not a second provider lifecycle.
-            // A source-created provider plus a separate runtime binder is possible, but adds indirection without changing V1.
-            return _provider;
+            // ConfigurationManager may call Build() again for every source when Sources/Properties are mutated. Returning the
+            // same provider instance is unsafe because the manager replaces its provider set and later disposes the old set.
+            // A fresh provider per Build follows the normal IConfigurationSource ownership contract. The stable runtime object
+            // is shared intentionally: DI identity, CurrentSource, watcher generation and lifecycle subscriptions survive rebuilds.
+            return new SwitchableJsonConfigurationProvider(_runtime);
         }
     }
 }
