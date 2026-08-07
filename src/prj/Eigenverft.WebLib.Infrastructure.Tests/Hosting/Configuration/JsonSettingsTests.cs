@@ -278,6 +278,108 @@ public sealed class JsonSettingsTests
     }
 
     [TestMethod]
+    public void DataProtectionCodecPersistsKeyRingAcrossCodecInstances()
+    {
+        using var directory = new TemporaryDirectory();
+        string keyDirectoryPath = Path.Combine(directory.Path, "data-protection-keys");
+
+        JsonSettingsValueCodec writeCodec = JsonSettingsValueEncoders.DataProtection(keyDirectoryPath);
+        string encodedValue = writeCodec.Encode("secret");
+
+        JsonSettingsValueCodec readCodec = JsonSettingsValueEncoders.DataProtection(keyDirectoryPath);
+        string settingsPath = directory.Write(
+            "data-protection.json",
+            $"{{ \"Password\": \"{encodedValue}\" }}");
+        var configuration = new ConfigurationManager();
+
+        ((IConfigurationBuilder)configuration).AddJsonFileWithDecodedValues(
+            settingsPath,
+            reloadOnChange: false,
+            decodeCodec: readCodec);
+
+        Assert.AreEqual("secret", configuration["Password"]);
+        StringAssert.StartsWith(encodedValue, "enc:d7p4r8:");
+        Assert.IsGreaterThan(0, Directory.GetFiles(keyDirectoryPath, "key-*.xml").Length);
+    }
+
+    [TestMethod]
+    public void DataProtectionCodecWithDifferentIsolationRemainsEncoded()
+    {
+        using var directory = new TemporaryDirectory();
+        string keyDirectoryPath = Path.Combine(directory.Path, "data-protection-keys");
+        JsonSettingsValueCodec writeCodec = JsonSettingsValueEncoders.DataProtection(
+            keyDirectoryPath,
+            "Eigenverft.Tests.Writer",
+            "JsonSettingsTests.SharedPurpose");
+        string encodedValue = writeCodec.Encode("secret");
+        string settingsPath = directory.Write(
+            "data-protection-isolation.json",
+            $"{{ \"Password\": \"{encodedValue}\" }}");
+
+        JsonSettingsValueCodec wrongApplicationCodec = JsonSettingsValueEncoders.DataProtection(
+            keyDirectoryPath,
+            "Eigenverft.Tests.OtherApplication",
+            "JsonSettingsTests.SharedPurpose");
+        var wrongApplicationConfiguration = new ConfigurationManager();
+        ((IConfigurationBuilder)wrongApplicationConfiguration).AddJsonFileWithDecodedValues(
+            settingsPath,
+            reloadOnChange: false,
+            decodeCodec: wrongApplicationCodec);
+
+        JsonSettingsValueCodec wrongPurposeCodec = JsonSettingsValueEncoders.DataProtection(
+            keyDirectoryPath,
+            "Eigenverft.Tests.Writer",
+            "JsonSettingsTests.OtherPurpose");
+        var wrongPurposeConfiguration = new ConfigurationManager();
+        ((IConfigurationBuilder)wrongPurposeConfiguration).AddJsonFileWithDecodedValues(
+            settingsPath,
+            reloadOnChange: false,
+            decodeCodec: wrongPurposeCodec);
+
+        Assert.AreEqual(encodedValue, wrongApplicationConfiguration["Password"]);
+        Assert.AreEqual(encodedValue, wrongPurposeConfiguration["Password"]);
+    }
+
+    [TestMethod]
+    public void DataProtectionCodecComposesWithOtherParameterizedCodecs()
+    {
+        using var directory = new TemporaryDirectory();
+        string keyDirectoryPath = Path.Combine(directory.Path, "data-protection-keys");
+
+        JsonSettingsValueCodec writeCodec = JsonSettingsValueEncoders.Compose(
+            JsonSettingsValueEncoders.Rot13,
+            JsonSettingsValueEncoders.Caesar(13),
+            JsonSettingsValueEncoders.DataProtection(
+                keyDirectoryPath,
+                "Eigenverft.Tests.Composed",
+                "JsonSettingsTests.ComposedDataProtection"),
+            JsonSettingsValueEncoders.AesPassword("test-only-password"),
+            JsonSettingsValueEncoders.Base92JsonSafe);
+        string encodedValue = writeCodec.Encode("composed-secret");
+        string settingsPath = directory.Write(
+            "data-protection-composed.json",
+            $"{{ \"Password\": \"{encodedValue}\" }}");
+
+        JsonSettingsValueCodec readCodec = JsonSettingsValueEncoders.Compose(
+            JsonSettingsValueEncoders.Rot13,
+            JsonSettingsValueEncoders.Caesar(13),
+            JsonSettingsValueEncoders.DataProtection(
+                keyDirectoryPath,
+                "Eigenverft.Tests.Composed",
+                "JsonSettingsTests.ComposedDataProtection"),
+            JsonSettingsValueEncoders.AesPassword("test-only-password"),
+            JsonSettingsValueEncoders.Base92JsonSafe);
+        var configuration = new ConfigurationManager();
+        ((IConfigurationBuilder)configuration).AddJsonFileWithDecodedValues(
+            settingsPath,
+            reloadOnChange: false,
+            decodeCodec: readCodec);
+
+        Assert.AreEqual("composed-secret", configuration["Password"]);
+        StringAssert.StartsWith(encodedValue, "enc:b9j2s7:");
+    }
+
+    [TestMethod]
     public void Rot13CodecRoundTripsAsObfuscation()
     {
         using var directory = new TemporaryDirectory();

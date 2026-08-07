@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
 using Eigenverft.WebLib.Infrastructure.Text;
+
+using Microsoft.AspNetCore.DataProtection;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 {
@@ -18,6 +22,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         private const int AesTagSize = 16;
         private const int AesKeySize = 32;
         private const int AesPbkdf2Iterations = 100_000;
+        private const string DefaultDataProtectionPurpose =
+            "Eigenverft.WebLib.Infrastructure.JsonSettings.ValueProtection.v1";
 
         /// <summary>
         /// Gets the Base64 representation codec.
@@ -111,6 +117,67 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 clearText => EncodeAesPassword(clearText, password),
                 (string encodedValue, out string clearText) =>
                     TryDecodeAesPasswordValue(encodedValue, password, out clearText));
+        }
+
+        /// <summary>
+        /// Creates an ASP.NET Core Data Protection codec backed by a persistent file-system key ring.
+        /// </summary>
+        /// <param name="keyDirectoryPath">The directory in which ASP.NET Core Data Protection stores its key ring.</param>
+        /// <returns>
+        /// A codec using the entry assembly name as its application discriminator and the library's stable JSON-settings
+        /// purpose string.
+        /// </returns>
+        /// <remarks>
+        /// This overload is intended for normal application use. The key-ring directory is the persistent backend; Data
+        /// Protection owns the individual key file names and may create multiple files as keys rotate. The application
+        /// machine is sufficient to use this codec there unless another composed protection layer, such as DPAPI, adds a
+        /// machine-bound requirement. File-system access to the key ring therefore remains security-sensitive. This codec
+        /// does not configure an additional at-rest encryptor for the key-ring files; that concern can be layered separately.
+        /// machine-bound requirement. File-system access to the key ring therefore remains security-sensitive.
+        /// </remarks>
+        public static JsonSettingsValueCodec DataProtection(string keyDirectoryPath)
+        {
+            return DataProtection(
+                keyDirectoryPath,
+                ResolveDefaultDataProtectionApplicationName(),
+                DefaultDataProtectionPurpose);
+        }
+
+        /// <summary>
+        /// Creates an ASP.NET Core Data Protection codec with explicit application and purpose isolation.
+        /// </summary>
+        /// <param name="keyDirectoryPath">The directory in which ASP.NET Core Data Protection stores its key ring.</param>
+        /// <param name="applicationName">The stable logical application discriminator for the key ring.</param>
+        /// <param name="purpose">The stable purpose that isolates JSON-settings payloads from other protected data.</param>
+        /// <returns>A codec backed by the specified persistent Data Protection key ring.</returns>
+        /// <remarks>
+        /// Callers that need persisted values to survive application renames or that deliberately share a key ring should
+        /// use this overload and keep both <paramref name="applicationName"/> and <paramref name="purpose"/> stable.
+        /// Changing either value makes previously protected payloads unavailable to the new protector. This codec contains
+        /// no additional machine binding by itself and can be composed with other codecs when that property is required.
+        /// </remarks>
+        public static JsonSettingsValueCodec DataProtection(
+            string keyDirectoryPath,
+            string applicationName,
+            string purpose)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(keyDirectoryPath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(applicationName);
+            ArgumentException.ThrowIfNullOrWhiteSpace(purpose);
+
+            string fullKeyDirectoryPath = Path.GetFullPath(keyDirectoryPath);
+            Directory.CreateDirectory(fullKeyDirectoryPath);
+
+            IDataProtectionProvider provider = DataProtectionProvider.Create(
+                new DirectoryInfo(fullKeyDirectoryPath),
+                builder => builder.SetApplicationName(applicationName));
+            IDataProtector protector = provider.CreateProtector(purpose);
+
+            return new JsonSettingsValueCodec(
+                $"DataProtection({applicationName})",
+                clearText => EncodeDataProtection(clearText, protector),
+                (string encodedValue, out string clearText) =>
+                    TryDecodeDataProtectionValue(encodedValue, protector, out clearText));
         }
 
         /// <summary>
@@ -433,6 +500,48 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             return new string(characters);
         }
 
+        private static string EncodeDataProtection(string clearText, IDataProtector protector)
+        {
+            string protectedPayload = protector.Protect(clearText);
+            return EncodedConfigurationValueFormat.Wrap(
+                EncodedConfigurationValueKind.DataProtection,
+                protectedPayload);
+        }
+
+        private static bool TryDecodeDataProtectionValue(
+            string encodedValue,
+            IDataProtector protector,
+            out string clearText)
+        {
+            clearText = encodedValue;
+
+            if (!EncodedConfigurationValueFormat.TryUnwrap(
+                    encodedValue,
+                    out EncodedConfigurationValueKind encoding,
+                    out string payload) ||
+                encoding != EncodedConfigurationValueKind.DataProtection)
+            {
+                return false;
+            }
+
+            try
+            {
+                clearText = protector.Unprotect(payload);
+                return true;
+            }
+            catch (CryptographicException)
+            {
+                clearText = encodedValue;
+                return false;
+            }
+        }
+
+        private static string ResolveDefaultDataProtectionApplicationName()
+        {
+            return Assembly.GetEntryAssembly()?.GetName().Name
+                ?? AppDomain.CurrentDomain.FriendlyName;
+        }
+
         private static string EncodePipeline(string clearText, JsonSettingsValueCodec[] codecs)
         {
             string current = clearText;
@@ -647,6 +756,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         Rot13 = 4,
         Caesar = 5,
         Base92JsonSafe = 6,
+        DataProtection = 7,
     }
 
     internal static class EncodedConfigurationValueFormat
@@ -663,6 +773,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 { EncodedConfigurationValueKind.Rot13, "r1t3o7" },
                 { EncodedConfigurationValueKind.Caesar, "c4e5s2" },
                 { EncodedConfigurationValueKind.Base92JsonSafe, "b9j2s7" },
+                { EncodedConfigurationValueKind.DataProtection, "d7p4r8" },
             };
 
         private static readonly IReadOnlyDictionary<string, EncodedConfigurationValueKind> TokenToEncoding =
@@ -675,6 +786,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 { "r1t3o7", EncodedConfigurationValueKind.Rot13 },
                 { "c4e5s2", EncodedConfigurationValueKind.Caesar },
                 { "b9j2s7", EncodedConfigurationValueKind.Base92JsonSafe },
+                { "d7p4r8", EncodedConfigurationValueKind.DataProtection },
             };
 
         public static string Wrap(EncodedConfigurationValueKind encoding, string? payload)
@@ -865,8 +977,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 EncodedConfigurationValueKind.Rot13 => JsonSettingsValueEncoders.TryDecodeRot13Payload(payload, out clearText),
                 EncodedConfigurationValueKind.Caesar => JsonSettingsValueEncoders.TryDecodeCaesarPayload(payload, out clearText),
                 EncodedConfigurationValueKind.Base92JsonSafe => JsonSettingsValueEncoders.TryDecodeBase92JsonSafePayload(payload, out clearText),
-                // Parameterized codecs such as AES require an explicitly supplied codec and stay encoded otherwise.
+                // Parameterized protection codecs require explicit context and stay encoded otherwise.
                 EncodedConfigurationValueKind.AesPassword => false,
+                EncodedConfigurationValueKind.DataProtection => false,
                 _ => false,
             };
         }
