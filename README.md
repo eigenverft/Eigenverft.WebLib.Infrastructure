@@ -38,6 +38,14 @@ configuration loading. Its JSON providers are appended and therefore override
 configuration sources already present. Base64 is available for encoding only;
 Windows DPAPI machine scope is available for machine-bound protection.
 
+`ConfigurationPrecedenceDiagnosticsExtensions` from the
+`Eigenverft.WebLib.Infrastructure.Hosting.Configuration.LogConfigurationResolution`
+namespace provides `LogConfigurationResolution(...)` for startup visibility into
+configuration-provider precedence and key collisions. It logs keys and provider
+origins only, never configuration values. Public feature namespaces intentionally
+avoid generic `Diagnostic`/`Diagnostics` segments to reduce collisions with common
+framework and tooling namespaces.
+
 `BootstrapLogger<TCategoryName>.CreateLogger(...)` from the
 `Eigenverft.WebLib.Infrastructure.Hosting.Logging.BootstrapLogger` namespace
 provides a pre-host `Microsoft.Extensions.Logging.ILogger<TCategoryName>` before
