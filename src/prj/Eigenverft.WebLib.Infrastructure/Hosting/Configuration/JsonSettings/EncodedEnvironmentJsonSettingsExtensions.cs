@@ -22,7 +22,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <param name="keyPathPatterns">Case-insensitive glob patterns for complete configuration paths.</param>
         /// <param name="codec">The reversible codec used for persistence encoding and in-memory decoding.</param>
         /// <param name="optionalEnvironment">Whether the environment-specific file may be absent.</param>
-        /// <param name="reloadOnChange">Whether the providers reload their files after changes.</param>
+        /// <param name="reloadOnChange">
+        /// Whether the providers reload their files after changes. The default is <see langword="false"/> because this method
+        /// encodes matching values only during startup; enabling reload does not automatically re-encode later clear-text file edits.
+        /// </param>
         /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
         /// <returns>The builder's <see cref="ConfigurationManager"/> for chaining.</returns>
         /// <remarks>
@@ -37,7 +40,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             IEnumerable<string> keyPathPatterns,
             JsonSettingsValueCodec codec,
             bool optionalEnvironment = true,
-            bool reloadOnChange = true,
+            bool reloadOnChange = false,
             bool nullAsEmpty = true)
         {
             ArgumentNullException.ThrowIfNull(builder);
@@ -91,7 +94,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <param name="keyPathPattern">A case-insensitive glob pattern for complete configuration paths.</param>
         /// <param name="codec">The reversible codec used for persistence encoding and in-memory decoding.</param>
         /// <param name="optionalEnvironment">Whether the environment-specific file may be absent.</param>
-        /// <param name="reloadOnChange">Whether the providers reload their files after changes.</param>
+        /// <param name="reloadOnChange">
+        /// Whether the providers reload their files after changes. The default is <see langword="false"/> because this method
+        /// encodes matching values only during startup; enabling reload does not automatically re-encode later clear-text file edits.
+        /// </param>
         /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
         /// <returns>The builder's <see cref="ConfigurationManager"/> for chaining.</returns>
         public static ConfigurationManager EncodeAndAddEnvironmentJsonSettings(
@@ -100,7 +106,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             string keyPathPattern,
             JsonSettingsValueCodec codec,
             bool optionalEnvironment = true,
-            bool reloadOnChange = true,
+            bool reloadOnChange = false,
             bool nullAsEmpty = true)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(keyPathPattern);

@@ -28,9 +28,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <returns>The same configuration builder for chaining.</returns>
         /// <remarks>
         /// The file remains encoded on disk. Plain values and malformed or unavailable encoded values remain unchanged in
-        /// configuration; consumers can therefore report errors in their own configuration domain. When an explicit codec is
-        /// supplied, a failed decode does not fall back to generic one-layer decoding. That fail-closed behavior avoids exposing
-        /// a partially unwrapped intermediate value when an inner password, key ring, purpose, or platform context is missing.
+        /// configuration; consumers can therefore report errors in their own configuration domain. Generic decoding is also
+        /// transactional across nested recognized wrappers: if an inner stage cannot be decoded with the available context,
+        /// successfully removed outer layers are rolled back. When an explicit codec is supplied, a failed decode does not fall
+        /// back to generic decoding. These rules avoid exposing a partially unwrapped intermediate value when an inner password,
+        /// key ring, purpose, or platform context is missing.
         /// </remarks>
         public static IConfigurationBuilder AddJsonFileWithDecodedValues(
             this IConfigurationBuilder builder,

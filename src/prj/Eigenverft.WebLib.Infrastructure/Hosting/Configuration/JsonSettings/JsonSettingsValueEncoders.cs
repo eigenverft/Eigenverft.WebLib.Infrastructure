@@ -25,6 +25,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         private const int AesKeySize = 32;
         private const int AesPbkdf2Iterations = 100_000;
         private const string AesPayloadVersion = "v1";
+        private static readonly Encoding StrictUtf8 = new UTF8Encoding(false, true);
         private const string DefaultDataProtectionPurpose =
             "Eigenverft.WebLib.Infrastructure.JsonSettings.ValueProtection.v1";
 
@@ -193,13 +194,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// purpose string.
         /// </returns>
         /// <remarks>
-        /// This overload is intended for normal application use. The key-ring directory is the persistent backend; Data
-        /// Protection owns the individual key file names and may create multiple files as keys rotate. The application
-        /// discriminator defaults to the entry assembly name and is not a file name. A conventional Eigenverft host can use
-        /// its separate <c>AppState</c> directory for this path to reduce accidental co-exposure with settings or application
-        /// data. Moving the same key ring to another machine is sufficient to use this codec there unless another composed
-        /// protection layer, such as DPAPI, adds a machine-bound requirement. The directory separation itself is not an ACL
-        /// boundary, and this codec does not configure an additional at-rest encryptor for the key-ring files.
+        /// This overload is intended for normal application use. The key-ring directory is durable settings state; Data
+        /// Protection owns the individual key file names and may create multiple files as keys rotate. Back up the complete
+        /// key ring with protected settings and retain old keys while persisted values may still depend on them. Losing or
+        /// deleting keys can make existing settings permanently unreadable. The application discriminator defaults to the
+        /// entry assembly name; use the explicit overload when values must survive an application rename. A conventional
+        /// Eigenverft host can keep this state in its separate <c>AppState</c> directory to reduce accidental co-exposure.
+        /// Moving the same key ring to another machine is sufficient to use this codec there unless another composed layer adds
+        /// machine binding. Directory separation is not an ACL boundary, and this codec does not configure an additional
+        /// at-rest encryptor for the key-ring files. A missing directory is created automatically; on an existing installation
+        /// an unexpectedly new or empty key ring should therefore be treated as lost state, not as a successful migration.
         /// </remarks>
         public static JsonSettingsValueCodec DataProtection(string keyDirectoryPath)
         {
@@ -217,10 +221,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <param name="purpose">The stable purpose that isolates JSON-settings payloads from other protected data.</param>
         /// <returns>A codec backed by the specified persistent Data Protection key ring.</returns>
         /// <remarks>
-        /// Callers that need persisted values to survive application renames or that deliberately share a key ring should
-        /// use this overload and keep both <paramref name="applicationName"/> and <paramref name="purpose"/> stable.
-        /// Changing either value makes previously protected payloads unavailable to the new protector. This codec contains
-        /// no additional machine binding by itself and can be composed with other codecs when that property is required.
+        /// Callers that need persisted values to survive application renames or that deliberately share a key ring should use
+        /// this overload and keep both <paramref name="applicationName"/> and <paramref name="purpose"/> stable. Changing either
+        /// value makes previously protected payloads unavailable to the new protector. The key ring is durable settings state:
+        /// retain and back up all keys that may still protect persisted values. This codec contains no additional machine
+        /// binding by itself and can be composed with other codecs when that property is required.
         /// </remarks>
         public static JsonSettingsValueCodec DataProtection(
             string keyDirectoryPath,
@@ -247,44 +252,51 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         }
 
         /// <summary>
-        /// Creates the platform-neutral default layered settings codec.
+        /// Creates the platform-neutral V1 default settings-protection codec.
         /// </summary>
         /// <param name="password">The caller-supplied visible-ASCII password used by the application AES layer.</param>
         /// <param name="keyDirectoryPath">The persistent ASP.NET Core Data Protection key-ring directory.</param>
         /// <returns>
-        /// A codec equivalent to <c>Compose(Rot13, Caesar(13), DataProtection(keyDirectoryPath), PhysicalMachineBoundAes(), AesPassword(password), Base92JsonSafe)</c>.
+        /// A codec equivalent to <c>Compose(DataProtection(keyDirectoryPath), PhysicalMachineBoundAes(), AesPassword(password))</c>.
         /// </returns>
         /// <remarks>
         /// <para>
-        /// This default deliberately combines different roles rather than presenting every layer as cryptographic security.
-        /// ROT13 and Caesar are obfuscation; Base92JsonSafe is representation. Data Protection requires the persistent key
-        /// ring, PhysicalMachineBoundAes requires the source system/platform identity, and AesPassword requires the
-        /// caller-supplied password. The intended effect is that copying only the application directory or only one related
-        /// artifact is insufficient for straightforward offline recovery on another machine.
+        /// The V1 default deliberately contains only independent protection/recovery factors. Representation and obfuscation
+        /// codecs such as Base64, Base92JsonSafe, ROT13, and Caesar remain available for explicit composition but are not part
+        /// of this default. Data Protection requires the persistent key ring, PhysicalMachineBoundAes requires the source
+        /// system/platform identity, and AesPassword requires the caller-supplied password. The intended effect is that copying
+        /// only one related artifact is insufficient for straightforward offline recovery on another machine.
         /// </para>
         /// <para>
-        /// The physical-machine binding is a lightweight additional recovery hurdle, not a hardware-backed secret. An
-        /// attacker that collected the source machine's platform identity can reproduce that factor. Likewise, a sufficiently
-        /// compromised running process can observe passwords and clear values. This pipeline is defense in depth, not a claim
-        /// that any one software-only layer is an absolute security boundary.
+        /// The physical-machine binding is a lightweight additional recovery hurdle, not a hardware-backed secret. An attacker
+        /// that collected the source machine's platform identity can reproduce that factor. A sufficiently compromised running
+        /// process can also observe passwords and clear values. This pipeline is defense in depth, not an absolute security
+        /// boundary.
         /// </para>
         /// <para>
-        /// The exact stage order is a persisted-format contract. Changing this default later requires explicit migration or
-        /// backward-decoding support. Hosts should normally place the Data Protection key ring in the separate AppState
-        /// directory rather than next to application settings or general application data.
+        /// This method defines the V1 persisted pipeline contract and must not be changed silently. A future default layout must
+        /// use an explicit new version or provide backward decoding/migration for V1 values.
+        /// </para>
+        /// <para>
+        /// The Data Protection key ring is durable settings state: back it up with the protected settings and retain old keys
+        /// while any persisted setting may still reference them. Losing or deleting the key ring can make existing values
+        /// permanently unreadable. The convenience DataProtection overload creates a missing directory; on an existing
+        /// installation an unexpectedly empty/new key ring therefore indicates lost state rather than a recoverable migration.
+        /// Hosts should normally keep the key ring in the separate AppState directory rather than next to application settings
+        /// or general application data. The default application discriminator is derived from the entry assembly name; callers
+        /// that require values to survive an application rename should compose the explicit DataProtection overload instead.
         /// </para>
         /// </remarks>
+        /// <exception cref="PlatformNotSupportedException">The current operating system is not supported for physical machine binding.</exception>
+        /// <exception cref="InvalidOperationException">No valid system/platform UUID is available for physical machine binding.</exception>
         public static JsonSettingsValueCodec Default(string password, string keyDirectoryPath)
         {
             password = NormalizeReadablePassword(password, nameof(password));
 
             return Compose(
-                Rot13,
-                Caesar(13),
                 DataProtection(keyDirectoryPath),
                 PhysicalMachineBoundAes(),
-                AesPassword(password),
-                Base92JsonSafe);
+                AesPassword(password));
         }
 
         /// <summary>
@@ -444,8 +456,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 return false;
             }
 
-            clearText = Encoding.UTF8.GetString(bytes);
-            return true;
+            try
+            {
+                clearText = StrictUtf8.GetString(bytes);
+                return true;
+            }
+            catch (DecoderFallbackException)
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -778,10 +797,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             {
                 using var aes = new AesGcm(key, AesTagSize);
                 aes.Decrypt(nonce, cipherBytes, tag, clearBytes);
-                clearText = Encoding.UTF8.GetString(clearBytes);
+                clearText = StrictUtf8.GetString(clearBytes);
                 return true;
             }
             catch (CryptographicException)
+            {
+                clearText = encodedValue;
+                return false;
+            }
+            catch (DecoderFallbackException)
             {
                 clearText = encodedValue;
                 return false;
@@ -798,10 +822,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 
             try
             {
-                clearText = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+                clearText = StrictUtf8.GetString(Convert.FromBase64String(payload));
                 return true;
             }
             catch (FormatException)
+            {
+                return false;
+            }
+            catch (DecoderFallbackException)
             {
                 return false;
             }
@@ -878,8 +906,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 return false;
             }
 
-            clearText = Encoding.UTF8.GetString(clearBytes);
-            return true;
+            try
+            {
+                clearText = StrictUtf8.GetString(clearBytes);
+                return true;
+            }
+            catch (DecoderFallbackException)
+            {
+                clearText = string.Empty;
+                return false;
+            }
         }
     }
 
@@ -927,9 +963,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 
         public static string Wrap(EncodedConfigurationValueKind encoding, string? payload)
         {
-            string token = EncodingToToken.TryGetValue(encoding, out string? knownToken)
-                ? knownToken
-                : encoding.ToString().ToLowerInvariant();
+            if (!EncodingToToken.TryGetValue(encoding, out string? token))
+            {
+                throw new ArgumentOutOfRangeException(nameof(encoding), encoding, "The encoding kind has no registered persisted token.");
+            }
 
             return $"{Prefix}{token}:{payload ?? string.Empty}";
         }
@@ -959,11 +996,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             payload = remainder.Substring(delimiterIndex + 1);
 
             if (TokenToEncoding.TryGetValue(token, out encoding))
-            {
-                return true;
-            }
-
-            if (Enum.TryParse(token, ignoreCase: true, out encoding))
             {
                 return true;
             }
@@ -1029,19 +1061,23 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
     {
         public static bool TryDecode(string? value, out string clearText)
         {
-            clearText = value ?? string.Empty;
-            string current = value ?? string.Empty;
+            string original = value ?? string.Empty;
+            string current = original;
             bool changed = false;
 
-            for (int depth = 0; depth < 5; depth++)
+            while (TryDecodeSingle(current, out string next))
             {
-                if (!TryDecodeSingle(current, out string next))
-                {
-                    break;
-                }
-
                 changed = true;
                 current = next;
+            }
+
+            // A recognized wrapper that remains means the complete nested value could not be decoded with the generic
+            // context (for example AES/Data Protection, malformed payload data, or a platform-specific protection failure).
+            // Roll back all successfully removed outer layers rather than exposing a partial representation.
+            if (EncodedConfigurationValueFormat.HasRecognizedWrapper(current))
+            {
+                clearText = original;
+                return false;
             }
 
             clearText = current;

@@ -63,8 +63,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         public bool TryDecode(string? encodedValue, out string clearText)
         {
             string value = encodedValue ?? string.Empty;
+
+            if (_tryDecode(value, out string decodedValue))
+            {
+                clearText = decodedValue;
+                return true;
+            }
+
             clearText = value;
-            return _tryDecode(value, out clearText);
+            return false;
         }
     }
 }

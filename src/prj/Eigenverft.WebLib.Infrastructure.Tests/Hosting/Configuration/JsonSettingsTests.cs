@@ -344,6 +344,80 @@ public sealed class JsonSettingsTests
     }
 
     [TestMethod]
+    public void DirectCodecTryDecodeAlwaysRollsBackOnFailure()
+    {
+        string encodedValue = JsonSettingsValueEncoders.Caesar(3).Encode("secret");
+
+        bool decoded = JsonSettingsValueEncoders.Caesar(4).TryDecode(encodedValue, out string clearText);
+
+        Assert.IsFalse(decoded);
+        Assert.AreEqual(encodedValue, clearText);
+    }
+
+    [TestMethod]
+    public void GenericDecoderRollsBackOuterLayersWhenInnerContextIsUnavailable()
+    {
+        using var directory = new TemporaryDirectory();
+        JsonSettingsValueCodec codec = JsonSettingsValueEncoders.Compose(
+            JsonSettingsValueEncoders.AesPassword("test-only-password"),
+            JsonSettingsValueEncoders.Base64);
+        string encodedValue = codec.Encode("secret");
+        string settingsPath = directory.Write("settings.json", $"{{ \"Password\": \"{encodedValue}\" }}");
+        var configuration = new ConfigurationManager();
+
+        ((IConfigurationBuilder)configuration).AddJsonFileWithDecodedValues(
+            settingsPath,
+            reloadOnChange: false);
+
+        Assert.AreEqual(encodedValue, configuration["Password"]);
+    }
+
+    [TestMethod]
+    public void GenericDecoderHasNoArbitraryFiveLayerLimit()
+    {
+        using var directory = new TemporaryDirectory();
+        string encodedValue = "secret";
+        for (int index = 0; index < 7; index++)
+        {
+            encodedValue = JsonSettingsValueEncoders.Base64.Encode(encodedValue);
+        }
+
+        string settingsPath = directory.Write("settings.json", $"{{ \"Password\": \"{encodedValue}\" }}");
+        var configuration = new ConfigurationManager();
+        ((IConfigurationBuilder)configuration).AddJsonFileWithDecodedValues(settingsPath, reloadOnChange: false);
+
+        Assert.AreEqual("secret", configuration["Password"]);
+    }
+
+    [TestMethod]
+    public void NumericWrapperTokenIsNotTreatedAsRecognizedPersistence()
+    {
+        using var directory = new TemporaryDirectory();
+        string settingsPath = directory.Write("settings.json", "{ \"Password\": \"enc:999:anything\" }");
+
+        int updateCount = JsonSettingsFileEncoder.EncodeMatchingValuesInPlace(
+            settingsPath,
+            "Password",
+            JsonSettingsValueEncoders.Base64);
+
+        string persisted = File.ReadAllText(settingsPath);
+        Assert.AreEqual(1, updateCount);
+        StringAssert.Contains(persisted, "enc:q7m2n4:");
+    }
+
+    [TestMethod]
+    public void RepresentationCodecsRejectInvalidUtf8WithoutChangingTheValue()
+    {
+        string invalidBase64 = "enc:q7m2n4:" + Convert.ToBase64String(new byte[] { 0xFF });
+        string invalidBase92 = "enc:b9j2s7:" + Base92JsonSafeEncoder.Encode(new byte[] { 0xFF });
+
+        Assert.IsFalse(JsonSettingsValueEncoders.Base64.TryDecode(invalidBase64, out string base64ClearText));
+        Assert.AreEqual(invalidBase64, base64ClearText);
+        Assert.IsFalse(JsonSettingsValueEncoders.Base92JsonSafe.TryDecode(invalidBase92, out string base92ClearText));
+        Assert.AreEqual(invalidBase92, base92ClearText);
+    }
+
+    [TestMethod]
     public void CombinedWorkflowSupportsComposedCodec()
     {
         using var directory = new TemporaryDirectory();
@@ -517,20 +591,21 @@ public sealed class JsonSettingsTests
         JsonSettingsValueCodec shortcut = JsonSettingsValueEncoders.Default("test-only-password", keyRingPath);
         JsonSettingsValueCodec byteShortcut = JsonSettingsValueEncoders.Default(passwordBytes, keyRingPath);
         JsonSettingsValueCodec composed = JsonSettingsValueEncoders.Compose(
-            JsonSettingsValueEncoders.Rot13,
-            JsonSettingsValueEncoders.Caesar(13),
             JsonSettingsValueEncoders.DataProtection(keyRingPath),
             JsonSettingsValueEncoders.PhysicalMachineBoundAes(),
-            JsonSettingsValueEncoders.AesPassword("test-only-password"),
-            JsonSettingsValueEncoders.Base92JsonSafe);
+            JsonSettingsValueEncoders.AesPassword("test-only-password"));
 
         Assert.AreEqual(composed.Name, shortcut.Name);
         Assert.AreEqual(shortcut.Name, byteShortcut.Name);
 
-        string encodedValue = byteShortcut.Encode("secret");
-        Assert.IsTrue(shortcut.TryDecode(encodedValue, out string clearText));
-        Assert.AreEqual("secret", clearText);
-        StringAssert.StartsWith(encodedValue, "enc:b9j2s7:");
+        string encodedByShortcut = byteShortcut.Encode("shortcut-secret");
+        Assert.IsTrue(composed.TryDecode(encodedByShortcut, out string shortcutClearText));
+        Assert.AreEqual("shortcut-secret", shortcutClearText);
+
+        string encodedByComposition = composed.Encode("composition-secret");
+        Assert.IsTrue(shortcut.TryDecode(encodedByComposition, out string compositionClearText));
+        Assert.AreEqual("composition-secret", compositionClearText);
+        StringAssert.StartsWith(encodedByShortcut, "enc:a3s6p1:v1.");
     }
 
     [TestMethod]
