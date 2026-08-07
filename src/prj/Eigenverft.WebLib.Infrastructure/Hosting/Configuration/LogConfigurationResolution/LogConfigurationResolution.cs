@@ -9,15 +9,14 @@
 //   - "Winner" is the highest-precedence provider that contains the key (last provider wins).
 //   - Uses reflection to read provider "Data" dictionaries (diagnostics-only).
 //   - Logs keys only (no values) to avoid leaking secrets.
-//   - The chain message template is generated dynamically so the numeric indices are separate log parameters.
-//     This helps console formatters color numbers consistently.
+//   - Resolution chains name provider origins directly so precedence is readable without internal provider indices.
 // -----------------------------------------------------------------------------
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
@@ -109,8 +108,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.LogConfiguratio
         /// </summary>
         /// <remarks>
         /// <para>
-        /// Prints the chain in winner-first order (highest precedence first). Indices are logged as separate parameters
-        /// so console formatters can color them distinctly.
+        /// Prints provider origins in highest-to-lowest precedence order without exposing internal provider indices.
         /// </para>
         /// <para>
         /// Example:
@@ -133,23 +131,19 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.LogConfiguratio
             var providers = root.Providers.ToList();
             var sources = TryGetSources(configuration);
 
-            var items = new List<(int Index, string Origin)>(providers.Count);
+            var origins = new List<string>(providers.Count);
             for (var i = 0; i < providers.Count; i++)
             {
-                var s = (sources is not null && i < sources.Count) ? sources[i] : null;
-                items.Add((i, DescribeOrigin(providers[i], s)));
+                var source = (sources is not null && i < sources.Count) ? sources[i] : null;
+                origins.Add(DescribeOrigin(providers[i], source));
             }
 
-            // Print highest precedence first so the bigger index reads like "higher priority".
-            var highestFirst = items.OrderByDescending(x => x.Index).ToList();
+            origins.Reverse();
 
-            var sb = new StringBuilder(capacity: 256);
-            var args = new List<object?>(capacity: Math.Max(1, highestFirst.Count * 2));
-
-            sb.Append("Config precedence (HIGHEST => LOWEST, winner first). ");
-            AppendIndexedChainTemplate(sb, args, highestFirst);
-
-            logger.Log(level, sb.ToString(), args.ToArray());
+            logger.Log(
+                level,
+                "Config precedence (highest -> lowest): {Resolution}",
+                string.Join(" -> ", origins));
         }
 
         /// <summary>
@@ -186,8 +180,19 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.LogConfiguratio
 
             for (var i = 0; i < providers.Count; i++)
             {
-                var data = TryGetProviderDataDictionary(providers[i]);
-                if (data is null || data.Count == 0)
+                var provider = providers[i];
+                var source = (sources is not null && i < sources.Count) ? sources[i] : null;
+                var data = TryGetProviderDataDictionary(provider);
+                if (data is null)
+                {
+                    logger.Log(
+                        level,
+                        "Configuration collision scan incomplete; provider {Provider} could not be inspected.",
+                        DescribeOrigin(provider, source));
+                    continue;
+                }
+
+                if (data.Count == 0)
                 {
                     continue;
                 }
@@ -226,58 +231,22 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.LogConfiguratio
                 var key = c.Key;
                 var indices = c.Value;
 
-                var winnerIndex = indices.Max();
-
-                // Winner-first chain (HIGH -> LOW).
-                var chainItems = indices
+                var chainOrigins = indices
                     .OrderByDescending(x => x)
                     .Select(idx =>
                     {
                         var provider = providers[idx];
                         var source = (sources is not null && idx < sources.Count) ? sources[idx] : null;
-                        return (Index: idx, Origin: DescribeOrigin(provider, source));
+                        return DescribeOrigin(provider, source);
                     })
                     .ToList();
 
-                var sb = new StringBuilder(capacity: 256);
-                var args = new List<object?>(capacity: 3 + (chainItems.Count * 2));
-
-                sb.Append("Config key collision on {Key}; chain (winner first): ");
-                args.Add(key); // {Key}
-
-                AppendIndexedChainTemplate(sb, args, chainItems);
-
-                sb.Append("; winner is [{WinnerIndex}]");
-                args.Add(winnerIndex); // {WinnerIndex}
-
-                logger.Log(level, sb.ToString(), args.ToArray());
-            }
-        }
-
-        /// <summary>
-        /// Appends a chain like "[{Idx0}] {Origin0}  ->  [{Idx1}] {Origin1} ..." and pushes matching args in order.
-        /// </summary>
-        private static void AppendIndexedChainTemplate(
-            StringBuilder sb,
-            List<object?> args,
-            IReadOnlyList<(int Index, string Origin)> items)
-        {
-            ArgumentNullException.ThrowIfNull(sb);
-            ArgumentNullException.ThrowIfNull(args);
-            ArgumentNullException.ThrowIfNull(items);
-
-            for (var i = 0; i < items.Count; i++)
-            {
-                if (i > 0)
-                {
-                    sb.Append("  ->  ");
-                }
-
-                // Placeholder names must be unique per position; the VALUE is the real provider index.
-                sb.Append("[{Idx").Append(i).Append("}] {Origin").Append(i).Append("}");
-
-                args.Add(items[i].Index);
-                args.Add(items[i].Origin);
+                logger.Log(
+                    level,
+                    "Config key collision on {Key}; winner {Winner} shadows {Shadowed}",
+                    key,
+                    chainOrigins[0],
+                    string.Join(" shadows ", chainOrigins.Skip(1)));
             }
         }
 
@@ -327,7 +296,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.LogConfiguratio
             if (source is JsonConfigurationSource json)
             {
                 var path = json.Path ?? string.Empty;
-                return string.IsNullOrWhiteSpace(path) ? "json" : $"json:{path}";
+                return string.IsNullOrWhiteSpace(path) ? "json" : $"json:{Path.GetFileName(path)}";
             }
 
             var typeName = provider.GetType().Name;
