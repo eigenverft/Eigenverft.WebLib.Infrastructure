@@ -31,26 +31,32 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.LogConfiguratio
     public static class ConfigurationPrecedenceDiagnosticsExtensions
     {
         /// <summary>
-        /// Logs the configuration provider order (precedence chain) and then warns only for keys that exist in multiple providers.
+        /// Logs configuration-provider precedence and reports keys shadowed by higher-precedence providers.
+        /// Call this as late as possible after the configuration-provider stack is complete and before <c>Build()</c>.
         /// </summary>
+        /// <param name="builder">The web application builder whose current configuration-provider stack is inspected.</param>
+        /// <param name="logger">The logger receiving structured precedence and collision messages. Configuration values are never logged.</param>
+        /// <param name="orderLogLevel">The level used for the provider-precedence message. The default is <see cref="LogLevel.Information"/>.</param>
+        /// <param name="collisionLogLevel">The level used for collision and incomplete-scan messages. The default is <see cref="LogLevel.Warning"/>.</param>
+        /// <returns>The same <paramref name="builder"/> instance for chaining.</returns>
         /// <remarks>
-        /// <para>
-        /// Intended as a lightweight, startup-only diagnostic. It prints:
-        /// </para>
-        /// <list type="bullet">
-        /// <item><description>The full provider precedence chain (winner first).</description></item>
-        /// <item><description>A warning per key that exists in 2+ providers, including the winner-first resolution chain.</description></item>
-        /// </list>
+        /// Add all declarative configuration providers before calling this method so the reported order represents the
+        /// effective startup configuration. Prefer calling it before injecting runtime-only values that are not part of
+        /// the intended provider-precedence model.
         /// <para>
         /// Example:
         /// </para>
         /// <code><![CDATA[
         /// var builder = WebApplication.CreateBuilder(args);
         ///
-        /// var startupLogger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Startup");
+        /// // Add/reset/load the complete configuration-provider stack first.
+        /// builder.Configuration.AddJsonFile("appsettings.json");
+        /// builder.Configuration.AddEnvironmentVariables();
+        ///
+        /// var startupLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("Startup");
         /// builder.LogConfigurationResolution(startupLogger);
         ///
-        /// // ... add services, build, run
+        /// var app = builder.Build();
         /// ]]></code>
         /// </remarks>
         public static WebApplicationBuilder LogConfigurationResolution(
@@ -68,26 +74,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.LogConfiguratio
             return builder;
         }
 
-        /// <summary>
-        /// Logs the configuration provider order (precedence chain) and then warns only for keys that exist in multiple providers.
-        /// </summary>
-        /// <remarks>
-        /// <para>
-        /// Use this overload when you build a generic host (non-web) via <see cref="HostApplicationBuilder"/>.
-        /// </para>
-        /// <para>
-        /// Example:
-        /// </para>
-        /// <code><![CDATA[
-        /// var builder = Host.CreateApplicationBuilder(args);
-        ///
-        /// var startupLogger = LoggerFactory.Create(b => b.AddConsole()).CreateLogger("Startup");
-        /// builder.LogConfigurationResolution(startupLogger);
-        ///
-        /// var host = builder.Build();
-        /// host.Run();
-        /// ]]></code>
-        /// </remarks>
+        // Future generic-host overload intentionally remains disabled until it is part of the supported public API.
         //public static HostApplicationBuilder LogConfigurationResolution(
         //    this HostApplicationBuilder builder,
         //    ILogger logger,
