@@ -80,65 +80,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             return builder.Configuration;
         }
 
-        /// <summary>Encodes matching values with a supplied legacy encoding function, then adds generic decoded providers.</summary>
-        /// <param name="builder">The web application builder receiving the JSON providers.</param>
-        /// <param name="commonJsonFilePath">The required common JSON file path.</param>
-        /// <param name="keyPathPatterns">Case-insensitive glob patterns for complete configuration paths.</param>
-        /// <param name="encode">
-        /// The encoding function. It must emit a self-describing format understood by the generic decoder if clear values are
-        /// expected in configuration. Use the <see cref="JsonSettingsValueCodec"/> overload for parameterized or composed codecs.
-        /// </param>
-        /// <param name="optionalEnvironment">Whether the environment-specific file may be absent.</param>
-        /// <param name="reloadOnChange">Whether the providers reload their files after changes.</param>
-        /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
-        /// <returns>The builder's <see cref="ConfigurationManager"/> for chaining.</returns>
-        public static ConfigurationManager EncodeAndAddEnvironmentJsonSettings(
-            this WebApplicationBuilder builder,
-            string commonJsonFilePath,
-            IEnumerable<string> keyPathPatterns,
-            Func<string, string> encode,
-            bool optionalEnvironment = true,
-            bool reloadOnChange = true,
-            bool nullAsEmpty = true)
-        {
-            ArgumentNullException.ThrowIfNull(builder);
-            ArgumentException.ThrowIfNullOrWhiteSpace(commonJsonFilePath);
-            ArgumentNullException.ThrowIfNull(keyPathPatterns);
-            ArgumentNullException.ThrowIfNull(encode);
-
-            string[] patterns = keyPathPatterns.ToArray();
-            string resolvedCommonPath = EnvironmentJsonFileResolver.ResolveCommonPath(
-                commonJsonFilePath,
-                builder.Environment.ContentRootPath);
-
-            _ = JsonSettingsFileEncoder.EncodeMatchingValuesInPlace(
-                resolvedCommonPath,
-                patterns,
-                encode,
-                nullAsEmpty);
-
-            if (EnvironmentJsonFileResolver.TryResolve(
-                    resolvedCommonPath,
-                    builder.Environment.EnvironmentName,
-                    out string environmentJsonFilePath))
-            {
-                _ = JsonSettingsFileEncoder.EncodeMatchingValuesInPlace(
-                    environmentJsonFilePath,
-                    patterns,
-                    encode,
-                    nullAsEmpty);
-            }
-
-            ((IConfigurationBuilder)builder.Configuration)
-                .AddEnvironmentJsonSettingsWithDecodedValues(
-                    resolvedCommonPath,
-                    builder.Environment,
-                    optionalCommon: false,
-                    optionalEnvironment: optionalEnvironment,
-                    reloadOnChange: reloadOnChange);
-
-            return builder.Configuration;
-        }
 
         /// <summary>
         /// Encodes matching values using one key-path pattern, then adds decoded providers.
@@ -173,36 +114,5 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 nullAsEmpty);
         }
 
-        /// <summary>Encodes matching values with a supplied legacy encoding function, then adds generic decoded providers.</summary>
-        /// <param name="builder">The web application builder receiving the JSON providers.</param>
-        /// <param name="commonJsonFilePath">The required common JSON file path.</param>
-        /// <param name="keyPathPattern">A case-insensitive glob pattern for complete configuration paths.</param>
-        /// <param name="encode">
-        /// The encoding function. It must emit a self-describing format understood by the generic decoder if clear values are
-        /// expected in configuration. Use the <see cref="JsonSettingsValueCodec"/> overload for parameterized or composed codecs.
-        /// </param>
-        /// <param name="optionalEnvironment">Whether the environment-specific file may be absent.</param>
-        /// <param name="reloadOnChange">Whether the providers reload their files after changes.</param>
-        /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
-        /// <returns>The builder's <see cref="ConfigurationManager"/> for chaining.</returns>
-        public static ConfigurationManager EncodeAndAddEnvironmentJsonSettings(
-            this WebApplicationBuilder builder,
-            string commonJsonFilePath,
-            string keyPathPattern,
-            Func<string, string> encode,
-            bool optionalEnvironment = true,
-            bool reloadOnChange = true,
-            bool nullAsEmpty = true)
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(keyPathPattern);
-
-            return builder.EncodeAndAddEnvironmentJsonSettings(
-                commonJsonFilePath,
-                new[] { keyPathPattern },
-                encode,
-                optionalEnvironment,
-                reloadOnChange,
-                nullAsEmpty);
-        }
     }
 }

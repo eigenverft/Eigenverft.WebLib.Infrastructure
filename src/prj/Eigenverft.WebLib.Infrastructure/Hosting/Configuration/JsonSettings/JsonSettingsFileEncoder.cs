@@ -41,20 +41,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             bool nullAsEmpty = true)
         {
             ArgumentNullException.ThrowIfNull(codec);
-            return EncodeMatchingValuesInPlace(jsonFilePath, keyPathPatterns, codec.Encode, nullAsEmpty);
+            return EncodeMatchingValuesInPlaceCore(jsonFilePath, keyPathPatterns, codec.Encode, nullAsEmpty);
         }
 
-        /// <summary>Encodes matching values with a supplied encoding function.</summary>
-        /// <param name="jsonFilePath">The JSON file that may be changed.</param>
-        /// <param name="keyPathPatterns">Case-insensitive glob patterns for complete configuration paths.</param>
-        /// <param name="encode">The encoding function.</param>
-        /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
-        /// <returns>The number of values changed.</returns>
-        public static int EncodeMatchingValuesInPlace(
+        private static int EncodeMatchingValuesInPlaceCore(
             string jsonFilePath,
             IEnumerable<string> keyPathPatterns,
             Func<string, string> encode,
-            bool nullAsEmpty = true)
+            bool nullAsEmpty)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(jsonFilePath);
             ArgumentNullException.ThrowIfNull(keyPathPatterns);
@@ -125,27 +119,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             bool nullAsEmpty = true)
         {
             ArgumentNullException.ThrowIfNull(codec);
-            return EncodeMatchingValuesInPlace(jsonFilePath, keyPathPattern, codec.Encode, nullAsEmpty);
-        }
-
-        /// <summary>Encodes matching values with a supplied encoding function.</summary>
-        /// <param name="jsonFilePath">The JSON file that may be changed.</param>
-        /// <param name="keyPathPattern">A case-insensitive glob pattern for complete configuration paths.</param>
-        /// <param name="encode">The encoding function.</param>
-        /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
-        /// <returns>The number of values changed.</returns>
-        public static int EncodeMatchingValuesInPlace(
-            string jsonFilePath,
-            string keyPathPattern,
-            Func<string, string> encode,
-            bool nullAsEmpty = true)
-        {
             ArgumentException.ThrowIfNullOrWhiteSpace(keyPathPattern);
 
-            return EncodeMatchingValuesInPlace(
+            return EncodeMatchingValuesInPlaceCore(
                 jsonFilePath,
                 new[] { keyPathPattern },
-                encode,
+                codec.Encode,
                 nullAsEmpty);
         }
 

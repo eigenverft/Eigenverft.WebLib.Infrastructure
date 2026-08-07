@@ -77,7 +77,7 @@ public sealed class JsonSettingsTests
         int firstUpdateCount = JsonSettingsFileEncoder.EncodeMatchingValuesInPlace(
             settingsPath,
             "Authentication:*Passw*",
-            JsonSettingsValueEncoders.EncodeBase64);
+            JsonSettingsValueEncoders.Base64);
         string encodedJson = File.ReadAllText(settingsPath);
         DateTime preservedWriteTime = new(2001, 2, 3, 4, 5, 6, DateTimeKind.Utc);
         File.SetLastWriteTimeUtc(settingsPath, preservedWriteTime);
@@ -85,7 +85,7 @@ public sealed class JsonSettingsTests
         int secondUpdateCount = JsonSettingsFileEncoder.EncodeMatchingValuesInPlace(
             settingsPath,
             "Authentication:*Passw*",
-            JsonSettingsValueEncoders.EncodeBase64);
+            JsonSettingsValueEncoders.Base64);
 
         Assert.AreEqual(1, firstUpdateCount);
         Assert.AreEqual(0, secondUpdateCount);
@@ -178,7 +178,7 @@ public sealed class JsonSettingsTests
         builder.EncodeAndAddEnvironmentJsonSettings(
             commonPath,
             keyPathPattern: "*Password",
-            encode: JsonSettingsValueEncoders.EncodeBase64,
+            codec: JsonSettingsValueEncoders.Base64,
             reloadOnChange: false);
 
         Assert.AreEqual("production", builder.Configuration["Credentials:Password"]);
