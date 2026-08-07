@@ -22,6 +22,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         private const int AesTagSize = 16;
         private const int AesKeySize = 32;
         private const int AesPbkdf2Iterations = 100_000;
+        private const string AesPayloadVersion = "v1";
         private const string DefaultDataProtectionPurpose =
             "Eigenverft.WebLib.Infrastructure.JsonSettings.ValueProtection.v1";
 
@@ -106,7 +107,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <returns>A codec that captures the password for both encoding and decoding.</returns>
         /// <remarks>
         /// This backend exists primarily to prove parameterized and composable protection backends. Its security is
-        /// bounded by how the caller obtains and protects the supplied password.
+        /// bounded by how the caller obtains and protects the supplied password. The codec captures that password for its
+        /// lifetime, so callers should assume it is recoverable from a sufficiently compromised process or from static
+        /// analysis when it is embedded directly in the consuming executable.
         /// </remarks>
         public static JsonSettingsValueCodec AesPassword(string password)
         {
@@ -130,10 +133,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <remarks>
         /// This overload is intended for normal application use. The key-ring directory is the persistent backend; Data
         /// Protection owns the individual key file names and may create multiple files as keys rotate. The application
-        /// machine is sufficient to use this codec there unless another composed protection layer, such as DPAPI, adds a
-        /// machine-bound requirement. File-system access to the key ring therefore remains security-sensitive. This codec
-        /// does not configure an additional at-rest encryptor for the key-ring files; that concern can be layered separately.
-        /// machine-bound requirement. File-system access to the key ring therefore remains security-sensitive.
+        /// discriminator defaults to the entry assembly name and is not a file name. A conventional Eigenverft host can use
+        /// its separate <c>AppState</c> directory for this path to reduce accidental co-exposure with settings or application
+        /// data. Moving the same key ring to another machine is sufficient to use this codec there unless another composed
+        /// protection layer, such as DPAPI, adds a machine-bound requirement. The directory separation itself is not an ACL
+        /// boundary, and this codec does not configure an additional at-rest encryptor for the key-ring files.
         /// </remarks>
         public static JsonSettingsValueCodec DataProtection(string keyDirectoryPath)
         {
@@ -260,9 +264,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <param name="codecs">The codecs in encoding order.</param>
         /// <returns>A codec that encodes from first to last and decodes from last to first.</returns>
         /// <remarks>
-        /// Composition keeps transformation roles independent. A protection codec such as AES can therefore be
-        /// combined with representation or future obfuscation codecs without creating combination-specific enum
-        /// values or changing the JSON provider.
+        /// Composition keeps transformation roles independent. A protection codec such as AES can therefore be combined
+        /// with representation or obfuscation codecs without creating combination-specific enum values or changing the JSON
+        /// provider. Encoding uses the declared order and decoding requires the same parameterized codec context in reverse.
+        /// The nested wrappers describe individual stages, but <see cref="Compose"/> is not a migration manifest: changing
+        /// passwords, Data Protection isolation, or stage order requires deliberate backward decoding or migration.
         /// </remarks>
         public static JsonSettingsValueCodec Compose(params JsonSettingsValueCodec[] codecs)
         {
@@ -389,32 +395,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 encoding == EncodedConfigurationValueKind.Rot13 &&
                 TryDecodeRot13Payload(payload, out clearText);
         }
-
         internal static bool TryDecodeRot13Payload(string payload, out string clearText)
         {
             clearText = ApplyCaesar(payload, 13);
             return true;
-        }
-
-        private static string ApplyRot13(string value)
-        {
-            char[] characters = value.ToCharArray();
-
-            for (int index = 0; index < characters.Length; index++)
-            {
-                char character = characters[index];
-
-                if (character is >= 'a' and <= 'z')
-                {
-                    characters[index] = (char)('a' + ((character - 'a' + 13) % 26));
-                }
-                else if (character is >= 'A' and <= 'Z')
-                {
-                    characters[index] = (char)('A' + ((character - 'A' + 13) % 26));
-                }
-            }
-
-            return new string(characters);
         }
 
         private static string EncodeCaesar(string clearText, int shift)
@@ -602,8 +586,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 
             // Base64Url here is only the storage representation for binary AES payload parts. It is not the
             // user-selectable Base64 codec and therefore does not add a pipeline transformation step.
+            // The explicit version is part of the persisted AES payload contract. Future KDF/cipher changes can add a new
+            // version without silently making previously written values undecodable.
             string payload = string.Join(
                 ".",
+                AesPayloadVersion,
                 Base64Url.Encode(salt),
                 Base64Url.Encode(nonce),
                 Base64Url.Encode(tag),
@@ -662,11 +649,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             }
 
             string[] parts = payload.Split('.', StringSplitOptions.None);
-            if (parts.Length != 4 ||
-                !Base64Url.TryDecode(parts[0], out byte[] salt) || salt.Length != AesSaltSize ||
-                !Base64Url.TryDecode(parts[1], out byte[] nonce) || nonce.Length != AesNonceSize ||
-                !Base64Url.TryDecode(parts[2], out byte[] tag) || tag.Length != AesTagSize ||
-                !Base64Url.TryDecode(parts[3], out byte[] cipherBytes))
+            if (parts.Length != 5 ||
+                !string.Equals(parts[0], AesPayloadVersion, StringComparison.Ordinal) ||
+                !Base64Url.TryDecode(parts[1], out byte[] salt) || salt.Length != AesSaltSize ||
+                !Base64Url.TryDecode(parts[2], out byte[] nonce) || nonce.Length != AesNonceSize ||
+                !Base64Url.TryDecode(parts[3], out byte[] tag) || tag.Length != AesTagSize ||
+                !Base64Url.TryDecode(parts[4], out byte[] cipherBytes))
             {
                 return false;
             }

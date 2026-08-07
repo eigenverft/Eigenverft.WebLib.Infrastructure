@@ -46,7 +46,21 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             return _encode(clearText ?? string.Empty);
         }
 
-        internal bool TryDecode(string? encodedValue, out string clearText)
+        /// <summary>
+        /// Attempts to reverse this codec for one encoded value.
+        /// </summary>
+        /// <param name="encodedValue">The encoded value; <see langword="null"/> is treated as empty.</param>
+        /// <param name="clearText">
+        /// Receives the decoded clear text on success. On failure, receives the original encoded value so callers can
+        /// preserve unavailable or mismatched protected data without partially unwrapping it.
+        /// </param>
+        /// <returns><see langword="true"/> when the complete codec reverses successfully; otherwise <see langword="false"/>.</returns>
+        /// <remarks>
+        /// Composed codecs are transactional from the caller's perspective: if any inner stage cannot be reversed, this
+        /// method returns <see langword="false"/> and restores <paramref name="encodedValue"/> rather than exposing an
+        /// intermediate representation. This also makes the API suitable for explicit decode-and-rewrite migrations.
+        /// </remarks>
+        public bool TryDecode(string? encodedValue, out string clearText)
         {
             string value = encodedValue ?? string.Empty;
             clearText = value;

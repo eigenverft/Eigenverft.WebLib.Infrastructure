@@ -21,12 +21,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <param name="reloadOnChange">Whether the provider reloads after file changes.</param>
         /// <param name="decodeCodec">
         /// Optional explicit codec used for decoding. When omitted, the built-in parameterless formats are decoded
-        /// as before. Parameterized or composed codecs must be supplied explicitly.
+        /// as before. When supplied, this codec is authoritative for encoded values in this provider: parameterized or
+        /// composed values must use the same relevant context that encoded them, such as passwords, Data Protection
+        /// application/purpose isolation, and composed stage order.
         /// </param>
         /// <returns>The same configuration builder for chaining.</returns>
         /// <remarks>
-        /// The file remains encoded on disk. Plain values and malformed or unavailable encoded values remain
-        /// unchanged in configuration; consumers can therefore report errors in their own configuration domain.
+        /// The file remains encoded on disk. Plain values and malformed or unavailable encoded values remain unchanged in
+        /// configuration; consumers can therefore report errors in their own configuration domain. When an explicit codec is
+        /// supplied, a failed decode does not fall back to generic one-layer decoding. That fail-closed behavior avoids exposing
+        /// a partially unwrapped intermediate value when an inner password, key ring, purpose, or platform context is missing.
         /// </remarks>
         public static IConfigurationBuilder AddJsonFileWithDecodedValues(
             this IConfigurationBuilder builder,

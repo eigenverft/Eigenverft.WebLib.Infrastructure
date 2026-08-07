@@ -80,11 +80,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             return builder.Configuration;
         }
 
-        /// <summary>Encodes matching values with a supplied encoding function, then adds decoded providers.</summary>
+        /// <summary>Encodes matching values with a supplied legacy encoding function, then adds generic decoded providers.</summary>
         /// <param name="builder">The web application builder receiving the JSON providers.</param>
         /// <param name="commonJsonFilePath">The required common JSON file path.</param>
         /// <param name="keyPathPatterns">Case-insensitive glob patterns for complete configuration paths.</param>
-        /// <param name="encode">The encoding function.</param>
+        /// <param name="encode">
+        /// The encoding function. It must emit a self-describing format understood by the generic decoder if clear values are
+        /// expected in configuration. Use the <see cref="JsonSettingsValueCodec"/> overload for parameterized or composed codecs.
+        /// </param>
         /// <param name="optionalEnvironment">Whether the environment-specific file may be absent.</param>
         /// <param name="reloadOnChange">Whether the providers reload their files after changes.</param>
         /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
@@ -170,11 +173,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 nullAsEmpty);
         }
 
-        /// <summary>Encodes matching values with a supplied encoding function, then adds decoded providers.</summary>
+        /// <summary>Encodes matching values with a supplied legacy encoding function, then adds generic decoded providers.</summary>
         /// <param name="builder">The web application builder receiving the JSON providers.</param>
         /// <param name="commonJsonFilePath">The required common JSON file path.</param>
         /// <param name="keyPathPattern">A case-insensitive glob pattern for complete configuration paths.</param>
-        /// <param name="encode">The encoding function.</param>
+        /// <param name="encode">
+        /// The encoding function. It must emit a self-describing format understood by the generic decoder if clear values are
+        /// expected in configuration. Use the <see cref="JsonSettingsValueCodec"/> overload for parameterized or composed codecs.
+        /// </param>
         /// <param name="optionalEnvironment">Whether the environment-specific file may be absent.</param>
         /// <param name="reloadOnChange">Whether the providers reload their files after changes.</param>
         /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>

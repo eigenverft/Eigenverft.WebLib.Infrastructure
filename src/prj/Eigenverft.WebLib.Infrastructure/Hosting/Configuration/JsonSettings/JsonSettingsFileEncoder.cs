@@ -29,8 +29,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <exception cref="InvalidDataException">The JSON document has no root value.</exception>
         /// <remarks>
         /// The file is rewritten only when at least one value changes. Rewriting uses formatted JSON and therefore
-        /// removes JSON comments, trailing commas, and the original whitespace. Recognized encoded values are not
-        /// encoded again.
+        /// removes JSON comments, trailing commas, and the original whitespace. Any recognized encoded wrapper is left
+        /// untouched, even when it was produced by a different codec or cannot currently be decoded. This avoids destroying
+        /// potentially recoverable protected data, but also means this method is not a codec-migration engine: changing a
+        /// codec, password, key ring, purpose, or composed stage order requires an explicit decode-and-rewrite migration.
         /// </remarks>
         public static int EncodeMatchingValuesInPlace(
             string jsonFilePath,

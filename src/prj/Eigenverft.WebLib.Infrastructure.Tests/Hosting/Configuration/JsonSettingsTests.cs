@@ -137,6 +137,24 @@ public sealed class JsonSettingsTests
     }
 
     [TestMethod]
+    public void FileEncoderDoesNotImplicitlyMigrateRecognizedCodecValues()
+    {
+        using var directory = new TemporaryDirectory();
+        string existingEncodedValue = JsonSettingsValueEncoders.EncodeBase64("secret");
+        string settingsPath = directory.Write(
+            "settings.json",
+            $"{{ \"Password\": \"{existingEncodedValue}\" }}");
+
+        int updateCount = JsonSettingsFileEncoder.EncodeMatchingValuesInPlace(
+            settingsPath,
+            "Password",
+            JsonSettingsValueEncoders.AesPassword("replacement-password"));
+
+        Assert.AreEqual(0, updateCount);
+        StringAssert.Contains(File.ReadAllText(settingsPath), existingEncodedValue);
+    }
+
+    [TestMethod]
     public void CombinedWorkflowEncodesBothFilesAndLoadsEnvironmentOverride()
     {
         using var directory = new TemporaryDirectory();
@@ -185,7 +203,30 @@ public sealed class JsonSettingsTests
             decodeCodec: codec);
 
         Assert.AreEqual("secret", configuration["Password"]);
-        StringAssert.StartsWith(encodedValue, "enc:a3s6p1:");
+        StringAssert.StartsWith(encodedValue, "enc:a3s6p1:v1.");
+    }
+
+    [TestMethod]
+    public void AesPasswordCodecRejectsUnknownPersistedPayloadVersionSoftly()
+    {
+        using var directory = new TemporaryDirectory();
+        JsonSettingsValueCodec codec = JsonSettingsValueEncoders.AesPassword("test-only-password");
+        string encodedValue = codec.Encode("secret");
+        string unsupportedVersionValue = encodedValue.Replace(
+            "enc:a3s6p1:v1.",
+            "enc:a3s6p1:v2.",
+            StringComparison.Ordinal);
+        string settingsPath = directory.Write(
+            "settings.json",
+            $"{{ \"Password\": \"{unsupportedVersionValue}\" }}");
+        var configuration = new ConfigurationManager();
+
+        ((IConfigurationBuilder)configuration).AddJsonFileWithDecodedValues(
+            settingsPath,
+            reloadOnChange: false,
+            decodeCodec: codec);
+
+        Assert.AreEqual(unsupportedVersionValue, configuration["Password"]);
     }
 
     [TestMethod]
@@ -217,7 +258,7 @@ public sealed class JsonSettingsTests
         Assert.AreEqual("first-secret", firstConfiguration["Password"]);
         Assert.AreEqual("second-secret", secondConfiguration["Password"]);
         StringAssert.StartsWith(firstEncoded, "enc:q7m2n4:");
-        StringAssert.StartsWith(secondEncoded, "enc:a3s6p1:");
+        StringAssert.StartsWith(secondEncoded, "enc:a3s6p1:v1.");
     }
 
     [TestMethod]
@@ -240,6 +281,23 @@ public sealed class JsonSettingsTests
             decodeCodec: wrongReadCodec);
 
         Assert.AreEqual(encodedValue, configuration["Password"]);
+    }
+
+    [TestMethod]
+    public void ComposedTryDecodeRollsBackWhenAnInnerProtectionStageFails()
+    {
+        JsonSettingsValueCodec writeCodec = JsonSettingsValueEncoders.Compose(
+            JsonSettingsValueEncoders.AesPassword("test-only-password"),
+            JsonSettingsValueEncoders.Base64);
+        JsonSettingsValueCodec wrongReadCodec = JsonSettingsValueEncoders.Compose(
+            JsonSettingsValueEncoders.AesPassword("wrong-test-password"),
+            JsonSettingsValueEncoders.Base64);
+        string encodedValue = writeCodec.Encode("secret");
+
+        bool decoded = wrongReadCodec.TryDecode(encodedValue, out string clearText);
+
+        Assert.IsFalse(decoded);
+        Assert.AreEqual(encodedValue, clearText);
     }
 
     [TestMethod]

@@ -16,6 +16,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
         [DefaultDirectoryName("AppData")]
         ApplicationData,
 
+        /// <summary>
+        /// Persistent internal application state that should remain operationally separate from ordinary application data
+        /// and configuration. Suitable for infrastructure-owned state such as a Data Protection key ring. The separate
+        /// directory reduces accidental co-exposure with settings/data paths but is not by itself an operating-system access
+        /// control boundary; deployments remain responsible for appropriate file-system permissions.
+        /// </summary>
+        [DefaultDirectoryName("AppState")]
+        ApplicationState,
+
         /// <summary>Application certificates.</summary>
         [DefaultDirectoryName("AppCerts")]
         ApplicationCerts,
