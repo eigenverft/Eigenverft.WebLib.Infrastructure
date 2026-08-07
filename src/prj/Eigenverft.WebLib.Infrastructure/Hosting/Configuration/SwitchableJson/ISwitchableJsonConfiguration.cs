@@ -19,11 +19,19 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         string CurrentSourcePath { get; }
 
         /// <summary>
-        /// Occurs after a runtime switch attempt has completed, including successful no-op and rejected attempts.
+        /// Occurs after a source lifecycle operation completes, including manual switches and optional active-file reloads.
         /// </summary>
         /// <remarks>
-        /// V1 reports completed outcomes only. A separate pre-I/O SwitchRequested event can be added later if an audit scenario
-        /// must observe an attempt before source access begins; it is intentionally omitted from the minimal lifecycle contract.
+        /// This event is independent of the normal IConfiguration change token. A successful source switch or file reload can
+        /// therefore be observable here while producing no IConfiguration reload when the effective key/value snapshot is equal.
+        /// Active-file events are raised from the file-watcher callback path, so handlers must be thread-safe and should avoid
+        /// long-running work. Observer exceptions are isolated by the provider: a notification handler cannot roll back or make a
+        /// completed source operation fail, and one failing observer does not prevent later observers from receiving the event.
+        /// Consumers should not coordinate work by assuming ordering between this lifecycle channel and IConfiguration change-token
+        /// callbacks; both describe an already committed provider state, while IConfiguration reload is emitted only for effective
+        /// data changes. Lifecycle handlers also run outside the provider state lock, so with concurrent callers the event payload
+        /// describes the completed operation and should be preferred over re-reading CurrentSourcePath to reconstruct that operation.
+        /// A separate pre-I/O SwitchRequested event remains intentionally omitted from the minimal lifecycle contract.
         /// </remarks>
         event EventHandler<SwitchableJsonConfigurationEventArgs>? LifecycleChanged;
 
@@ -33,7 +41,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// <param name="sourcePath">Absolute path, or a path relative to the host content root used during registration.</param>
         /// <returns>The completed switch outcome.</returns>
         /// <remarks>
-        /// V1 is synchronous because <c>IConfigurationProvider</c> and local file loading are synchronous. A future asynchronous
+        /// The API is synchronous because IConfigurationProvider and local file loading are synchronous. Concurrent calls are thread-safe
+        /// and serialize complete candidate-load/compare/commit operations; whichever call acquires provider serialization next is
+        /// the next operation committed, so no separate cross-thread request-priority guarantee is implied. A future asynchronous
         /// API would be appropriate for remote or otherwise slow sources, but is intentionally not introduced for local JSON files.
         /// </remarks>
         SwitchableJsonSwitchResult TrySwitch(string sourcePath);

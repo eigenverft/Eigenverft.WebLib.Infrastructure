@@ -12,7 +12,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// <summary>Keep the current source and its last successfully published configuration snapshot.</summary>
         KeepLastKnownGood = 0,
 
-        /// <summary>Keep the current source and snapshot, publish the lifecycle event, then throw the load failure.</summary>
+        /// <summary>
+        /// Keep the current source and snapshot, publish the lifecycle event, then throw a manual switch load failure.
+        /// </summary>
+        /// <remarks>
+        /// Background watcher reloads have no synchronous caller to receive an exception. They therefore retain the last known
+        /// good snapshot and publish <see cref="SwitchableJsonConfigurationEventKind.ActiveSourceReloadRejected"/> instead.
+        /// </remarks>
         Throw = 1,
     }
 
@@ -29,26 +35,26 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         Rejected = 2,
     }
 
-    /// <summary>Classifies runtime candidate-load failures without coupling callers to concrete exception types.</summary>
+    /// <summary>Classifies candidate-load failures without coupling callers to concrete exception types.</summary>
     public enum SwitchableJsonFailureKind
     {
         /// <summary>No failure occurred.</summary>
         None = 0,
 
-        /// <summary>The requested source file or one of its parent directories does not exist.</summary>
+        /// <summary>The source file or one of its parent directories does not exist.</summary>
         SourceNotFound = 1,
 
-        /// <summary>The requested source does not contain valid configuration JSON.</summary>
+        /// <summary>The source does not contain valid configuration JSON.</summary>
         InvalidJson = 2,
 
-        /// <summary>The process is not permitted to read the requested source.</summary>
+        /// <summary>The process is not permitted to read the source.</summary>
         AccessDenied = 3,
 
-        /// <summary>An input/output error prevented the candidate from being loaded.</summary>
+        /// <summary>An input/output error prevented the source from being loaded.</summary>
         IoError = 4,
     }
 
-    /// <summary>Identifies the provider lifecycle event raised for a completed manual switch attempt.</summary>
+    /// <summary>Identifies an observable provider/source lifecycle outcome.</summary>
     public enum SwitchableJsonConfigurationEventKind
     {
         /// <summary>A different source path was successfully selected.</summary>
@@ -59,9 +65,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
         /// <summary>The requested candidate was rejected and the current source remained active.</summary>
         SwitchRejected = 2,
+
+        /// <summary>The active source changed on disk and was successfully loaded, whether or not effective data changed.</summary>
+        ActiveSourceReloaded = 3,
+
+        /// <summary>The active source changed on disk but the new candidate was rejected; last-known-good data remained active.</summary>
+        ActiveSourceReloadRejected = 4,
     }
 
-    /// <summary>Contains the completed outcome of a runtime source switch.</summary>
+    /// <summary>Contains the completed outcome of a manual runtime source switch.</summary>
     public sealed class SwitchableJsonSwitchResult
     {
         internal SwitchableJsonSwitchResult(
@@ -122,21 +134,63 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         public bool Succeeded => Status != SwitchableJsonSwitchStatus.Rejected;
     }
 
-    /// <summary>Provides the source lifecycle outcome independently of the normal IConfiguration reload channel.</summary>
+    /// <summary>Provides source lifecycle information independently of the normal IConfiguration reload channel.</summary>
     public sealed class SwitchableJsonConfigurationEventArgs : EventArgs
     {
         internal SwitchableJsonConfigurationEventArgs(
             SwitchableJsonConfigurationEventKind kind,
-            SwitchableJsonSwitchResult result)
+            string name,
+            string previousSourcePath,
+            string requestedSourcePath,
+            string currentSourcePath,
+            bool sourceChanged,
+            bool configurationChanged,
+            SwitchableJsonFailureKind failureKind,
+            Exception? exception,
+            DateTimeOffset timestamp)
         {
             Kind = kind;
-            Result = result;
+            Name = name;
+            PreviousSourcePath = previousSourcePath;
+            RequestedSourcePath = requestedSourcePath;
+            CurrentSourcePath = currentSourcePath;
+            SourceChanged = sourceChanged;
+            ConfigurationChanged = configurationChanged;
+            FailureKind = failureKind;
+            Exception = exception;
+            Timestamp = timestamp;
         }
 
         /// <summary>Gets the lifecycle event kind.</summary>
         public SwitchableJsonConfigurationEventKind Kind { get; }
 
-        /// <summary>Gets the completed switch outcome associated with this event.</summary>
-        public SwitchableJsonSwitchResult Result { get; }
+        /// <summary>Gets the caller-defined provider identity.</summary>
+        public string Name { get; }
+
+        /// <summary>Gets the source path that was active before the operation.</summary>
+        public string PreviousSourcePath { get; }
+
+        /// <summary>
+        /// Gets the source path involved in the operation. For active-source reloads this equals the current source path.
+        /// </summary>
+        public string RequestedSourcePath { get; }
+
+        /// <summary>Gets the active source path after the operation.</summary>
+        public string CurrentSourcePath { get; }
+
+        /// <summary>Gets whether the active source identity changed.</summary>
+        public bool SourceChanged { get; }
+
+        /// <summary>Gets whether the effective key/value snapshot changed.</summary>
+        public bool ConfigurationChanged { get; }
+
+        /// <summary>Gets the classified failure kind, or <see cref="SwitchableJsonFailureKind.None"/>.</summary>
+        public SwitchableJsonFailureKind FailureKind { get; }
+
+        /// <summary>Gets the underlying load exception for rejected operations, when available.</summary>
+        public Exception? Exception { get; }
+
+        /// <summary>Gets the UTC timestamp at which the lifecycle outcome completed.</summary>
+        public DateTimeOffset Timestamp { get; }
     }
 }
