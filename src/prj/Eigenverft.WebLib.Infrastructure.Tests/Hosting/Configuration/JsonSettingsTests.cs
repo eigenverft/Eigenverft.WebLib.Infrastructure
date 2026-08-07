@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 
 using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings;
+using Eigenverft.WebLib.Infrastructure.Security.MachineBinding;
 using Eigenverft.WebLib.Infrastructure.Text;
 
 using Microsoft.AspNetCore.Builder;
@@ -203,6 +204,48 @@ public sealed class JsonSettingsTests
             decodeCodec: codec);
 
         Assert.AreEqual("secret", configuration["Password"]);
+        StringAssert.StartsWith(encodedValue, "enc:a3s6p1:v1.");
+    }
+
+    [TestMethod]
+    public void AesPasswordByteRepresentationMatchesSameReadableString()
+    {
+        byte[] passwordBytes = { 0x68, 0x65, 0x6C, 0x6C, 0x6F };
+        JsonSettingsValueCodec stringCodec = JsonSettingsValueEncoders.AesPassword("hello");
+        JsonSettingsValueCodec byteCodec = JsonSettingsValueEncoders.AesPassword(passwordBytes);
+
+        string encodedByString = stringCodec.Encode("first-secret");
+        string encodedByBytes = byteCodec.Encode("second-secret");
+
+        Assert.IsTrue(byteCodec.TryDecode(encodedByString, out string firstClearText));
+        Assert.AreEqual("first-secret", firstClearText);
+        Assert.IsTrue(stringCodec.TryDecode(encodedByBytes, out string secondClearText));
+        Assert.AreEqual("second-secret", secondClearText);
+    }
+
+    [TestMethod]
+    public void AesPasswordRejectsNonVisiblePasswordRepresentations()
+    {
+        _ = Assert.ThrowsExactly<ArgumentException>(() => JsonSettingsValueEncoders.AesPassword("hidden\u200Bvalue"));
+        _ = Assert.ThrowsExactly<ArgumentException>(() => JsonSettingsValueEncoders.AesPassword(new byte[] { 0x00 }));
+        _ = Assert.ThrowsExactly<ArgumentException>(() => JsonSettingsValueEncoders.AesPassword(new byte[] { 0xFF }));
+    }
+
+    [TestMethod]
+    public void PhysicalMachineBoundAesUsesCurrentMachineFingerprintWhenAvailable()
+    {
+        if (!PhysicalMachineBinding.TryGetFingerprint(out _))
+        {
+            return;
+        }
+
+        JsonSettingsValueCodec writeCodec = JsonSettingsValueEncoders.PhysicalMachineBoundAes();
+        string encodedValue = writeCodec.Encode("machine-secret");
+        JsonSettingsValueCodec readCodec = JsonSettingsValueEncoders.PhysicalMachineBoundAes();
+
+        Assert.AreEqual("PhysicalMachineBoundAes", writeCodec.Name);
+        Assert.IsTrue(readCodec.TryDecode(encodedValue, out string clearText));
+        Assert.AreEqual("machine-secret", clearText);
         StringAssert.StartsWith(encodedValue, "enc:a3s6p1:v1.");
     }
 
@@ -457,42 +500,65 @@ public sealed class JsonSettingsTests
     }
 
     [TestMethod]
-    public void DefaultShortcutDelegatesToDocumentedCompositionOnWindows()
+    public void DefaultShortcutDelegatesToDocumentedPlatformNeutralComposition()
     {
-        if (!OperatingSystem.IsWindows())
+        if (!PhysicalMachineBinding.TryGetFingerprint(out _))
         {
             return;
         }
 
-        JsonSettingsValueCodec shortcut = JsonSettingsValueEncoders.Default("test-only-password");
+        using var directory = new TemporaryDirectory();
+        string keyRingPath = Path.Combine(directory.Path, "AppState");
+        byte[] passwordBytes =
+        {
+            0x74, 0x65, 0x73, 0x74, 0x2D, 0x6F, 0x6E, 0x6C, 0x79, 0x2D, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6F, 0x72, 0x64,
+        };
+
+        JsonSettingsValueCodec shortcut = JsonSettingsValueEncoders.Default("test-only-password", keyRingPath);
+        JsonSettingsValueCodec byteShortcut = JsonSettingsValueEncoders.Default(passwordBytes, keyRingPath);
         JsonSettingsValueCodec composed = JsonSettingsValueEncoders.Compose(
             JsonSettingsValueEncoders.Rot13,
             JsonSettingsValueEncoders.Caesar(13),
+            JsonSettingsValueEncoders.DataProtection(keyRingPath),
+            JsonSettingsValueEncoders.PhysicalMachineBoundAes(),
             JsonSettingsValueEncoders.AesPassword("test-only-password"),
-            JsonSettingsValueEncoders.DpapiMachineBase64Url);
+            JsonSettingsValueEncoders.Base92JsonSafe);
 
         Assert.AreEqual(composed.Name, shortcut.Name);
+        Assert.AreEqual(shortcut.Name, byteShortcut.Name);
+
+        string encodedValue = byteShortcut.Encode("secret");
+        Assert.IsTrue(shortcut.TryDecode(encodedValue, out string clearText));
+        Assert.AreEqual("secret", clearText);
+        StringAssert.StartsWith(encodedValue, "enc:b9j2s7:");
+    }
+
+    [TestMethod]
+    public void DefaultWindowsAddsOuterDpapiMachineLayer()
+    {
+        if (!OperatingSystem.IsWindows() || !PhysicalMachineBinding.TryGetFingerprint(out _))
+        {
+            return;
+        }
 
         using var directory = new TemporaryDirectory();
-        string encodedValue = shortcut.Encode("secret");
-        string settingsPath = directory.Write(
-            "settings.json",
-            "{ \"Password\": \"" + encodedValue + "\" }");
-        var configuration = new ConfigurationManager();
+        string keyRingPath = Path.Combine(directory.Path, "AppState");
+        JsonSettingsValueCodec codec = JsonSettingsValueEncoders.DefaultWindows("test-only-password", keyRingPath);
 
-        ((IConfigurationBuilder)configuration).AddJsonFileWithDecodedValues(
-            settingsPath,
-            reloadOnChange: false,
-            decodeCodec: shortcut);
+        string encodedValue = codec.Encode("secret");
 
         StringAssert.StartsWith(encodedValue, "enc:k4v8s2:");
-        Assert.AreEqual("secret", configuration["Password"]);
+        Assert.IsTrue(codec.TryDecode(encodedValue, out string clearText));
+        Assert.AreEqual("secret", clearText);
     }
 
     [TestMethod]
     public void DefaultRejectsEmptyPassword()
     {
-        _ = Assert.ThrowsExactly<ArgumentException>(() => JsonSettingsValueEncoders.Default(string.Empty));
+        _ = Assert.ThrowsExactly<ArgumentException>(() =>
+            JsonSettingsValueEncoders.Default(string.Empty, "unused-key-ring"));
+        _ = Assert.ThrowsExactly<ArgumentException>(() =>
+            JsonSettingsValueEncoders.Default(Array.Empty<byte>(), "unused-key-ring"));
     }
 
     [TestMethod]

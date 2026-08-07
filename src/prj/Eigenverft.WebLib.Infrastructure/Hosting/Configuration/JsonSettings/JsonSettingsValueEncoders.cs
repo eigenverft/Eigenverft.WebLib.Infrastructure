@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 
+using Eigenverft.WebLib.Infrastructure.Security.MachineBinding;
+using Eigenverft.WebLib.Infrastructure.Security.Protection;
 using Eigenverft.WebLib.Infrastructure.Text;
 
 using Microsoft.AspNetCore.DataProtection;
@@ -85,16 +87,24 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         }
 
         /// <summary>
-        /// Gets the Windows DPAPI machine-scope protection codec with a Base64 payload.
+        /// Gets the Windows DPAPI LocalMachine codec with a Base64 payload.
         /// </summary>
+        /// <remarks>
+        /// LocalMachine binds the payload to the Windows machine, not to an administrator or individual user. Windows allows
+        /// another user on the same machine to unprotect it; the value of this layer is the machine-context requirement.
+        /// </remarks>
         public static JsonSettingsValueCodec DpapiMachine { get; } = new(
             "DpapiMachine",
             EncodeDpapiMachine,
             TryDecodeDpapiBase64Value);
 
         /// <summary>
-        /// Gets the Windows DPAPI machine-scope protection codec with a Base64Url payload.
+        /// Gets the Windows DPAPI LocalMachine codec with a Base64Url payload.
         /// </summary>
+        /// <remarks>
+        /// LocalMachine binds the payload to the Windows machine, not to an administrator or individual user. Windows allows
+        /// another user on the same machine to unprotect it; the value of this layer is the machine-context requirement.
+        /// </remarks>
         public static JsonSettingsValueCodec DpapiMachineBase64Url { get; } = new(
             "DpapiMachineBase64Url",
             EncodeDpapiMachineBase64Url,
@@ -103,8 +113,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <summary>
         /// Creates a password-derived AES-GCM protection codec.
         /// </summary>
-        /// <param name="password">The non-empty password used to derive the AES key.</param>
-        /// <returns>A codec that captures the password for both encoding and decoding.</returns>
+        /// <param name="password">The non-empty visible-ASCII password used to derive the AES key.</param>
+        /// <returns>A codec that captures the normalized password for both encoding and decoding.</returns>
         /// <remarks>
         /// This backend exists primarily to prove parameterized and composable protection backends. Its security is
         /// bounded by how the caller obtains and protects the supplied password. The codec captures that password for its
@@ -113,13 +123,65 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// </remarks>
         public static JsonSettingsValueCodec AesPassword(string password)
         {
-            ArgumentException.ThrowIfNullOrEmpty(password);
+            password = NormalizeReadablePassword(password, nameof(password));
 
             return new JsonSettingsValueCodec(
                 "AesPassword",
                 clearText => EncodeAesPassword(clearText, password),
                 (string encodedValue, out string clearText) =>
                     TryDecodeAesPasswordValue(encodedValue, password, out clearText));
+        }
+
+        /// <summary>
+        /// Creates the same password-derived AES-GCM codec from visible ASCII password bytes.
+        /// </summary>
+        /// <param name="passwordAsciiBytes">
+        /// The visible ASCII representation of the password. For example, <c>"hello"</c> and
+        /// <c>{ 0x68, 0x65, 0x6C, 0x6C, 0x6F }</c> describe the same password and therefore the same AES context.
+        /// </param>
+        /// <returns>A codec equivalent to calling <see cref="AesPassword(string)"/> with the represented ASCII text.</returns>
+        /// <remarks>
+        /// This overload exists so callers can embed a password without placing its clear text in the assembly string-literal
+        /// table. It is only a small static-analysis obstacle, not a secrecy boundary: the bytes and this normalization logic
+        /// remain recoverable from the executable. Bytes outside visible ASCII (0x21 through 0x7E) are rejected deliberately
+        /// so accidental values such as 0x00 or 0xFF cannot silently produce a different password.
+        /// </remarks>
+        public static JsonSettingsValueCodec AesPassword(byte[] passwordAsciiBytes)
+        {
+            return AesPassword(NormalizeReadablePassword(passwordAsciiBytes, nameof(passwordAsciiBytes)));
+        }
+
+        /// <summary>
+        /// Creates an AES-GCM codec whose password material is derived from the current machine's V1 platform fingerprint.
+        /// </summary>
+        /// <returns>A codec bound to the current Windows, Linux, or macOS system/platform UUID.</returns>
+        /// <exception cref="PlatformNotSupportedException">The current operating system is not supported.</exception>
+        /// <exception cref="InvalidOperationException">
+        /// The current operating system is supported, but no valid system/platform UUID is available.
+        /// </exception>
+        /// <remarks>
+        /// <para>
+        /// This is a lightweight machine-binding shortcut, not a hardware-backed secret. It is equivalent to creating an
+        /// AES password codec from <see cref="PhysicalMachineBinding.GetFingerprint"/>. Its intended value is to make an
+        /// application-directory-only theft insufficient for offline decoding on another machine unless the attacker also
+        /// collected the source machine's platform identity. An attacker with sufficient access to the source machine can
+        /// read the same identity and reproduce the fingerprint.
+        /// </para>
+        /// <para>
+        /// No additional management package is required. If broader hardware/CIM inventory becomes useful later,
+        /// Microsoft.Management.Infrastructure may be evaluated separately; that is intentionally outside this shortcut's
+        /// scope. The encoded payload remains an ordinary versioned <see cref="AesPassword(string)"/> payload, so callers must use
+        /// this same machine-bound codec context when decoding.
+        /// </para>
+        /// </remarks>
+        public static JsonSettingsValueCodec PhysicalMachineBoundAes()
+        {
+            JsonSettingsValueCodec aes = AesPassword(PhysicalMachineBinding.GetFingerprint());
+
+            return new JsonSettingsValueCodec(
+                "PhysicalMachineBoundAes",
+                aes.Encode,
+                aes.TryDecode);
         }
 
         /// <summary>
@@ -185,49 +247,94 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         }
 
         /// <summary>
-        /// Creates the recommended default Windows settings-protection pipeline for a caller-supplied password.
+        /// Creates the platform-neutral default layered settings codec.
         /// </summary>
-        /// <param name="password">
-        /// The non-empty password used by the AES layer. The password is not persisted in the encoded settings value;
-        /// callers are responsible for supplying the same value when the settings are loaded.
-        /// </param>
+        /// <param name="password">The caller-supplied visible-ASCII password used by the application AES layer.</param>
+        /// <param name="keyDirectoryPath">The persistent ASP.NET Core Data Protection key-ring directory.</param>
         /// <returns>
-        /// A codec equivalent to <c>Compose(Rot13, Caesar(13), AesPassword(password), DpapiMachineBase64Url)</c>.
+        /// A codec equivalent to <c>Compose(Rot13, Caesar(13), DataProtection(keyDirectoryPath), PhysicalMachineBoundAes(), AesPassword(password), Base92JsonSafe)</c>.
         /// </returns>
         /// <remarks>
         /// <para>
-        /// This shortcut is intentionally layered to increase the work required to recover a protected settings value.
-        /// ROT13 and Caesar are only obfuscation and provide no cryptographic security. AES adds password-derived
-        /// authenticated encryption, while the final Windows DPAPI machine-scope layer binds the resulting value to the
-        /// Windows machine that protected it.
+        /// This default deliberately combines different roles rather than presenting every layer as cryptographic security.
+        /// ROT13 and Caesar are obfuscation; Base92JsonSafe is representation. Data Protection requires the persistent key
+        /// ring, PhysicalMachineBoundAes requires the source system/platform identity, and AesPassword requires the
+        /// caller-supplied password. The intended effect is that copying only the application directory or only one related
+        /// artifact is insufficient for straightforward offline recovery on another machine.
         /// </para>
         /// <para>
-        /// In the intended deployment model, recovering the clear value therefore requires the persisted encoded value,
-        /// the caller-supplied AES password (for example obtained by analysing the consuming executable or its runtime
-        /// inputs), and access to the DPAPI machine context. This is defense in depth and does not protect against a fully
-        /// compromised machine or a process that can already observe the clear value at runtime.
+        /// The physical-machine binding is a lightweight additional recovery hurdle, not a hardware-backed secret. An
+        /// attacker that collected the source machine's platform identity can reproduce that factor. Likewise, a sufficiently
+        /// compromised running process can observe passwords and clear values. This pipeline is defense in depth, not a claim
+        /// that any one software-only layer is an absolute security boundary.
         /// </para>
         /// <para>
-        /// This default is Windows-only because its outer protection layer uses DPAPI machine scope. Its exact codec order
-        /// is also a persisted-format contract: changing the default pipeline later requires migration or backward-decoding
-        /// support for values written by the previous default.
-        /// </para>
-        /// <para>
-        /// The method contains no independent encoding logic; <see cref="Compose"/> remains the canonical pipeline
-        /// implementation. Encoding applies ROT13, Caesar(13), AES, then DPAPI. Decoding applies those stages in reverse.
+        /// The exact stage order is a persisted-format contract. Changing this default later requires explicit migration or
+        /// backward-decoding support. Hosts should normally place the Data Protection key ring in the separate AppState
+        /// directory rather than next to application settings or general application data.
         /// </para>
         /// </remarks>
-        /// <exception cref="ArgumentException"><paramref name="password"/> is null or empty.</exception>
-        /// <exception cref="PlatformNotSupportedException">Encoding is attempted on a non-Windows platform.</exception>
-        public static JsonSettingsValueCodec Default(string password)
+        public static JsonSettingsValueCodec Default(string password, string keyDirectoryPath)
         {
-            ArgumentException.ThrowIfNullOrEmpty(password);
+            password = NormalizeReadablePassword(password, nameof(password));
 
             return Compose(
                 Rot13,
                 Caesar(13),
+                DataProtection(keyDirectoryPath),
+                PhysicalMachineBoundAes(),
                 AesPassword(password),
-                DpapiMachineBase64Url);
+                Base92JsonSafe);
+        }
+
+        /// <summary>
+        /// Creates <see cref="Default(string,string)"/> from the visible-ASCII byte representation of the same password.
+        /// </summary>
+        /// <param name="passwordAsciiBytes">Visible ASCII bytes representing the password text.</param>
+        /// <param name="keyDirectoryPath">The persistent ASP.NET Core Data Protection key-ring directory.</param>
+        /// <returns>The same default codec as the equivalent string password.</returns>
+        /// <remarks>
+        /// This overload is intended for embedded application material where a consumer wants to avoid a clear password as
+        /// a .NET string literal. It does not make the password secret from executable analysis.
+        /// </remarks>
+        public static JsonSettingsValueCodec Default(byte[] passwordAsciiBytes, string keyDirectoryPath)
+        {
+            return Default(
+                NormalizeReadablePassword(passwordAsciiBytes, nameof(passwordAsciiBytes)),
+                keyDirectoryPath);
+        }
+
+        /// <summary>
+        /// Creates the Windows default by adding DPAPI LocalMachine protection outside the platform-neutral default.
+        /// </summary>
+        /// <param name="password">The caller-supplied visible-ASCII password used by the application AES layer.</param>
+        /// <param name="keyDirectoryPath">The persistent ASP.NET Core Data Protection key-ring directory.</param>
+        /// <returns>A codec equivalent to <c>Compose(Default(password, keyDirectoryPath), DpapiMachineBase64Url)</c>.</returns>
+        /// <remarks>
+        /// This shortcut adds a Windows DPAPI LocalMachine requirement without changing the semantics of
+        /// <see cref="Default(string,string)"/> on other platforms. LocalMachine is machine scope, not user or administrator
+        /// isolation: Windows permits another user on the same machine to unprotect a LocalMachine payload. The intended extra
+        /// requirement is therefore access to the originating Windows machine context, not elevated privileges. DPAPI is
+        /// invoked through the Windows operating-system API; the library does not require the
+        /// System.Security.Cryptography.ProtectedData NuGet package.
+        /// </remarks>
+        /// <exception cref="PlatformNotSupportedException">Encoding is attempted on a non-Windows platform.</exception>
+        public static JsonSettingsValueCodec DefaultWindows(string password, string keyDirectoryPath)
+        {
+            return Compose(Default(password, keyDirectoryPath), DpapiMachineBase64Url);
+        }
+
+        /// <summary>
+        /// Creates <see cref="DefaultWindows(string,string)"/> from the visible-ASCII byte representation of the same password.
+        /// </summary>
+        /// <param name="passwordAsciiBytes">Visible ASCII bytes representing the password text.</param>
+        /// <param name="keyDirectoryPath">The persistent ASP.NET Core Data Protection key-ring directory.</param>
+        /// <returns>The same Windows default codec as the equivalent string password.</returns>
+        public static JsonSettingsValueCodec DefaultWindows(byte[] passwordAsciiBytes, string keyDirectoryPath)
+        {
+            return DefaultWindows(
+                NormalizeReadablePassword(passwordAsciiBytes, nameof(passwordAsciiBytes)),
+                keyDirectoryPath);
         }
 
         /// <summary>
@@ -721,6 +828,47 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
                 TryUnprotect(protectedBytes, out clearText);
         }
 
+        private static string NormalizeReadablePassword(string password, string parameterName)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(password, parameterName);
+
+            for (int index = 0; index < password.Length; index++)
+            {
+                char value = password[index];
+                if (value < '!' || value > '~')
+                {
+                    throw new ArgumentException(
+                        $"Password character at index {index} is U+{(int)value:X4}; only visible ASCII characters U+0021 through U+007E are allowed.",
+                        parameterName);
+                }
+            }
+
+            return password;
+        }
+
+        private static string NormalizeReadablePassword(byte[] passwordBytes, string parameterName)
+        {
+            ArgumentNullException.ThrowIfNull(passwordBytes, parameterName);
+
+            if (passwordBytes.Length == 0)
+            {
+                throw new ArgumentException("Password byte representation must not be empty.", parameterName);
+            }
+
+            for (int index = 0; index < passwordBytes.Length; index++)
+            {
+                byte value = passwordBytes[index];
+                if (value < 0x21 || value > 0x7E)
+                {
+                    throw new ArgumentException(
+                        $"Password byte at index {index} is 0x{value:X2}; only visible ASCII bytes 0x21 through 0x7E are allowed.",
+                        parameterName);
+                }
+            }
+
+            return Encoding.ASCII.GetString(passwordBytes);
+        }
+
         private static bool TryUnprotect(byte[] protectedBytes, out string clearText)
         {
             clearText = string.Empty;
@@ -877,54 +1025,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             }
         }
     }
-
-    internal static class DpapiMachineProtection
-    {
-        private const string NotAvailableMessage =
-            "Windows DPAPI machine-scope protection is available only on Windows.";
-
-        public static byte[] Protect(byte[] clearBytes)
-        {
-            ArgumentNullException.ThrowIfNull(clearBytes);
-
-            if (!OperatingSystem.IsWindows())
-            {
-                throw new PlatformNotSupportedException(NotAvailableMessage);
-            }
-
-            return ProtectedData.Protect(clearBytes, optionalEntropy: null, DataProtectionScope.LocalMachine);
-        }
-
-        public static bool TryUnprotect(byte[] protectedBytes, out byte[] clearBytes)
-        {
-            ArgumentNullException.ThrowIfNull(protectedBytes);
-
-            clearBytes = Array.Empty<byte>();
-
-            if (!OperatingSystem.IsWindows())
-            {
-                return false;
-            }
-
-            try
-            {
-                clearBytes = ProtectedData.Unprotect(
-                    protectedBytes,
-                    optionalEntropy: null,
-                    DataProtectionScope.LocalMachine);
-                return true;
-            }
-            catch (CryptographicException)
-            {
-                return false;
-            }
-            catch (PlatformNotSupportedException)
-            {
-                return false;
-            }
-        }
-    }
-
     internal static class EncodedConfigurationValueDecoder
     {
         public static bool TryDecode(string? value, out string clearText)
