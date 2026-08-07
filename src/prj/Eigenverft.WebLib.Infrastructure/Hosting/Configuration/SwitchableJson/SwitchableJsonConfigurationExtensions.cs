@@ -86,7 +86,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
                 // Keyed DI is used instead of a custom registry so multiple independent sources remain addressable through the
                 // standard Microsoft container. The runtime handle survives framework-driven concrete-provider rebuilds.
-                builder.Services.AddKeyedSingleton<ISwitchableJsonConfiguration>(name, runtime);
+                // Register through a factory so the DI container owns and disposes the stable runtime handle. Concrete
+                // IConfigurationProvider instances are framework-owned and may be replaced/removed independently.
+                builder.Services.AddKeyedSingleton<ISwitchableJsonConfiguration>(
+                    name,
+                    (_, _) => runtime);
             }
             catch
             {

@@ -983,6 +983,365 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
             Assert.AreEqual(0, lifecycleCount);
         }
 
+        [TestMethod]
+        public void PrepareSwitchDoesNotPublishOrChangeActiveStateAndAbortIsSilent()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"A\" }");
+            directory.Write("B.json", "{ \"Value\": \"B\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("settings", "A.json");
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            int reloadCount = 0;
+            int lifecycleCount = 0;
+            using IDisposable subscription = ChangeToken.OnChange(
+                ((IConfiguration)builder.Configuration).GetReloadToken,
+                () => Interlocked.Increment(ref reloadCount));
+            runtime.LifecycleChanged += (_, _) => Interlocked.Increment(ref lifecycleCount);
+
+            using SwitchableJsonSwitchPreparation preparation = runtime.PrepareSwitch("B.json");
+
+            Assert.AreEqual(SwitchableJsonPreparationStatus.Prepared, preparation.Status);
+            Assert.IsTrue(preparation.CanCommit);
+            Assert.IsTrue(preparation.ConfigurationChanged);
+            Assert.AreEqual("A", builder.Configuration["Value"]);
+            Assert.AreEqual(Path.Combine(directory.Path, "A.json"), runtime.CurrentSourcePath);
+            Assert.AreEqual(0, reloadCount);
+            Assert.AreEqual(0, lifecycleCount);
+
+            preparation.Abort();
+
+            Assert.AreEqual("A", builder.Configuration["Value"]);
+            Assert.AreEqual(Path.Combine(directory.Path, "A.json"), runtime.CurrentSourcePath);
+            Assert.AreEqual(0, reloadCount);
+            Assert.AreEqual(0, lifecycleCount);
+            _ = Assert.ThrowsExactly<InvalidOperationException>(() => preparation.Commit());
+        }
+
+        [TestMethod]
+        public void PreparedCommitPublishesChangedSnapshotAndExistingLifecycleSignals()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"A\" }");
+            directory.Write("B.json", "{ \"Value\": \"B\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("settings", "A.json");
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            int reloadCount = 0;
+            SwitchableJsonConfigurationEventArgs? observedEvent = null;
+            using IDisposable subscription = ChangeToken.OnChange(
+                ((IConfiguration)builder.Configuration).GetReloadToken,
+                () => Interlocked.Increment(ref reloadCount));
+            runtime.LifecycleChanged += (_, args) => observedEvent = args;
+            using SwitchableJsonSwitchPreparation preparation = runtime.PrepareSwitch("B.json");
+
+            SwitchableJsonSwitchResult result = preparation.Commit();
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, result.Status);
+            Assert.IsTrue(result.SourceChanged);
+            Assert.IsTrue(result.ConfigurationChanged);
+            Assert.AreEqual("B", builder.Configuration["Value"]);
+            Assert.AreEqual(Path.Combine(directory.Path, "B.json"), runtime.CurrentSourcePath);
+            Assert.AreEqual(1, reloadCount);
+            Assert.IsNotNull(observedEvent);
+            Assert.AreEqual(SwitchableJsonConfigurationEventKind.SwitchSucceeded, observedEvent.Kind);
+        }
+
+        [TestMethod]
+        public void PreparedCommitWithIdenticalDataChangesSourceWithoutConfigurationReload()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"Same\", \"Other\": \"1\" }");
+            directory.Write("B.json", "{ \"Other\": \"1\", \"Value\": \"Same\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("settings", "A.json");
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            int reloadCount = 0;
+            int lifecycleCount = 0;
+            using IDisposable subscription = ChangeToken.OnChange(
+                ((IConfiguration)builder.Configuration).GetReloadToken,
+                () => Interlocked.Increment(ref reloadCount));
+            runtime.LifecycleChanged += (_, args) =>
+            {
+                if (args.Kind == SwitchableJsonConfigurationEventKind.SwitchSucceeded)
+                {
+                    Interlocked.Increment(ref lifecycleCount);
+                }
+            };
+            using SwitchableJsonSwitchPreparation preparation = runtime.PrepareSwitch("B.json");
+
+            Assert.IsFalse(preparation.ConfigurationChanged);
+            SwitchableJsonSwitchResult result = preparation.Commit();
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, result.Status);
+            Assert.IsTrue(result.SourceChanged);
+            Assert.IsFalse(result.ConfigurationChanged);
+            Assert.AreEqual(Path.Combine(directory.Path, "B.json"), runtime.CurrentSourcePath);
+            Assert.AreEqual(0, reloadCount);
+            Assert.AreEqual(1, lifecycleCount);
+        }
+
+        [TestMethod]
+        public void RejectedPrepareIsResultDrivenAndDoesNotApplyThrowPolicyOrLifecycle()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"A\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile(
+                "settings",
+                "A.json",
+                runtimeFailurePolicy: SwitchableJsonRuntimeFailurePolicy.Throw);
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            int lifecycleCount = 0;
+            runtime.LifecycleChanged += (_, _) => Interlocked.Increment(ref lifecycleCount);
+
+            using SwitchableJsonSwitchPreparation preparation = runtime.PrepareSwitch("missing.json");
+
+            Assert.AreEqual(SwitchableJsonPreparationStatus.Rejected, preparation.Status);
+            Assert.IsFalse(preparation.CanCommit);
+            Assert.AreEqual(SwitchableJsonFailureKind.SourceNotFound, preparation.FailureKind);
+            Assert.IsNotNull(preparation.Exception);
+            Assert.AreEqual("A", builder.Configuration["Value"]);
+            Assert.AreEqual(0, lifecycleCount);
+            _ = Assert.ThrowsExactly<InvalidOperationException>(() => preparation.Commit());
+        }
+
+        [TestMethod]
+        public void MultipleProvidersCanPrepareThenAbortWithoutPublishingAnyPartialSwitch()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("FirstA.json", "{ \"First\": \"A\" }");
+            directory.Write("FirstB.json", "{ \"First\": \"B\" }");
+            directory.Write("SecondA.json", "{ \"Second\": \"A\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("first", "FirstA.json");
+            builder.AddSwitchableJsonFile("second", "SecondA.json");
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration first =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("first");
+            ISwitchableJsonConfiguration second =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("second");
+
+            using SwitchableJsonSwitchPreparation firstPreparation = first.PrepareSwitch("FirstB.json");
+            using SwitchableJsonSwitchPreparation secondPreparation = second.PrepareSwitch("SecondMissing.json");
+
+            Assert.AreEqual(SwitchableJsonPreparationStatus.Prepared, firstPreparation.Status);
+            Assert.AreEqual(SwitchableJsonPreparationStatus.Rejected, secondPreparation.Status);
+            Assert.AreEqual("A", builder.Configuration["First"]);
+            Assert.AreEqual("A", builder.Configuration["Second"]);
+
+            firstPreparation.Abort();
+            secondPreparation.Abort();
+
+            Assert.AreEqual("A", builder.Configuration["First"]);
+            Assert.AreEqual("A", builder.Configuration["Second"]);
+            Assert.AreEqual(Path.Combine(directory.Path, "FirstA.json"), first.CurrentSourcePath);
+            Assert.AreEqual(Path.Combine(directory.Path, "SecondA.json"), second.CurrentSourcePath);
+        }
+
+        [TestMethod]
+        public void PreparationCannotOverwriteNewerProviderState()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"A\" }");
+            directory.Write("B.json", "{ \"Value\": \"B\" }");
+            directory.Write("C.json", "{ \"Value\": \"C\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("settings", "A.json");
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            using SwitchableJsonSwitchPreparation preparation = runtime.PrepareSwitch("B.json");
+
+            SwitchableJsonSwitchResult newer = runtime.TrySwitch("C.json");
+            SwitchableJsonSwitchResult stale = preparation.Commit();
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, newer.Status);
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Rejected, stale.Status);
+            Assert.AreEqual(SwitchableJsonFailureKind.StalePreparation, stale.FailureKind);
+            Assert.IsFalse(stale.SourceChanged);
+            Assert.IsFalse(stale.ConfigurationChanged);
+            Assert.AreEqual("C", builder.Configuration["Value"]);
+            Assert.AreEqual(Path.Combine(directory.Path, "C.json"), runtime.CurrentSourcePath);
+        }
+
+        [TestMethod]
+        public void FrameworkProviderRebuildInvalidatesExistingPreparationWithoutBreakingRuntime()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"A\" }");
+            directory.Write("B.json", "{ \"Value\": \"B\" }");
+            directory.Write("C.json", "{ \"Value\": \"C\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationBuilder configurationBuilder = builder.Configuration;
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> { ["Temporary"] = "x" });
+            IConfigurationSource removable = configurationBuilder.Sources.Last();
+            builder.AddSwitchableJsonFile("settings", "A.json");
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            using SwitchableJsonSwitchPreparation preparation = runtime.PrepareSwitch("B.json");
+
+            Assert.IsTrue(configurationBuilder.Sources.Remove(removable));
+            SwitchableJsonSwitchResult stale = preparation.Commit();
+            SwitchableJsonSwitchResult later = runtime.TrySwitch("C.json");
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Rejected, stale.Status);
+            Assert.AreEqual(SwitchableJsonFailureKind.StalePreparation, stale.FailureKind);
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, later.Status);
+            Assert.AreEqual("C", builder.Configuration["Value"]);
+        }
+
+        [TestMethod]
+        public async Task PreparedWatcherInvalidatesCandidateChangedBeforeCommit()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"A\" }");
+            string bPath = directory.Write("B.json", "{ \"Value\": \"B1\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile(
+                "settings",
+                "A.json",
+                reloadOnChange: true,
+                reloadDelayMilliseconds: 100);
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            using SwitchableJsonSwitchPreparation preparation = runtime.PrepareSwitch("B.json");
+
+            File.WriteAllText(bPath, "{ \"Value\": \"B2\" }");
+            await Task.Delay(300);
+            SwitchableJsonSwitchResult result = preparation.Commit();
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Rejected, result.Status);
+            Assert.AreEqual(SwitchableJsonFailureKind.StalePreparation, result.FailureKind);
+            Assert.AreEqual("A", builder.Configuration["Value"]);
+            Assert.AreEqual(Path.Combine(directory.Path, "A.json"), runtime.CurrentSourcePath);
+        }
+
+        [TestMethod]
+        public void PrepareAlreadyCurrentIsSilentUntilCommittedAsNoOp()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"A\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("settings", "A.json");
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            int lifecycleCount = 0;
+            runtime.LifecycleChanged += (_, _) => Interlocked.Increment(ref lifecycleCount);
+            using SwitchableJsonSwitchPreparation preparation = runtime.PrepareSwitch("A.json");
+
+            Assert.AreEqual(SwitchableJsonPreparationStatus.AlreadyCurrent, preparation.Status);
+            Assert.AreEqual(0, lifecycleCount);
+
+            SwitchableJsonSwitchResult result = preparation.Commit();
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.AlreadyCurrent, result.Status);
+            Assert.AreEqual(1, lifecycleCount);
+            Assert.AreEqual("A", builder.Configuration["Value"]);
+        }
+
+        [TestMethod]
+        public void RemovedSwitchableSourceCanBeReaddedWithSameStableRuntimeHandle()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"A\" }");
+            directory.Write("B.json", "{ \"Value\": \"B\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationBuilder configurationBuilder = builder.Configuration;
+            builder.AddSwitchableJsonFile("settings", "A.json");
+            IConfigurationSource switchableSource = configurationBuilder.Sources.Last();
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+
+            Assert.IsTrue(configurationBuilder.Sources.Remove(switchableSource));
+            Assert.IsNull(builder.Configuration["Value"]);
+            _ = Assert.ThrowsExactly<InvalidOperationException>(() => runtime.TrySwitch("B.json"));
+
+            configurationBuilder.Add(switchableSource);
+            Assert.AreEqual("A", builder.Configuration["Value"]);
+
+            SwitchableJsonSwitchResult result = runtime.TrySwitch("B.json");
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("B", builder.Configuration["Value"]);
+            Assert.AreEqual(Path.Combine(directory.Path, "B.json"), runtime.CurrentSourcePath);
+        }
+
+        [TestMethod]
+        public void MultipleSuccessfulPreparationsCanBeCommittedByExternalCoordinatorOrder()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("FirstA.json", "{ \"First\": \"A\" }");
+            directory.Write("FirstB.json", "{ \"First\": \"B\" }");
+            directory.Write("SecondA.json", "{ \"Second\": \"A\" }");
+            directory.Write("SecondB.json", "{ \"Second\": \"B\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("first", "FirstA.json");
+            builder.AddSwitchableJsonFile("second", "SecondA.json");
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration first =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("first");
+            ISwitchableJsonConfiguration second =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("second");
+            using SwitchableJsonSwitchPreparation firstPreparation = first.PrepareSwitch("FirstB.json");
+            using SwitchableJsonSwitchPreparation secondPreparation = second.PrepareSwitch("SecondB.json");
+
+            Assert.AreEqual(SwitchableJsonPreparationStatus.Prepared, firstPreparation.Status);
+            Assert.AreEqual(SwitchableJsonPreparationStatus.Prepared, secondPreparation.Status);
+            Assert.AreEqual("A", builder.Configuration["First"]);
+            Assert.AreEqual("A", builder.Configuration["Second"]);
+
+            SwitchableJsonSwitchResult secondResult = secondPreparation.Commit();
+            SwitchableJsonSwitchResult firstResult = firstPreparation.Commit();
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, secondResult.Status);
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, firstResult.Status);
+            Assert.AreEqual("B", builder.Configuration["First"]);
+            Assert.AreEqual("B", builder.Configuration["Second"]);
+        }
+
+        [TestMethod]
+        public async Task PreparedWatcherBecomesActiveWatcherAfterCommit()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Value\": \"A\" }");
+            directory.Write("B.json", "{ \"Value\": \"B1\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile(
+                "settings",
+                "A.json",
+                reloadOnChange: true,
+                reloadDelayMilliseconds: 50);
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            using SwitchableJsonSwitchPreparation preparation = runtime.PrepareSwitch("B.json");
+
+            SwitchableJsonSwitchResult committed = preparation.Commit();
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, committed.Status);
+            Assert.AreEqual("B1", builder.Configuration["Value"]);
+
+            SwitchableJsonConfigurationEventArgs reloaded = await WaitForLifecycleAsync(
+                runtime,
+                SwitchableJsonConfigurationEventKind.ActiveSourceReloaded,
+                () => directory.Write("B.json", "{ \"Value\": \"B2\" }"));
+
+            Assert.IsTrue(reloaded.ConfigurationChanged);
+            Assert.AreEqual("B2", builder.Configuration["Value"]);
+        }
+
         private static async Task<SwitchableJsonConfigurationEventArgs> WaitForLifecycleAsync(
             ISwitchableJsonConfiguration runtime,
             SwitchableJsonConfigurationEventKind kind,

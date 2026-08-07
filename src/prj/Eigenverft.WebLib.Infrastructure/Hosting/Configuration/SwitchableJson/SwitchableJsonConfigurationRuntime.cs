@@ -30,7 +30,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         private readonly int _reloadDelayMilliseconds;
         private readonly SwitchableJsonRuntimeFailurePolicy _runtimeFailurePolicy;
         private string _currentSourcePath;
-        private long _generation;
+
+        // Watcher generation protects active callbacks after watcher replacement. State version is broader: it changes whenever
+        // the provider/source state against which a prepared candidate was compared changes, including Set, framework Reload,
+        // provider rebuild, effective watcher reload and any successful source switch. Prepared commits require the same version.
+        private long _watcherGeneration;
+        private long _stateVersion;
         private ActiveSourceWatcher? _activeWatcher;
         private SwitchableJsonConfigurationProvider? _activeProvider;
         private bool _disposed;
@@ -83,102 +88,59 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
         public event EventHandler<SwitchableJsonConfigurationEventArgs>? LifecycleChanged;
 
-        public SwitchableJsonSwitchResult TrySwitch(string sourcePath)
+        public SwitchableJsonSwitchPreparation PrepareSwitch(string sourcePath)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
-
             string requestedSourcePath = NormalizeSourcePath(sourcePath);
-            SwitchableJsonSwitchResult result;
-            SwitchableJsonConfigurationProvider? providerToReload = null;
 
             lock (_operationGate)
             {
                 ThrowIfDisposed();
-                SwitchableJsonConfigurationProvider provider = GetActiveProvider();
-                string previousSourcePath = _currentSourcePath;
-
-                // A switch to the already-active normalized path is a source-level no-op. It intentionally does not become an
-                // implicit Reload() API. Physical changes are handled by reloadOnChange when enabled.
-                if (SourcePathsEqual(previousSourcePath, requestedSourcePath))
-                {
-                    result = CreateSwitchResult(
-                        SwitchableJsonSwitchStatus.AlreadyCurrent,
-                        previousSourcePath,
-                        requestedSourcePath,
-                        previousSourcePath,
-                        sourceChanged: false,
-                        configurationChanged: false,
-                        SwitchableJsonFailureKind.None,
-                        exception: null);
-                }
-                else
-                {
-                    long nextGeneration = _generation + 1;
-                    ActiveSourceWatcher? preparedWatcher = null;
-
-                    try
-                    {
-                        // Prepare the new watcher before candidate IO. A notification that arrives while the file is being read
-                        // waits on this operation gate. On commit it belongs to nextGeneration; on rejection the watcher is disposed.
-                        preparedWatcher = CreateWatcher(requestedSourcePath, nextGeneration);
-                        IDictionary<string, string?> candidateData = JsonConfigurationSnapshotLoader.Load(requestedSourcePath);
-                        bool configurationChanged = provider.CommitCandidate(candidateData);
-
-                        ActiveSourceWatcher? previousWatcher = _activeWatcher;
-                        _currentSourcePath = requestedSourcePath;
-                        _generation = nextGeneration;
-                        _activeWatcher = preparedWatcher;
-                        preparedWatcher = null;
-                        previousWatcher?.Dispose();
-
-                        if (configurationChanged)
-                        {
-                            providerToReload = provider;
-                        }
-
-                        result = CreateSwitchResult(
-                            SwitchableJsonSwitchStatus.Succeeded,
-                            previousSourcePath,
-                            requestedSourcePath,
-                            requestedSourcePath,
-                            sourceChanged: true,
-                            configurationChanged,
-                            SwitchableJsonFailureKind.None,
-                            exception: null);
-                    }
-                    catch (Exception exception) when (IsCandidateLoadFailure(exception))
-                    {
-                        preparedWatcher?.Dispose();
-                        result = CreateSwitchResult(
-                            SwitchableJsonSwitchStatus.Rejected,
-                            previousSourcePath,
-                            requestedSourcePath,
-                            previousSourcePath,
-                            sourceChanged: false,
-                            configurationChanged: false,
-                            ClassifyFailure(exception),
-                            exception);
-                    }
-                }
+                return PrepareSwitchLocked(requestedSourcePath);
             }
+        }
 
-            // Source state is fully committed before either notification channel runs. IConfiguration change callbacks and
-            // lifecycle observers are consumer code and must never execute under the runtime operation lock.
-            if (providerToReload is not null)
+        public SwitchableJsonSwitchResult TrySwitch(string sourcePath)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
+            string requestedSourcePath = NormalizeSourcePath(sourcePath);
+            CommitOutcome outcome;
+            SwitchableJsonSwitchPreparation preparation;
+
+            // The one-step API deliberately keeps Prepare+Commit under one operation lock. Public preparations release this lock
+            // between phases so an orchestrator can coordinate multiple providers, but direct TrySwitch should retain its original
+            // serialized semantics and must not become stale merely because another direct switch interleaved between the phases.
+            lock (_operationGate)
             {
-                PublishConfigurationReload(providerToReload);
+                ThrowIfDisposed();
+                preparation = PrepareSwitchLocked(requestedSourcePath);
+
+                if (!preparation.TryClaimForDirectSwitch())
+                {
+                    throw new InvalidOperationException("Internal switch preparation was unexpectedly already consumed.");
+                }
+
+                try
+                {
+                    outcome = CommitPreparationLocked(preparation, allowRejectedPreparation: true);
+                }
+                catch
+                {
+                    AbortPreparationResources(preparation);
+                    throw;
+                }
             }
 
-            PublishLifecycle(CreateLifecycleEvent(result));
+            PublishCommitOutcome(outcome);
 
-            if (result.Status == SwitchableJsonSwitchStatus.Rejected &&
+            if (outcome.Result.Status == SwitchableJsonSwitchStatus.Rejected &&
                 _runtimeFailurePolicy == SwitchableJsonRuntimeFailurePolicy.Throw &&
-                result.Exception is not null)
+                outcome.Result.Exception is not null)
             {
-                ExceptionDispatchInfo.Capture(result.Exception).Throw();
+                ExceptionDispatchInfo.Capture(outcome.Result.Exception).Throw();
             }
 
-            return result;
+            return outcome.Result;
         }
 
         public void Dispose()
@@ -193,13 +155,45 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 }
 
                 _disposed = true;
-                _generation++;
+                _watcherGeneration++;
+                _stateVersion++;
                 _activeProvider = null;
                 watcher = _activeWatcher;
                 _activeWatcher = null;
             }
 
             watcher?.Dispose();
+        }
+
+        internal SwitchableJsonSwitchResult CommitPreparation(SwitchableJsonSwitchPreparation preparation)
+        {
+            ArgumentNullException.ThrowIfNull(preparation);
+
+            if (!ReferenceEquals(preparation.Runtime, this))
+            {
+                throw new InvalidOperationException("The switch preparation belongs to a different runtime handle.");
+            }
+
+            CommitOutcome outcome;
+
+            lock (_operationGate)
+            {
+                ThrowIfDisposed();
+                outcome = CommitPreparationLocked(preparation, allowRejectedPreparation: false);
+            }
+
+            // Explicit prepared commits are result-driven for coordinators and therefore never apply Throw failure policy.
+            PublishCommitOutcome(outcome);
+            return outcome.Result;
+        }
+
+        internal void AbortPreparationResources(SwitchableJsonSwitchPreparation preparation)
+        {
+            ArgumentNullException.ThrowIfNull(preparation);
+            preparation.WatcherRelay?.Close();
+            preparation.WatcherRelay = null;
+            preparation.CandidateData = null;
+            preparation.TakePreparedWatcher()?.Dispose();
         }
 
         internal void LoadProvider(SwitchableJsonConfigurationProvider provider)
@@ -215,12 +209,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 // ConfigurationManager.Sources rebuilds safe while preserving the provider's original precedence position.
                 ActiveSourceWatcher? preparedWatcher = null;
                 bool needsWatcher = _reloadOnChange && _activeWatcher is null;
-                long preparedGeneration = _generation;
+                long preparedGeneration = _watcherGeneration;
 
                 if (needsWatcher)
                 {
-                    preparedGeneration = _generation + 1;
-                    preparedWatcher = CreateWatcher(_currentSourcePath, preparedGeneration);
+                    preparedGeneration = _watcherGeneration + 1;
+                    preparedWatcher = CreateActiveWatcher(_currentSourcePath, preparedGeneration);
                 }
 
                 try
@@ -236,12 +230,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
                 // ConfigurationManager.ReloadSources builds and loads the replacement provider set before disposing the old set.
                 // Activating the freshly loaded provider here means disposal of the previous provider later sees that it is stale
-                // and cannot tear down the shared runtime/watcher state.
+                // and cannot tear down the shared runtime/watcher state. Provider replacement also invalidates old preparations.
                 _activeProvider = provider;
+                _stateVersion++;
 
                 if (preparedWatcher is not null)
                 {
-                    _generation = preparedGeneration;
+                    _watcherGeneration = preparedGeneration;
                     _activeWatcher = preparedWatcher;
                 }
             }
@@ -261,9 +256,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
                 // If a replacement provider was loaded during ConfigurationManager.ReloadSources, _activeProvider already points
                 // at that fresh instance and disposal of the old provider lands in the no-op branch above. Reaching this branch
-                // means this runtime source itself is leaving the active configuration stack (or the host is being disposed).
-                _disposed = true;
-                _generation++;
+                // means this concrete source currently leaves the active provider stack. The stable DI runtime itself stays alive:
+                // the same source may later be re-added and Build() will bind a fresh provider to this handle. Host disposal is
+                // owned separately by the DI container and calls Dispose() on the runtime handle.
+                _watcherGeneration++;
+                _stateVersion++;
                 _activeProvider = null;
                 watcher = _activeWatcher;
                 _activeWatcher = null;
@@ -280,6 +277,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             {
                 ThrowIfDisposed();
                 provider.SetCore(key, value);
+
+                if (ReferenceEquals(_activeProvider, provider))
+                {
+                    _stateVersion++;
+                }
             }
         }
 
@@ -304,6 +306,202 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             return true;
         }
 
+        private SwitchableJsonSwitchPreparation PrepareSwitchLocked(string requestedSourcePath)
+        {
+            SwitchableJsonConfigurationProvider provider = GetActiveProvider();
+            string previousSourcePath = _currentSourcePath;
+            long preparedStateVersion = _stateVersion;
+            long preparedWatcherGeneration = _watcherGeneration + 1;
+
+            if (SourcePathsEqual(previousSourcePath, requestedSourcePath))
+            {
+                return CreatePreparation(
+                    SwitchableJsonPreparationStatus.AlreadyCurrent,
+                    previousSourcePath,
+                    requestedSourcePath,
+                    configurationChanged: false,
+                    SwitchableJsonFailureKind.None,
+                    exception: null,
+                    preparedStateVersion,
+                    preparedWatcherGeneration,
+                    provider,
+                    candidateData: null,
+                    preparedWatcher: null,
+                    watcherRelay: null);
+            }
+
+            ActiveSourceWatcher? preparedWatcher = null;
+            PreparedSourceWatcherRelay? watcherRelay = null;
+
+            try
+            {
+                if (_reloadOnChange)
+                {
+                    watcherRelay = new PreparedSourceWatcherRelay(HandleActiveSourceChanged);
+                    preparedWatcher = ActiveSourceWatcher.Create(
+                        requestedSourcePath,
+                        preparedWatcherGeneration,
+                        _reloadDelayMilliseconds,
+                        watcherRelay.OnReload,
+                        watcherRelay.ObserveSourceChanged);
+                }
+
+                IDictionary<string, string?> candidateData = JsonConfigurationSnapshotLoader.Load(requestedSourcePath);
+                bool configurationChanged = !provider.IsDataEqual(candidateData);
+
+                return CreatePreparation(
+                    SwitchableJsonPreparationStatus.Prepared,
+                    previousSourcePath,
+                    requestedSourcePath,
+                    configurationChanged,
+                    SwitchableJsonFailureKind.None,
+                    exception: null,
+                    preparedStateVersion,
+                    preparedWatcherGeneration,
+                    provider,
+                    candidateData,
+                    preparedWatcher,
+                    watcherRelay);
+            }
+            catch (Exception exception) when (IsCandidateLoadFailure(exception))
+            {
+                watcherRelay?.Close();
+                preparedWatcher?.Dispose();
+
+                return CreatePreparation(
+                    SwitchableJsonPreparationStatus.Rejected,
+                    previousSourcePath,
+                    requestedSourcePath,
+                    configurationChanged: false,
+                    ClassifyFailure(exception),
+                    exception,
+                    preparedStateVersion,
+                    preparedWatcherGeneration,
+                    provider,
+                    candidateData: null,
+                    preparedWatcher: null,
+                    watcherRelay: null);
+            }
+        }
+
+        private CommitOutcome CommitPreparationLocked(
+            SwitchableJsonSwitchPreparation preparation,
+            bool allowRejectedPreparation)
+        {
+            if (preparation.Status == SwitchableJsonPreparationStatus.Rejected)
+            {
+                if (!allowRejectedPreparation)
+                {
+                    throw new InvalidOperationException("A rejected switch preparation cannot be committed.");
+                }
+
+                SwitchableJsonSwitchResult rejected = CreateSwitchResult(
+                    SwitchableJsonSwitchStatus.Rejected,
+                    preparation.PreviousSourcePath,
+                    preparation.RequestedSourcePath,
+                    _currentSourcePath,
+                    sourceChanged: false,
+                    configurationChanged: false,
+                    preparation.FailureKind,
+                    preparation.Exception);
+
+                return new CommitOutcome(rejected, ProviderToReload: null);
+            }
+
+            SwitchableJsonConfigurationProvider activeProvider = GetActiveProvider();
+
+            if (preparation.PreparedStateVersion != _stateVersion ||
+                !ReferenceEquals(preparation.Provider, activeProvider) ||
+                !SourcePathsEqual(preparation.PreviousSourcePath, _currentSourcePath))
+            {
+                return RejectStalePreparationLocked(preparation, "The active provider state changed after the candidate was prepared.");
+            }
+
+            if (preparation.Status == SwitchableJsonPreparationStatus.AlreadyCurrent)
+            {
+                SwitchableJsonSwitchResult alreadyCurrent = CreateSwitchResult(
+                    SwitchableJsonSwitchStatus.AlreadyCurrent,
+                    _currentSourcePath,
+                    preparation.RequestedSourcePath,
+                    _currentSourcePath,
+                    sourceChanged: false,
+                    configurationChanged: false,
+                    SwitchableJsonFailureKind.None,
+                    exception: null);
+
+                return new CommitOutcome(alreadyCurrent, ProviderToReload: null);
+            }
+
+            IDictionary<string, string?> candidateData = preparation.CandidateData ??
+                throw new InvalidOperationException("Prepared switch candidate data is missing.");
+
+            bool configurationChanged = false;
+            ActiveSourceWatcher? previousWatcher = null;
+
+            void CommitState()
+            {
+                configurationChanged = activeProvider.CommitCandidate(candidateData);
+                preparation.CandidateData = null;
+                previousWatcher = _activeWatcher;
+                _currentSourcePath = preparation.RequestedSourcePath;
+                _watcherGeneration = preparation.PreparedWatcherGeneration;
+                _activeWatcher = preparation.TakePreparedWatcher();
+                _stateVersion++;
+            }
+
+            if (preparation.WatcherRelay is not null)
+            {
+                PreparedSourceWatcherRelay relay = preparation.WatcherRelay;
+                if (!relay.TryActivate(CommitState))
+                {
+                    return RejectStalePreparationLocked(
+                        preparation,
+                        "The candidate source changed after it was prepared and before commit.");
+                }
+
+                // The active watcher's delegates now own the relay. The consumed public preparation no longer needs to retain it.
+                preparation.WatcherRelay = null;
+            }
+            else
+            {
+                CommitState();
+            }
+
+            previousWatcher?.Dispose();
+
+            SwitchableJsonSwitchResult succeeded = CreateSwitchResult(
+                SwitchableJsonSwitchStatus.Succeeded,
+                preparation.PreviousSourcePath,
+                preparation.RequestedSourcePath,
+                preparation.RequestedSourcePath,
+                sourceChanged: true,
+                configurationChanged,
+                SwitchableJsonFailureKind.None,
+                exception: null);
+
+            return new CommitOutcome(succeeded, configurationChanged ? activeProvider : null);
+        }
+
+        private CommitOutcome RejectStalePreparationLocked(
+            SwitchableJsonSwitchPreparation preparation,
+            string reason)
+        {
+            AbortPreparationResources(preparation);
+            var exception = new InvalidOperationException(reason);
+
+            SwitchableJsonSwitchResult rejected = CreateSwitchResult(
+                SwitchableJsonSwitchStatus.Rejected,
+                _currentSourcePath,
+                preparation.RequestedSourcePath,
+                _currentSourcePath,
+                sourceChanged: false,
+                configurationChanged: false,
+                SwitchableJsonFailureKind.StalePreparation,
+                exception);
+
+            return new CommitOutcome(rejected, ProviderToReload: null);
+        }
+
         private void HandleActiveSourceChanged(long watcherGeneration, string watcherSourcePath)
         {
             SwitchableJsonConfigurationEventArgs? lifecycleEvent = null;
@@ -312,7 +510,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             lock (_operationGate)
             {
                 if (_disposed ||
-                    watcherGeneration != _generation ||
+                    watcherGeneration != _watcherGeneration ||
                     !SourcePathsEqual(watcherSourcePath, _currentSourcePath) ||
                     _activeProvider is null)
                 {
@@ -328,6 +526,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                     bool configurationChanged = provider.CommitCandidate(candidateData);
                     if (configurationChanged)
                     {
+                        _stateVersion++;
                         providerToReload = provider;
                     }
 
@@ -344,7 +543,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 catch (Exception exception) when (IsCandidateLoadFailure(exception))
                 {
                     // Watcher reloads always preserve the last-known-good snapshot. Throw is meaningful only for a synchronous
-                    // manual TrySwitch caller; there is no caller on this Timer/ThreadPool path to receive such an exception.
+                    // one-step TrySwitch caller; there is no caller on this Timer/ThreadPool path to receive such an exception.
                     lifecycleEvent = CreateLifecycleEvent(
                         SwitchableJsonConfigurationEventKind.ActiveSourceReloadRejected,
                         currentSourcePath,
@@ -382,7 +581,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             }
         }
 
-        private ActiveSourceWatcher? CreateWatcher(string sourcePath, long generation)
+        private ActiveSourceWatcher? CreateActiveWatcher(string sourcePath, long generation)
         {
             return _reloadOnChange
                 ? ActiveSourceWatcher.Create(
@@ -415,6 +614,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             return string.Equals(left, right, comparison);
         }
 
+        private void PublishCommitOutcome(CommitOutcome outcome)
+        {
+            if (outcome.ProviderToReload is not null)
+            {
+                PublishConfigurationReload(outcome.ProviderToReload);
+            }
+
+            PublishLifecycle(CreateLifecycleEvent(outcome.Result));
+        }
+
         private void PublishConfigurationReload(SwitchableJsonConfigurationProvider provider)
         {
             try
@@ -425,7 +634,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             {
                 // IConfiguration change-token observers are notifications, not transaction participants. The provider snapshot
                 // and source selection were committed before notification. Allowing a consumer exception to escape would make a
-                // successful TrySwitch appear rejected and, on watcher callbacks, could become an unhandled background exception.
+                // successful switch appear rejected and, on watcher callbacks, could become an unhandled background exception.
                 // CancellationToken invokes registered callbacks before surfacing aggregate callback exceptions, so isolating the
                 // final exception preserves notification delivery without giving observers veto power over committed state.
             }
@@ -452,6 +661,38 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                     // Intentionally isolated; the provider has no logging-policy dependency of its own.
                 }
             }
+        }
+
+        private SwitchableJsonSwitchPreparation CreatePreparation(
+            SwitchableJsonPreparationStatus status,
+            string previousSourcePath,
+            string requestedSourcePath,
+            bool configurationChanged,
+            SwitchableJsonFailureKind failureKind,
+            Exception? exception,
+            long preparedStateVersion,
+            long preparedWatcherGeneration,
+            SwitchableJsonConfigurationProvider provider,
+            IDictionary<string, string?>? candidateData,
+            ActiveSourceWatcher? preparedWatcher,
+            PreparedSourceWatcherRelay? watcherRelay)
+        {
+            return new SwitchableJsonSwitchPreparation(
+                this,
+                status,
+                Name,
+                previousSourcePath,
+                requestedSourcePath,
+                configurationChanged,
+                failureKind,
+                exception,
+                DateTimeOffset.UtcNow,
+                preparedStateVersion,
+                preparedWatcherGeneration,
+                provider,
+                candidateData,
+                preparedWatcher,
+                watcherRelay);
         }
 
         private SwitchableJsonSwitchResult CreateSwitchResult(
@@ -589,5 +830,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 }
             }
         }
+
+        private readonly record struct CommitOutcome(
+            SwitchableJsonSwitchResult Result,
+            SwitchableJsonConfigurationProvider? ProviderToReload);
     }
 }

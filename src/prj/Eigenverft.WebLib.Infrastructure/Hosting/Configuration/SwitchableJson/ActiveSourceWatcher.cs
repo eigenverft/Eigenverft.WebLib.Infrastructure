@@ -10,7 +10,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 {
     /// <summary>
     /// Watches exactly one normalized source path and debounces physical file notifications before handing them back to the
-    /// owning provider together with the generation for which the watcher was created.
+    /// owning runtime together with the generation for which the watcher was created.
     /// </summary>
     internal sealed class ActiveSourceWatcher : IDisposable
     {
@@ -19,6 +19,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         private readonly IDisposable _changeRegistration;
         private readonly Timer _reloadTimer;
         private readonly Action<long, string> _reloadCallback;
+        private readonly Action<long, string>? _sourceChangedObservedCallback;
         private readonly int _reloadDelayMilliseconds;
         private readonly long _generation;
         private readonly string _sourcePath;
@@ -30,13 +31,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             string sourcePath,
             long generation,
             int reloadDelayMilliseconds,
-            Action<long, string> reloadCallback)
+            Action<long, string> reloadCallback,
+            Action<long, string>? sourceChangedObservedCallback)
         {
             _fileProvider = fileProvider;
             _sourcePath = sourcePath;
             _generation = generation;
             _reloadDelayMilliseconds = reloadDelayMilliseconds;
             _reloadCallback = reloadCallback;
+            _sourceChangedObservedCallback = sourceChangedObservedCallback;
             _reloadTimer = new Timer(ReloadTimerElapsed, null, Timeout.Infinite, Timeout.Infinite);
 
             // ChangeToken.OnChange rearms the underlying one-shot file-provider token. A direct FileSystemWatcher or polling
@@ -51,7 +54,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             string sourcePath,
             long generation,
             int reloadDelayMilliseconds,
-            Action<long, string> reloadCallback)
+            Action<long, string> reloadCallback,
+            Action<long, string>? sourceChangedObservedCallback = null)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
             ArgumentNullException.ThrowIfNull(reloadCallback);
@@ -61,6 +65,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             // segments in the relative filter. This preserves normal file-provider semantics without polling for creation.
             string watchRoot = FindExistingWatchRoot(sourcePath);
             string filter = Path.GetRelativePath(watchRoot, sourcePath).Replace('\\', '/');
+
             // The caller named an exact source path, so do not apply PhysicalFileProvider's default hidden/system/dot-file
             // exclusions. Those filters are useful for broad directory discovery, but here they could make a file load normally
             // while silently never producing change notifications.
@@ -74,7 +79,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                     sourcePath,
                     generation,
                     reloadDelayMilliseconds,
-                    reloadCallback);
+                    reloadCallback,
+                    sourceChangedObservedCallback);
             }
             catch
             {
@@ -96,7 +102,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             }
 
             // A timer callback may already be queued after _disposed becomes true. Disposing these resources prevents new work;
-            // the queued callback performs its own disposed check and the provider additionally validates watcher generation.
+            // the queued callback performs its own disposed check and the runtime additionally validates watcher generation.
             // The two checks intentionally make teardown/replacement safe without waiting for ThreadPool callbacks to drain.
             _changeRegistration.Dispose();
             _reloadTimer.Dispose();
@@ -105,6 +111,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
         private void ScheduleReload()
         {
+            Action<long, string>? observedCallback;
+
             lock (_gate)
             {
                 if (_disposed)
@@ -112,11 +120,28 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                     return;
                 }
 
+                observedCallback = _sourceChangedObservedCallback;
+
                 // Physical saves commonly produce several notifications (write, rename, metadata change). Resetting one timer on
                 // every notification coalesces that burst and delays reading until the file is more likely to contain a complete
                 // document. This is debounce, not a correctness guarantee: malformed/transient JSON is still rejected by the
-                // provider and LKG remains active. An async queue/Channel could coalesce too, but adds needless background state.
+                // runtime and LKG remains active. An async queue/Channel could coalesce too, but adds needless background state.
                 _reloadTimer.Change(_reloadDelayMilliseconds, Timeout.Infinite);
+            }
+
+            if (observedCallback is not null)
+            {
+                try
+                {
+                    // Prepared switches use this immediate observation only to invalidate a candidate before Commit. The actual
+                    // active-source reload remains debounced through _reloadCallback below. Keep this callback internal and isolated
+                    // so candidate invalidation cannot destabilize the file-provider notification path.
+                    observedCallback(_generation, _sourcePath);
+                }
+                catch (Exception)
+                {
+                    // Internal observation is advisory invalidation state; never let it escape the file-provider callback.
+                }
             }
         }
 
@@ -130,8 +155,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 }
             }
 
-            // Never hold the watcher gate while entering the provider. The provider can replace/dispose this watcher while a
-            // callback is queued; generation validation in the provider makes such stale callbacks harmless.
+            // Never hold the watcher gate while entering the runtime. The runtime can replace/dispose this watcher while a
+            // callback is queued; generation validation makes such stale callbacks harmless.
             _reloadCallback(_generation, _sourcePath);
         }
 
@@ -139,7 +164,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         {
             // PhysicalFileProvider requires an existing root. Walking upward instead of requiring the source directory itself to
             // exist is what lets reloadOnChange work with optional future files/directories. The returned root is an implementation
-            // detail only; source identity remains the fully normalized requested file path held by the provider.
+            // detail only; source identity remains the fully normalized requested file path held by the runtime.
             string? current = Path.GetDirectoryName(sourcePath);
 
             while (!string.IsNullOrWhiteSpace(current) && !Directory.Exists(current))

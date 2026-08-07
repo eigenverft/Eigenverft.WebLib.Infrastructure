@@ -22,6 +22,19 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         Throw = 1,
     }
 
+    /// <summary>Describes the completed outcome of preparing a source switch without publishing it.</summary>
+    public enum SwitchableJsonPreparationStatus
+    {
+        /// <summary>A different source was loaded successfully and is ready for a later commit.</summary>
+        Prepared = 0,
+
+        /// <summary>The requested normalized path was already the current source when preparation occurred.</summary>
+        AlreadyCurrent = 1,
+
+        /// <summary>The candidate could not be prepared; the active provider state was not changed.</summary>
+        Rejected = 2,
+    }
+
     /// <summary>Describes the completed outcome of a manual source switch.</summary>
     public enum SwitchableJsonSwitchStatus
     {
@@ -31,11 +44,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// <summary>The requested normalized path was already the current source.</summary>
         AlreadyCurrent = 1,
 
-        /// <summary>The candidate could not be loaded and the current source was retained.</summary>
+        /// <summary>The requested switch could not be committed and the current source was retained.</summary>
         Rejected = 2,
     }
 
-    /// <summary>Classifies candidate-load failures without coupling callers to concrete exception types.</summary>
+    /// <summary>Classifies source preparation/switch failures without coupling callers to concrete exception types.</summary>
     public enum SwitchableJsonFailureKind
     {
         /// <summary>No failure occurred.</summary>
@@ -52,6 +65,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
         /// <summary>An input/output error prevented the source from being loaded.</summary>
         IoError = 4,
+
+        /// <summary>
+        /// A previously successful preparation no longer matches the provider state against which it was prepared.
+        /// </summary>
+        StalePreparation = 5,
     }
 
     /// <summary>Identifies an observable provider/source lifecycle outcome.</summary>
@@ -124,7 +142,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// <summary>Gets the classified failure kind, or <see cref="SwitchableJsonFailureKind.None"/>.</summary>
         public SwitchableJsonFailureKind FailureKind { get; }
 
-        /// <summary>Gets the underlying load exception for rejected candidates, when available.</summary>
+        /// <summary>Gets the underlying failure exception for rejected switches, when available.</summary>
         public Exception? Exception { get; }
 
         /// <summary>Gets the UTC timestamp at which the outcome was completed.</summary>

@@ -40,6 +40,22 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         event EventHandler<SwitchableJsonConfigurationEventArgs>? LifecycleChanged;
 
         /// <summary>
+        /// Loads and validates a candidate source without changing the active source, provider snapshot, watcher or reload token.
+        /// </summary>
+        /// <param name="sourcePath">Absolute path, or a path relative to the host content root used during registration.</param>
+        /// <returns>
+        /// A disposable preparation describing the completed prepare outcome. Successful preparations can later be committed or
+        /// aborted; rejected preparations contain failure information but never mutate the active provider state.
+        /// </returns>
+        /// <remarks>
+        /// Prepare itself emits no provider lifecycle event and never applies the one-step
+        /// <see cref="SwitchableJsonRuntimeFailurePolicy.Throw"/> policy. This keeps multi-provider orchestration result-driven:
+        /// a coordinator can prepare every participant, inspect all outcomes, then commit or abort explicitly. Dispose is
+        /// equivalent to Abort for an uncommitted successful preparation.
+        /// </remarks>
+        SwitchableJsonSwitchPreparation PrepareSwitch(string sourcePath);
+
+        /// <summary>
         /// Loads a candidate JSON source completely before atomically publishing it as the active source.
         /// </summary>
         /// <param name="sourcePath">Absolute path, or a path relative to the host content root used during registration.</param>

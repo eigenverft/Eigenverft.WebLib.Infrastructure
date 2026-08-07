@@ -70,9 +70,21 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
             // Detach while this instance is still usable. During ConfigurationManager.ReloadSources a newly built provider
             // is loaded/activated before the previous provider set is disposed, so disposal of the previous instance becomes
-            // a no-op for runtime ownership. If this instance is still active, detaching ends the runtime source lifecycle.
+            // a no-op for runtime ownership. If this instance is still active, detaching only removes the concrete provider/watch
+            // attachment; the stable DI-owned runtime remains available and can bind a later rebuilt/re-added provider instance.
             _runtime.DetachProvider(this);
             Volatile.Write(ref _disposed, 1);
+        }
+
+        internal bool IsDataEqual(IDictionary<string, string?> candidateData)
+        {
+            ArgumentNullException.ThrowIfNull(candidateData);
+
+            lock (_dataGate)
+            {
+                ThrowIfDisposed();
+                return SwitchableJsonConfigurationRuntime.ConfigurationDataEquals(Data, candidateData);
+            }
         }
 
         internal bool CommitCandidate(IDictionary<string, string?> candidateData)
