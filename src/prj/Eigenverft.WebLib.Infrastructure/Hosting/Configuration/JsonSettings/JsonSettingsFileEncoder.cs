@@ -22,10 +22,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <c>Certificates:*:Password</c>. <c>*</c> matches any sequence and <c>?</c> one character.
         /// Array indexes are represented as path segments.
         /// </param>
-        /// <param name="encode">
-        /// The encoder applied to matching clear-text values. Use a member of
-        /// <see cref="JsonSettingsValueEncoders"/> so subsequent calls recognize existing encoded values.
-        /// </param>
+        /// <param name="codec">The reversible codec applied to matching clear-text values.</param>
         /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
         /// <returns>The number of values changed.</returns>
         /// <exception cref="FileNotFoundException"><paramref name="jsonFilePath"/> does not exist.</exception>
@@ -35,6 +32,22 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// removes JSON comments, trailing commas, and the original whitespace. Recognized encoded values are not
         /// encoded again.
         /// </remarks>
+        public static int EncodeMatchingValuesInPlace(
+            string jsonFilePath,
+            IEnumerable<string> keyPathPatterns,
+            JsonSettingsValueCodec codec,
+            bool nullAsEmpty = true)
+        {
+            ArgumentNullException.ThrowIfNull(codec);
+            return EncodeMatchingValuesInPlace(jsonFilePath, keyPathPatterns, codec.Encode, nullAsEmpty);
+        }
+
+        /// <summary>Encodes matching values with a supplied encoding function.</summary>
+        /// <param name="jsonFilePath">The JSON file that may be changed.</param>
+        /// <param name="keyPathPatterns">Case-insensitive glob patterns for complete configuration paths.</param>
+        /// <param name="encode">The encoding function.</param>
+        /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
+        /// <returns>The number of values changed.</returns>
         public static int EncodeMatchingValuesInPlace(
             string jsonFilePath,
             IEnumerable<string> keyPathPatterns,
@@ -100,7 +113,23 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// </summary>
         /// <param name="jsonFilePath">The JSON file that may be changed.</param>
         /// <param name="keyPathPattern">A case-insensitive glob pattern for complete configuration paths.</param>
-        /// <param name="encode">The encoder applied to matching clear-text values.</param>
+        /// <param name="codec">The reversible codec applied to matching clear-text values.</param>
+        /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
+        /// <returns>The number of values changed.</returns>
+        public static int EncodeMatchingValuesInPlace(
+            string jsonFilePath,
+            string keyPathPattern,
+            JsonSettingsValueCodec codec,
+            bool nullAsEmpty = true)
+        {
+            ArgumentNullException.ThrowIfNull(codec);
+            return EncodeMatchingValuesInPlace(jsonFilePath, keyPathPattern, codec.Encode, nullAsEmpty);
+        }
+
+        /// <summary>Encodes matching values with a supplied encoding function.</summary>
+        /// <param name="jsonFilePath">The JSON file that may be changed.</param>
+        /// <param name="keyPathPattern">A case-insensitive glob pattern for complete configuration paths.</param>
+        /// <param name="encode">The encoding function.</param>
         /// <param name="nullAsEmpty">Whether matching JSON <see langword="null"/> values are encoded as empty strings.</param>
         /// <returns>The number of values changed.</returns>
         public static int EncodeMatchingValuesInPlace(
