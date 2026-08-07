@@ -46,8 +46,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// Gets the Base92JsonSafe representation codec backed by <see cref="Base92JsonSafeEncoder"/>.
         /// </summary>
         /// <remarks>
-        /// This is representation/obfuscation only, not cryptographic protection. The standalone Base92 implementation
-        /// owns the alphabet and base conversion; this settings codec only adds the self-describing settings wrapper.
+        /// This is a representation and analysis-friction layer, not cryptographic protection. It can hide immediately
+        /// recognizable inner wrapper text from trivial inspection, but it adds no secret or cryptographic boundary. The
+        /// standalone Base92 implementation owns the alphabet and base conversion; this settings codec only adds the
+        /// self-describing settings wrapper.
         /// </remarks>
         public static JsonSettingsValueCodec Base92JsonSafe { get; } = new(
             "Base92JsonSafe",
@@ -58,8 +60,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// Gets the ROT13 obfuscation codec.
         /// </summary>
         /// <remarks>
-        /// ROT13 is deliberately weak obfuscation, not cryptographic protection. It exists as a lightweight codec
-        /// for exercising composition without introducing another protection backend.
+        /// ROT13 is deliberately weak obfuscation and an analysis-friction layer, not cryptographic protection. It can
+        /// disrupt trivial string matching or first-pass inspection, but it adds no secret factor or cryptographic boundary.
         /// </remarks>
         public static JsonSettingsValueCodec Rot13 { get; } = new(
             "Rot13",
@@ -72,9 +74,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <param name="shift">The letter shift. Values are normalized modulo 26.</param>
         /// <returns>A self-describing Caesar codec.</returns>
         /// <remarks>
-        /// Caesar shifting is deliberately weak obfuscation and provides no cryptographic protection. The normalized
-        /// shift is persisted in the encoded payload so the parameter is not secret and the generic decoder can reverse
-        /// the transformation without application-specific state.
+        /// Caesar shifting is deliberately weak obfuscation and an analysis-friction layer; it provides no cryptographic
+        /// protection. The normalized shift is persisted in the encoded payload, so the parameter is not secret. Its value is
+        /// limited to adding small extra work to trivial inspection while remaining generically reversible without application-
+        /// specific state.
         /// </remarks>
         public static JsonSettingsValueCodec Caesar(int shift)
         {
@@ -252,26 +255,27 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         }
 
         /// <summary>
-        /// Creates the platform-neutral V1 default settings-protection codec.
+        /// Creates the platform-neutral V1 default layered settings codec.
         /// </summary>
         /// <param name="password">The caller-supplied visible-ASCII password used by the application AES layer.</param>
         /// <param name="keyDirectoryPath">The persistent ASP.NET Core Data Protection key-ring directory.</param>
         /// <returns>
-        /// A codec equivalent to <c>Compose(DataProtection(keyDirectoryPath), PhysicalMachineBoundAes(), AesPassword(password))</c>.
+        /// A codec equivalent to <c>Compose(Rot13, Caesar(13), DataProtection(keyDirectoryPath), PhysicalMachineBoundAes(), AesPassword(password), Base92JsonSafe)</c>.
         /// </returns>
         /// <remarks>
         /// <para>
-        /// The V1 default deliberately contains only independent protection/recovery factors. Representation and obfuscation
-        /// codecs such as Base64, Base92JsonSafe, ROT13, and Caesar remain available for explicit composition but are not part
-        /// of this default. Data Protection requires the persistent key ring, PhysicalMachineBoundAes requires the source
-        /// system/platform identity, and AesPassword requires the caller-supplied password. The intended effect is that copying
-        /// only one related artifact is insufficient for straightforward offline recovery on another machine.
+        /// The V1 default deliberately combines protection factors with low-cost friction layers. Data Protection requires the
+        /// persistent key ring, PhysicalMachineBoundAes requires the source system/platform identity, and AesPassword requires
+        /// the caller-supplied password. ROT13 and Caesar provide only reversible obfuscation/analysis friction, while
+        /// Base92JsonSafe is a representation layer that also removes immediately recognizable inner wrapper text. These
+        /// friction layers are not cryptographic security boundaries and must not be counted as independent secret factors.
+        /// Their purpose is only to add small extra work to trivial inspection and automated first-pass analysis.
         /// </para>
         /// <para>
         /// The physical-machine binding is a lightweight additional recovery hurdle, not a hardware-backed secret. An attacker
         /// that collected the source machine's platform identity can reproduce that factor. A sufficiently compromised running
-        /// process can also observe passwords and clear values. This pipeline is defense in depth, not an absolute security
-        /// boundary.
+        /// process can also observe passwords and clear values. This pipeline is defense in depth and analysis friction, not an
+        /// absolute security boundary.
         /// </para>
         /// <para>
         /// This method defines the V1 persisted pipeline contract and must not be changed silently. A future default layout must
@@ -292,11 +296,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         public static JsonSettingsValueCodec Default(string password, string keyDirectoryPath)
         {
             password = NormalizeReadablePassword(password, nameof(password));
-
             return Compose(
+                Rot13,
+                Caesar(13),
                 DataProtection(keyDirectoryPath),
                 PhysicalMachineBoundAes(),
-                AesPassword(password));
+                AesPassword(password),
+                Base92JsonSafe);
         }
 
         /// <summary>

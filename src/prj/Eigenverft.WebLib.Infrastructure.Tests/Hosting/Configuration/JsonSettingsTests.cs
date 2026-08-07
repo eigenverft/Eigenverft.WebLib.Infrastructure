@@ -591,9 +591,12 @@ public sealed class JsonSettingsTests
         JsonSettingsValueCodec shortcut = JsonSettingsValueEncoders.Default("test-only-password", keyRingPath);
         JsonSettingsValueCodec byteShortcut = JsonSettingsValueEncoders.Default(passwordBytes, keyRingPath);
         JsonSettingsValueCodec composed = JsonSettingsValueEncoders.Compose(
+            JsonSettingsValueEncoders.Rot13,
+            JsonSettingsValueEncoders.Caesar(13),
             JsonSettingsValueEncoders.DataProtection(keyRingPath),
             JsonSettingsValueEncoders.PhysicalMachineBoundAes(),
-            JsonSettingsValueEncoders.AesPassword("test-only-password"));
+            JsonSettingsValueEncoders.AesPassword("test-only-password"),
+            JsonSettingsValueEncoders.Base92JsonSafe);
 
         Assert.AreEqual(composed.Name, shortcut.Name);
         Assert.AreEqual(shortcut.Name, byteShortcut.Name);
@@ -605,7 +608,7 @@ public sealed class JsonSettingsTests
         string encodedByComposition = composed.Encode("composition-secret");
         Assert.IsTrue(shortcut.TryDecode(encodedByComposition, out string compositionClearText));
         Assert.AreEqual("composition-secret", compositionClearText);
-        StringAssert.StartsWith(encodedByShortcut, "enc:a3s6p1:v1.");
+        StringAssert.StartsWith(encodedByShortcut, "enc:b9j2s7:");
     }
 
     [TestMethod]
