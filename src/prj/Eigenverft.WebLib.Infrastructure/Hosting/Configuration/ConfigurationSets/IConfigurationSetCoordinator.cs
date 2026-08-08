@@ -7,23 +7,37 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     /// Coordinates the active value of one independent named configuration-set axis.
     /// </summary>
     /// <remarks>
-    /// Multiple coordinators may exist in the same process. For example, one coordinator may represent an environment set
-    /// while another independently represents proxy behavior or a feature set. The coordinator itself assigns no semantics to
-    /// names or values. Later participants can use the active value to coordinate concrete configuration-source transitions.
+    /// Multiple coordinators may exist in the same process. A coordinator can remain a pure logical set, or switchable
+    /// configuration sources can be bound to it so one set transition prepares all mapped sources before publishing commits.
+    /// The coordinator assigns no application meaning to set names or values.
     /// </remarks>
     public interface IConfigurationSetCoordinator
     {
         /// <summary>Gets the caller-defined set identity.</summary>
         string Name { get; }
 
-        /// <summary>Gets the currently active value for this set.</summary>
+        /// <summary>
+        /// Gets the last set value that was successfully coordinated across every bound participant.
+        /// </summary>
         string ActiveValue { get; }
+
+        /// <summary>
+        /// Gets whether all bound participants are known to represent <see cref="ActiveValue"/>.
+        /// </summary>
+        /// <remarks>
+        /// A rare participant commit race can leave a coordinated operation partially committed. In that case this becomes false
+        /// until a later successful switch converges every binding on one allowed value again.
+        /// </remarks>
+        bool IsConsistent { get; }
 
         /// <summary>Gets the values that may become active for this set.</summary>
         IReadOnlyList<string> AllowedValues { get; }
 
+        /// <summary>Gets the identities of switchable configuration sources currently bound to this set.</summary>
+        IReadOnlyList<string> BoundParticipantNames { get; }
+
         /// <summary>
-        /// Occurs after a completed switch request, including successful changes, already-active no-ops, and rejected values.
+        /// Occurs after a completed switch request, including success, already-active no-op, rejection and partial commit.
         /// </summary>
         /// <remarks>
         /// Lifecycle observers are notifications rather than transaction participants. Observer exceptions are isolated and do
@@ -34,11 +48,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Returns whether a value is valid for this set.</summary>
         bool IsAllowed(string value);
 
-        /// <summary>
-        /// Requests that this set activate another allowed value.
-        /// </summary>
+        /// <summary>Requests that this set activate another allowed value.</summary>
         /// <param name="value">The caller-defined set value to activate.</param>
-        /// <returns>The completed switch outcome.</returns>
+        /// <returns>The completed coordinated switch outcome.</returns>
         ConfigurationSetSwitchResult TrySwitch(string value);
     }
 }
