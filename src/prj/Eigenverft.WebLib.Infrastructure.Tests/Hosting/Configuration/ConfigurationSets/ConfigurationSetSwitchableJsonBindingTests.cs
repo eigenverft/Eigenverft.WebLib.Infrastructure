@@ -484,7 +484,6 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "ProxySet",
                 "Stable");
             registration.AddSwitchableJson(
-                "proxy-settings",
                 "AppSettings",
                 "Settings.json");
 
@@ -499,7 +498,9 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual("Stable", coordinator.AllowedValues[0]);
             Assert.AreEqual("Stable", coordinator.ActiveValue);
             Assert.AreEqual("StableOnly", builder.Configuration["Mode"]);
-            CollectionAssert.AreEqual(new[] { "proxy-settings" }, coordinator.BoundParticipantNames.ToArray());
+            CollectionAssert.AreEqual(
+                new[] { "ProxySet:AppSettings/Settings.json" },
+                coordinator.BoundParticipantNames.ToArray());
 
             ConfigurationSetSwitchResult result = coordinator.TrySwitch("Stable");
 

@@ -34,15 +34,12 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             proxySet
                 .AddSwitchableJson(
-                    "proxy-settings",
                     Path.Combine("AppSettings", "Proxy"),
                     "ProxySettings.json")
                 .AddSwitchableJson(
                     Path.Combine("AppSettings", "Proxy"),
-                    [
-                        ("edge-filters", "EdgeFilters.json"),
-                        ("behaviors", "Behaviors.json"),
-                    ]);
+                    "EdgeFilters.json",
+                    "Behaviors.json");
 
             using IHost host = builder.Build();
             IConfigurationSetCoordinator coordinator =
@@ -60,7 +57,36 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual("Experimental", builder.Configuration["FilterMode"]);
             Assert.AreEqual("Experimental", builder.Configuration["BehaviorMode"]);
             CollectionAssert.AreEqual(
-                new[] { "proxy-settings", "edge-filters", "behaviors" },
+                new[]
+                {
+                    "ProxySet:AppSettings/Proxy/ProxySettings.json",
+                    "ProxySet:AppSettings/Proxy/EdgeFilters.json",
+                    "ProxySet:AppSettings/Proxy/Behaviors.json",
+                },
+                coordinator.BoundParticipantNames.ToArray());
+        }
+
+        [TestMethod]
+        public void FluentRegistrationDerivesDistinctNamesForSameFileNameInDifferentRoots()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write(Path.Combine("First", "Stable", "Settings.json"), "{ \"FirstValue\": \"A\" }");
+            directory.Write(Path.Combine("Second", "Stable", "Settings.json"), "{ \"SecondValue\": \"B\" }");
+
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            ConfigurationSetRegistration registration = builder.AddConfigurationSet("AppSet", "Stable");
+            registration
+                .AddSwitchableJson("First", "Settings.json")
+                .AddSwitchableJson("Second", "Settings.json");
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("AppSet");
+
+            Assert.AreEqual("A", builder.Configuration["FirstValue"]);
+            Assert.AreEqual("B", builder.Configuration["SecondValue"]);
+            CollectionAssert.AreEqual(
+                new[] { "AppSet:First/Settings.json", "AppSet:Second/Settings.json" },
                 coordinator.BoundParticipantNames.ToArray());
         }
 
@@ -75,7 +101,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "ProxySet",
                 "Stable",
                 "Experimental");
-            registration.AddSwitchableJson("settings", "Proxy", "Settings.json");
+            registration.AddSwitchableJson("Proxy", "Settings.json");
 
             using IHost host = builder.Build();
             IConfigurationSetEventHub hub = host.Services.GetRequiredService<IConfigurationSetEventHub>();
@@ -107,7 +133,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             directory.Write(Path.Combine("Proxy", "Experimental", "Settings.json"), "{ \"Value\": \"Experimental\" }");
             HostApplicationBuilder builder = CreateBuilder(directory.Path);
             builder.AddConfigurationSet("ProxySet", "Stable", "Experimental")
-                .AddSwitchableJson("settings", "Proxy", "Settings.json");
+                .AddSwitchableJson("Proxy", "Settings.json");
 
             using IHost host = builder.Build();
             IConfigurationSetEventHub hub = host.Services.GetRequiredService<IConfigurationSetEventHub>();

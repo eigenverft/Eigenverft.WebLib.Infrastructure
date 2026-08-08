@@ -35,9 +35,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         /// <summary>
         /// Registers one switchable JSON source whose path follows <c>{rootPath}/{setValue}/{fileName}</c>.
+        /// The technical participant identity is derived automatically for DI and diagnostics.
         /// </summary>
         public ConfigurationSetRegistration AddSwitchableJson(
-            string switchableName,
             string rootPath,
             string fileName,
             bool optional = false,
@@ -47,7 +47,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         {
             _builder.AddSwitchableJsonToConfigurationSet(
                 Name,
-                switchableName,
                 rootPath,
                 fileName,
                 optional,
@@ -60,12 +59,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         /// <summary>
         /// Registers multiple independent switchable JSON sources in the same <c>{rootPath}/{setValue}</c> directory.
+        /// Technical participant identities are derived automatically from the set and logical file paths.
         /// </summary>
         public ConfigurationSetRegistration AddSwitchableJson(
             string rootPath,
-            params (string SwitchableName, string FileName)[] files)
+            params string[] fileNames)
         {
-            _builder.AddSwitchableJsonToConfigurationSet(Name, rootPath, files);
+            _builder.AddSwitchableJsonToConfigurationSet(Name, rootPath, fileNames);
             return this;
         }
     }

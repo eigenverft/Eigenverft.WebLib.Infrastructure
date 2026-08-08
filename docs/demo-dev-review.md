@@ -71,8 +71,7 @@ var proxySet = builder.AddConfigurationSet(
     "Stable");
 
 proxySet.AddSwitchableJson(
-    "proxy-settings",
-    "AppSettings/Proxy",
+        "AppSettings/Proxy",
     "ProxySettings.json");
 ```
 
@@ -180,8 +179,7 @@ builder
         "ProxySet",
         "Stable")
     .AddSwitchableJson(
-        "proxy-settings",
-        "AppSettings/Proxy",
+                "AppSettings/Proxy",
         "ProxySettings.json");
 
 var host = builder.Build();
@@ -230,9 +228,9 @@ builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            ("proxy-settings", "ProxySettings.json"),
-            ("edge-filters", "EdgeFilters.json"),
-            ("behaviors", "Behaviors.json"),
+            "ProxySettings.json",
+            "EdgeFilters.json",
+            "Behaviors.json",
         ]);
 
 var host = builder.Build();
@@ -259,6 +257,8 @@ AppSettings/Proxy/
 
 The three files remain three independent `ISwitchableJsonConfiguration` runtimes.
 
+The caller does not name those technical runtimes. The configuration-set convenience derives stable participant identities from the set name plus logical file path, for example `ProxySet:AppSettings/Proxy/EdgeFilters.json`. Those identities exist for keyed DI, status, failure diagnostics and logging; they are not another configuration concept the normal caller has to manage.
+
 `ConfigurationSetCoordinator` only coordinates their set transition.
 
 This is useful when a feature has several configuration files but all of them belong to the same deployment lane.
@@ -278,8 +278,7 @@ builder
         "Development",
         "Production")
     .AddSwitchableJson(
-        "environment-settings",
-        "AppSettings/Environment",
+                "AppSettings/Environment",
         "EnvironmentSettings.json");
 
 builder
@@ -291,8 +290,8 @@ builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            ("proxy-settings", "ProxySettings.json"),
-            ("edge-filters", "EdgeFilters.json"),
+            "ProxySettings.json",
+            "EdgeFilters.json",
         ]);
 
 builder
@@ -301,8 +300,7 @@ builder
         "Stable",
         "Candidate")
     .AddSwitchableJson(
-        "build-settings",
-        "AppSettings/Build",
+                "AppSettings/Build",
         "BuildSettings.json");
 
 var host = builder.Build();
@@ -707,8 +705,8 @@ var proxySet = builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            ("proxy-settings", "ProxySettings.json"),
-            ("edge-filters", "EdgeFilters.json"),
+            "ProxySettings.json",
+            "EdgeFilters.json",
         ]);
 
 var buildSet = builder
@@ -717,8 +715,7 @@ var buildSet = builder
         "Stable",
         "Candidate")
     .AddSwitchableJson(
-        "build-settings",
-        "AppSettings/Build",
+                "AppSettings/Build",
         "BuildSettings.json");
 
 // Proposal, not current API:
@@ -1001,8 +998,7 @@ builder
         "Dark",
         "HighContrast")
     .AddSwitchableJson(
-        "theme-settings",
-        "AppSettings/Theme",
+                "AppSettings/Theme",
         "Theme.json",
         reloadOnChange: true);
 
@@ -1094,8 +1090,7 @@ builder
         "Beta",
         "Lab")
     .AddSwitchableJson(
-        "feature-management",
-        "AppSettings/Features",
+                "AppSettings/Features",
         "Features.json");
 
 builder.Services.AddFeatureManagement();
@@ -1252,8 +1247,7 @@ builder
         "Stable",
         "Candidate")
     .AddSwitchableJson(
-        "build-settings",
-        "AppSettings/Build",
+                "AppSettings/Build",
         "BuildSettings.json");
 
 builder
@@ -1262,8 +1256,7 @@ builder
         "Development",
         "Production")
     .AddSwitchableJson(
-        "environment-settings",
-        "AppSettings/Environment",
+                "AppSettings/Environment",
         "EnvironmentSettings.json");
 ```
 
@@ -1329,9 +1322,9 @@ var proxySet = builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            ("proxy-settings", "ProxySettings.json"),
-            ("edge-filters", "EdgeFilters.json"),
-            ("behaviors", "Behaviors.json"),
+            "ProxySettings.json",
+            "EdgeFilters.json",
+            "Behaviors.json",
         ]);
 ```
 
@@ -1410,8 +1403,7 @@ builder
         "Stable",
         "Candidate")
     .AddSwitchableJson(
-        "application-settings",
-        "AppSettings/Application",
+                "AppSettings/Application",
         "AppSettings.json");
 ```
 
@@ -1580,8 +1572,8 @@ builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            ("proxy-settings", "ProxySettings.json"),
-            ("edge-filters", "EdgeFilters.json"),
+            "ProxySettings.json",
+            "EdgeFilters.json",
         ]);
 
 builder
@@ -1590,8 +1582,7 @@ builder
         "Light",
         "Dark")
     .AddSwitchableJson(
-        "theme-settings",
-        "AppSettings/Theme",
+                "AppSettings/Theme",
         "Theme.json");
 
 builder.AddConfigurationSetStateFile(
@@ -1663,8 +1654,7 @@ builder
         "EnvironmentSet",
         "Production")
     .AddSwitchableJson(
-        "environment-settings",
-        "AppSettings/Environment",
+                "AppSettings/Environment",
         "EnvironmentSettings.json");
 
 builder
@@ -1673,8 +1663,7 @@ builder
         "Stable",
         "Candidate")
     .AddSwitchableJson(
-        "build-settings",
-        "AppSettings/Build",
+                "AppSettings/Build",
         "BuildSettings.json");
 
 builder.AddConfigurationSetStateFile(
@@ -1745,8 +1734,8 @@ var proxySet = builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            ("proxy-settings", "ProxySettings.json"),
-            ("edge-filters", "EdgeFilters.json"),
+            "ProxySettings.json",
+            "EdgeFilters.json",
         ]);
 
 var themeSet = builder
@@ -1755,8 +1744,7 @@ var themeSet = builder
         "Light",
         "Dark")
     .AddSwitchableJson(
-        "theme-settings",
-        "AppSettings/Theme",
+                "AppSettings/Theme",
         "Theme.json");
 
 var environmentSet = builder
@@ -1764,8 +1752,7 @@ var environmentSet = builder
         "EnvironmentSet",
         "Production")
     .AddSwitchableJson(
-        "environment-settings",
-        "AppSettings/Environment",
+                "AppSettings/Environment",
         "EnvironmentSettings.json");
 
 var buildSet = builder
@@ -1774,8 +1761,7 @@ var buildSet = builder
         "Stable",
         "Candidate")
     .AddSwitchableJson(
-        "build-settings",
-        "AppSettings/Build",
+                "AppSettings/Build",
         "BuildSettings.json");
 
 // Possible future policy API; not implemented yet.

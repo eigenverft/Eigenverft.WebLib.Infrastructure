@@ -12,6 +12,61 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     public static class ConfigurationSetBuilderBindingExtensions
     {
         /// <summary>
+        /// Registers one switchable JSON source and binds it to a configuration set using an internally derived runtime identity.
+        /// </summary>
+        public static IHostApplicationBuilder AddSwitchableJsonToConfigurationSet(
+            this IHostApplicationBuilder builder,
+            string setName,
+            string rootPath,
+            string fileName,
+            bool optional = false,
+            bool reloadOnChange = false,
+            int reloadDelayMilliseconds = 250,
+            SwitchableJsonRuntimeFailurePolicy runtimeFailurePolicy = SwitchableJsonRuntimeFailurePolicy.KeepLastKnownGood)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentException.ThrowIfNullOrWhiteSpace(setName);
+            ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+
+            string switchableName = CreateGeneratedSwitchableName(setName, rootPath, fileName);
+            return builder.AddSwitchableJsonToConfigurationSet(
+                setName,
+                switchableName,
+                rootPath,
+                fileName,
+                optional,
+                reloadOnChange,
+                reloadDelayMilliseconds,
+                runtimeFailurePolicy);
+        }
+
+        /// <summary>
+        /// Registers multiple switchable JSON sources in one set directory using internally derived runtime identities.
+        /// </summary>
+        public static IHostApplicationBuilder AddSwitchableJsonToConfigurationSet(
+            this IHostApplicationBuilder builder,
+            string setName,
+            string rootPath,
+            params string[] fileNames)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentException.ThrowIfNullOrWhiteSpace(setName);
+            ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+            ArgumentNullException.ThrowIfNull(fileNames);
+
+            var files = new (string SwitchableName, string FileName)[fileNames.Length];
+            for (int index = 0; index < fileNames.Length; index++)
+            {
+                string fileName = fileNames[index];
+                ArgumentException.ThrowIfNullOrWhiteSpace(fileName, nameof(fileNames));
+                files[index] = (CreateGeneratedSwitchableName(setName, rootPath, fileName), fileName);
+            }
+
+            return builder.AddSwitchableJsonToConfigurationSet(setName, rootPath, files);
+        }
+
+        /// <summary>
         /// Registers one switchable JSON source and binds it to the common directory layout
         /// <c>{rootPath}/{setValue}/{fileName}</c> in one startup call.
         /// </summary>
@@ -228,6 +283,18 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
             coordinator.BindSwitchableJson(configuration, sourcePathResolver);
             return builder;
+        }
+
+        internal static string CreateGeneratedSwitchableName(
+            string setName,
+            string rootPath,
+            string fileName)
+        {
+            string logicalPath = Path.Combine(rootPath, fileName)
+                .Replace('\\', '/')
+                .Trim('/');
+
+            return $"{setName}:{logicalPath}";
         }
 
         private static IConfigurationSetCoordinator GetRequiredCoordinator(
