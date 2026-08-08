@@ -11,9 +11,23 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
     /// <summary>Adds JSON configuration providers whose isolated snapshots pass through generic source preparations.</summary>
     public static class PreparedJsonConfigurationExtensions
     {
-        /// <summary>
-        /// Adds one JSON file whose parsed snapshot is prepared before it replaces provider state.
-        /// </summary>
+        /// <summary>Adds one JSON file using one reusable candidate-preparation bundle.</summary>
+        public static IConfigurationBuilder AddPreparedJsonFile(
+            this IConfigurationBuilder builder,
+            string path,
+            IJsonConfigurationSourcePreparation candidatePreparation,
+            bool optional = false,
+            bool reloadOnChange = false)
+        {
+            ArgumentNullException.ThrowIfNull(candidatePreparation);
+            return builder.AddPreparedJsonFile(
+                path,
+                new[] { candidatePreparation },
+                optional,
+                reloadOnChange);
+        }
+
+        /// <summary>Adds one JSON file using an explicit low-level sequence of source preparations.</summary>
         public static IConfigurationBuilder AddPreparedJsonFile(
             this IConfigurationBuilder builder,
             string path,

@@ -1,138 +1,144 @@
-# JSON Source Preparations
+# JSON candidate preparation
 
-JSON source preparations add one small extension boundary between JSON parsing and configuration publication.
+This feature adds one extension boundary between JSON parsing and configuration publication.
 
-They are deliberately **not** a secret-management feature and they do not replace the existing encoded-settings APIs. `EncodeAndAddEnvironmentJsonSettings` and its related codec behavior remain independent and unchanged.
+It is intentionally parallel to the existing encoded-settings stack. `EncodeAndAddEnvironmentJsonSettings`, `JsonSettingsValueEncoders`, decoded JSON providers, persisted formats, and existing shortcuts remain unchanged.
 
-The contract is useful whenever a parsed JSON candidate should be inspected, validated or transformed before it becomes visible through `IConfiguration`.
-
-## Mental model
+The application-facing idea is simple:
 
 ```text
 JSON file
    ↓
-parse isolated snapshot
+parse isolated candidate snapshot
    ↓
-preparation 1
+CandidatePreparation
    ↓
-preparation 2
+commit or reject
    ↓
-...
-   ↓
-detach prepared snapshot
-   ↓
-owner validates that its runtime state is still current
-   ↓
-commit
-   ↓
-publish IConfiguration / lifecycle notifications
+IConfiguration
 ```
 
-If a preparation throws, the candidate is rejected before it replaces provider state.
+A candidate preparation may decode values, validate them, normalize them, or perform several such steps as one reusable bundle.
 
-For `SwitchableJson`, preparation implementations execute outside the runtime state lock. If another runtime operation changes the active state while a preparation is running, the prepared candidate is rejected as stale instead of overwriting the newer state.
+## Application-facing API
 
-## Contract
-
-A preparation implements:
+Build the behavior once:
 
 ```csharp
-public interface IJsonConfigurationSourcePreparation
-{
-    void Prepare(JsonConfigurationSourcePreparationContext context);
-}
+JsonConfigurationCandidatePreparation defaultWindows =
+    JsonConfigurationCandidatePreparations.DefaultWindows(
+        settingsProtectionPassword,
+        settingsStateDirectory);
 ```
 
-`context.Values` is a mutable, flattened candidate snapshot. A preparation may modify those values during the current `Prepare` call.
-
-The contract is intentionally narrow:
-
-- preparation may inspect, validate or transform only the supplied candidate values;
-- preparation must not select another source, publish configuration changes or mutate owner runtime state;
-- throwing rejects the current candidate;
-- preparations execute in registration order;
-- a preparation may be called repeatedly or concurrently and must therefore be safe for concurrent use;
-- the supplied value dictionary is valid only for the current call;
-- owners publish a detached copy, so retaining and mutating the dictionary later cannot change live configuration;
-- a successfully prepared candidate may still be discarded as stale if owner state changed while preparation was executing.
-
-The library can protect its own provider/runtime state from failed or stale preparations. It cannot undo arbitrary external side effects performed by a preparation implementation. Such side effects are outside the preparation contract.
-
-## Small proof implementation: XOR
-
-`XorBase64JsonConfigurationSourcePreparation` exists to prove the contract with a deterministic transformation that is visibly different from the existing codec implementation.
-
-It is **not encryption and not a security boundary**.
+Then assign that one object to any switchable JSON registration:
 
 ```csharp
-var xor = new XorBase64JsonConfigurationSourcePreparation(
-    key: 0x5A,
-    "*Secret*");
-```
-
-For demonstration and test setup it also exposes:
-
-```csharp
-string persisted = xor.EncodeValue("my-value");
-```
-
-The persisted value looks like:
-
-```text
-xor1:<base64-payload>
-```
-
-The source file remains unchanged while configuration consumers receive the prepared clear value.
-
-## Usage 1: standalone SwitchableJson
-
-Directory:
-
-```text
-AppSettings/
-└── Routing/
-    ├── Stable.json
-    └── Candidate.json
-```
-
-`Stable.json`:
-
-```json
-{
-  "Mode": "Stable",
-  "BackendSecret": "xor1:..."
-}
-```
-
-Registration:
-
-```csharp
-var xor = new XorBase64JsonConfigurationSourcePreparation(
-    0x5A,
-    "*Secret*");
-
 builder.AddSwitchableJsonFile(
-    "routing-settings",
-    "AppSettings/Routing/Stable.json",
+    "settings",
+    "AppSettings/Stable.json",
     new SwitchableJsonRegistrationOptions
     {
-        SourcePreparations = [xor]
+        CandidatePreparation = defaultWindows
     });
 ```
 
-Runtime switching remains the normal SwitchableJson API:
+`SwitchableJson` does not know what `DefaultWindows` means. It knows only that the parsed candidate must successfully pass the supplied preparation before it can be committed.
+
+The same preparation object can be reused:
 
 ```csharp
-var runtime = services.GetRequiredKeyedService<ISwitchableJsonConfiguration>(
-    "routing-settings");
+var defaultWindows =
+    JsonConfigurationCandidatePreparations.DefaultWindows(
+        settingsProtectionPassword,
+        settingsStateDirectory);
 
-SwitchableJsonSwitchResult result = runtime.TrySwitch(
-    "AppSettings/Routing/Candidate.json");
+var proxyOptions = new SwitchableJsonRegistrationOptions
+{
+    CandidatePreparation = defaultWindows
+};
+
+var kestrelOptions = new SwitchableJsonRegistrationOptions
+{
+    CandidatePreparation = defaultWindows
+};
 ```
 
-Preparation happens before the candidate can replace the current snapshot.
+## Existing codec concepts are available as candidate preparations
 
-## Usage 2: ConfigurationSet participant
+`JsonConfigurationCandidatePreparations` adapts the existing value codecs rather than copying their cryptographic or persisted-format implementations.
+
+The current factory mirrors the codec-producing surface of `JsonSettingsValueEncoders`:
+
+```text
+Base64
+Base92JsonSafe
+Rot13
+Caesar(shift)
+DpapiMachine
+DpapiMachineBase64Url
+AesPassword(password)
+AesPassword(passwordAsciiBytes)
+PhysicalMachineBoundAes()
+DataProtection(keyDirectoryPath)
+DataProtection(keyDirectoryPath, applicationName, purpose)
+Default(password, keyDirectoryPath)
+Default(passwordAsciiBytes, keyDirectoryPath)
+DefaultWindows(password, keyDirectoryPath)
+DefaultWindows(passwordAsciiBytes, keyDirectoryPath)
+DpapiWithRot13()
+DpapiWithCaesar(shift)
+```
+
+For an arbitrary existing codec:
+
+```csharp
+JsonSettingsValueCodec codec = MyCodecFactory.Create(...);
+
+JsonConfigurationCandidatePreparation preparation =
+    JsonConfigurationCandidatePreparations.Decode(codec);
+```
+
+A codec-backed candidate preparation scans the parsed values and replaces a value only when that codec can completely decode it. Plain values and values belonging to another codec remain unchanged, matching the existing explicit-codec loading semantics.
+
+## Compose several candidate operations
+
+Candidate preparations can be bundled:
+
+```csharp
+var preparation =
+    JsonConfigurationCandidatePreparations.Compose(
+        JsonConfigurationCandidatePreparations.DefaultWindows(
+            settingsProtectionPassword,
+            settingsStateDirectory),
+        new ReverseProxySchemaPreparation(),
+        new RequireHttpsEndpointsPreparation());
+```
+
+Then registration still sees exactly one object:
+
+```csharp
+new SwitchableJsonRegistrationOptions
+{
+    CandidatePreparation = preparation
+}
+```
+
+Candidate `Compose(...)` means **execution order**:
+
+```text
+DefaultWindows decode
+        ↓
+ReverseProxy schema validation
+        ↓
+HTTPS policy validation
+        ↓
+commit
+```
+
+This is intentionally different from `JsonSettingsValueEncoders.Compose(...)`. Codec composition describes **encoding order** and therefore decodes in reverse. `Default` and `DefaultWindows` adapt the already-composed existing codec as one candidate step, so their established persisted-format semantics cannot accidentally be rebuilt in the wrong order.
+
+## ConfigurationSet usage
 
 Directory:
 
@@ -148,9 +154,10 @@ AppSettings/
 Program setup:
 
 ```csharp
-var xor = new XorBase64JsonConfigurationSourcePreparation(
-    0x41,
-    "*Secret*");
+var defaultWindows =
+    JsonConfigurationCandidatePreparations.DefaultWindows(
+        settingsProtectionPassword,
+        settingsStateDirectory);
 
 builder
     .AddConfigurationSet(
@@ -161,23 +168,42 @@ builder
         "AppSettings/Routing",
         new SwitchableJsonRegistrationOptions
         {
-            SourcePreparations = [xor]
+            CandidatePreparation = defaultWindows
         },
         "Settings.json");
 ```
 
-The ConfigurationSet coordinator remains unaware of XOR or any other transformation. It coordinates the existing SwitchableJson participant contract; each participant prepares its candidate before reporting that it is ready to commit.
+The coordinator does not know about decoding, codecs, validation, or secret handling.
 
-```csharp
-ConfigurationSetSwitchResult result =
-    coordinator.TrySwitch("Candidate");
+```text
+ConfigurationSetCoordinator
+        ↓
+prepare participant candidate
+        ↓
+SwitchableJson
+        ↓
+CandidatePreparation
+        ↓
+participant ready or rejected
+        ↓
+normal coordinated commit
 ```
 
-If a participant preparation fails, the set is rejected before the normal coordinated commit phase begins.
+If candidate preparation fails, that participant never reaches the normal commit phase.
 
-## Usage 3: parallel environment JSON loader
+## Standalone prepared JSON
 
-For non-switchable JSON there is a separate load-only path using the same preparation contract:
+The same bundle can be used without switching:
+
+```csharp
+var preparation = JsonConfigurationCandidatePreparations.Base92JsonSafe;
+
+configurationBuilder.AddPreparedJsonFile(
+    "AppSettings/settings.json",
+    preparation);
+```
+
+Or with the parallel environment loader:
 
 ```text
 AppSettings/
@@ -186,49 +212,122 @@ AppSettings/
 ```
 
 ```csharp
-var xor = new XorBase64JsonConfigurationSourcePreparation(
-    0x2D,
-    "*Secret*");
+var preparation =
+    JsonConfigurationCandidatePreparations.DefaultWindows(
+        settingsProtectionPassword,
+        settingsStateDirectory);
 
 builder.AddPreparedEnvironmentJsonSettings(
     "AppSettings/ReverseProxySettings.json",
-    xor);
+    preparation);
 ```
 
-The common file loads first and the environment-specific file overrides it, matching the normal environment JSON precedence model.
+This is load-only. It does not encode or rewrite either file.
 
-This API does **not** encode or rewrite files. It is a prepared load path only.
-
-The existing API remains a separate concern:
+The established write/load API remains separate:
 
 ```csharp
 builder.EncodeAndAddEnvironmentJsonSettings(...);
 ```
 
-No migration from one model to the other is implied by the preparation contract.
+## Low-level custom plugin contract
+
+A developer who needs behavior not supplied by the factories implements only:
+
+```csharp
+public interface IJsonConfigurationSourcePreparation
+{
+    void Prepare(JsonConfigurationSourcePreparationContext context);
+}
+```
+
+The context contains:
+
+```csharp
+context.SourcePath
+context.Values
+```
+
+`Values` is an isolated, flattened candidate snapshot. For example:
+
+```json
+{
+  "Backend": {
+    "Url": "https://backend",
+    "Secret": "encoded-value"
+  }
+}
+```
+
+is presented approximately as:
+
+```text
+Backend:Url    = https://backend
+Backend:Secret = encoded-value
+```
+
+A custom implementation can modify that candidate:
+
+```csharp
+public sealed class RequireHttpsEndpointsPreparation
+    : IJsonConfigurationSourcePreparation
+{
+    public void Prepare(JsonConfigurationSourcePreparationContext context)
+    {
+        if (context.Values.TryGetValue("Backend:Url", out string? value) &&
+            value is not null &&
+            !value.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Backend URL must use HTTPS.");
+        }
+    }
+}
+```
+
+It can then be used directly or bundled with factory preparations:
+
+```csharp
+var preparation =
+    JsonConfigurationCandidatePreparations.Compose(
+        JsonConfigurationCandidatePreparations.Base92JsonSafe,
+        new RequireHttpsEndpointsPreparation());
+```
+
+## Contract
+
+The low-level contract is deliberately narrow:
+
+- a preparation may inspect, validate, or transform only the supplied candidate values;
+- it must not select another source or publish configuration changes;
+- throwing rejects the current candidate before provider state is committed;
+- composed candidate steps execute in declaration order;
+- implementations may be called repeatedly or concurrently and must be safe for concurrent use;
+- the supplied dictionary is valid only during the current `Prepare` call;
+- owners publish a detached copy, so retaining and mutating the dictionary later cannot alter live configuration;
+- a prepared SwitchableJson candidate may still be rejected as stale when runtime state changed while external preparation was executing;
+- external side effects performed by a custom plugin cannot be rolled back by the library and are outside the contract.
+
+For `SwitchableJson`, custom preparation code executes outside the runtime state lock.
 
 ## Failure semantics
 
 | Situation | Result |
 | --- | --- |
-| JSON/file load fails | existing JSON/SwitchableJson load failure semantics |
-| preparation throws during SwitchableJson candidate preparation | candidate rejected with `SourcePreparationFailed` |
-| runtime state changes while external preparation is running | candidate rejected as `StalePreparation` |
-| active watched source preparation fails | last-known-good snapshot remains active and reload is rejected |
-| prepared ordinary JSON provider reload fails | previous provider snapshot remains published; `FileConfigurationProvider` reports the reload error |
-| observer throws after a successful commit | observer remains a notification consumer, not a transaction participant |
+| JSON/file load fails | existing JSON/SwitchableJson load-failure semantics |
+| preparation throws during switch preparation | candidate rejected with `SourcePreparationFailed` |
+| runtime state changes while preparation runs | candidate rejected as `StalePreparation` |
+| watched active source preparation fails | last-known-good snapshot remains active |
+| ordinary prepared JSON reload fails | previous provider snapshot remains published |
+| observer throws after successful commit | observer remains notification-only; committed state stays committed |
 
-## Why the boundary is generic
+## XOR proof implementation
 
-The initial XOR implementation is intentionally trivial. The extension point is meant to remain independent of any one use case.
+`XorBase64JsonConfigurationSourcePreparation` remains a deliberately small proof that the generic plugin boundary is independent of the existing codec stack:
 
-Potential consumers can include:
+```csharp
+var xor = new XorBase64JsonConfigurationSourcePreparation(
+    0x5A,
+    "*Secret*");
+```
 
-- schema or domain validation;
-- value normalization;
-- compatibility migrations;
-- template/value expansion;
-- signature or integrity checks;
-- decoding or secret resolution, if a future design can satisfy the same side-effect and failure contract.
-
-Those consumers should not require changes to ConfigurationSet coordination itself. The owner only needs to know whether a candidate was successfully prepared and is still current when it is committed.
+It is not encryption and not a security boundary. Its only purpose is to provide a deterministic custom implementation of the same low-level contract.

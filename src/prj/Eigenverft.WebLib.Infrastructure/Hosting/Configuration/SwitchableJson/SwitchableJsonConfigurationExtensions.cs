@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -98,7 +100,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 options.ReloadOnChange,
                 options.ReloadDelayMilliseconds,
                 options.RuntimeFailurePolicy,
-                options.SourcePreparations);
+                options.CandidatePreparation is null
+                    ? Array.Empty<IJsonConfigurationSourcePreparation>()
+                    : new IJsonConfigurationSourcePreparation[] { options.CandidatePreparation });
 
             IConfigurationBuilder configurationBuilder = builder.Configuration;
             var source = new SwitchableJsonConfigurationSource(runtime);

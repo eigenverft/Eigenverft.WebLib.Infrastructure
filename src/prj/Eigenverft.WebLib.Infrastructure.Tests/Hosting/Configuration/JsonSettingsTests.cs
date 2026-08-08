@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
 
 using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings;
@@ -42,6 +44,123 @@ public sealed class JsonSettingsTests
 
         Assert.AreEqual("production", builder.Configuration["Shared"]);
         Assert.AreEqual("common", builder.Configuration["CommonOnly"]);
+    }
+
+    [TestMethod]
+    public void CandidatePreparationFactoriesMirrorAllOriginalCodecFactoriesAndShortcuts()
+    {
+        string[] codecProperties = typeof(JsonSettingsValueEncoders)
+            .GetProperties(BindingFlags.Public | BindingFlags.Static)
+            .Where(property => property.PropertyType == typeof(JsonSettingsValueCodec))
+            .Select(property => property.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+        string[] candidateProperties = typeof(JsonConfigurationCandidatePreparations)
+            .GetProperties(BindingFlags.Public | BindingFlags.Static)
+            .Where(property => property.PropertyType == typeof(JsonConfigurationCandidatePreparation))
+            .Select(property => property.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        CollectionAssert.AreEqual(codecProperties, candidateProperties);
+
+        string[] codecFactories = typeof(JsonSettingsValueEncoders)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(method => method.ReturnType == typeof(JsonSettingsValueCodec))
+            .Where(method => !string.Equals(method.Name, nameof(JsonSettingsValueEncoders.Compose), StringComparison.Ordinal))
+            .Select(CreateFactorySignature)
+            .OrderBy(signature => signature, StringComparer.Ordinal)
+            .ToArray();
+        string[] candidateFactories = typeof(JsonConfigurationCandidatePreparations)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(method => method.ReturnType == typeof(JsonConfigurationCandidatePreparation))
+            .Where(method =>
+                !string.Equals(method.Name, nameof(JsonConfigurationCandidatePreparations.Compose), StringComparison.Ordinal) &&
+                !string.Equals(method.Name, nameof(JsonConfigurationCandidatePreparations.Decode), StringComparison.Ordinal) &&
+                !string.Equals(method.Name, nameof(JsonConfigurationCandidatePreparations.From), StringComparison.Ordinal))
+            .Select(CreateFactorySignature)
+            .OrderBy(signature => signature, StringComparer.Ordinal)
+            .ToArray();
+
+        CollectionAssert.AreEqual(codecFactories, candidateFactories);
+    }
+
+    [TestMethod]
+    public void CandidatePreparationFactoriesAdaptOriginalValueCodecs()
+    {
+        using var directory = new TemporaryDirectory();
+
+        AssertCandidateDecodes(
+            directory,
+            "candidate-base64.json",
+            JsonSettingsValueEncoders.Base64,
+            JsonConfigurationCandidatePreparations.Base64);
+        AssertCandidateDecodes(
+            directory,
+            "candidate-base92.json",
+            JsonSettingsValueEncoders.Base92JsonSafe,
+            JsonConfigurationCandidatePreparations.Base92JsonSafe);
+        AssertCandidateDecodes(
+            directory,
+            "candidate-rot13.json",
+            JsonSettingsValueEncoders.Rot13,
+            JsonConfigurationCandidatePreparations.Rot13);
+        AssertCandidateDecodes(
+            directory,
+            "candidate-caesar.json",
+            JsonSettingsValueEncoders.Caesar(7),
+            JsonConfigurationCandidatePreparations.Caesar(7));
+        AssertCandidateDecodes(
+            directory,
+            "candidate-aes.json",
+            JsonSettingsValueEncoders.AesPassword("candidate-password"),
+            JsonConfigurationCandidatePreparations.AesPassword("candidate-password"));
+
+        string dataProtectionDirectory = Path.Combine(directory.Path, "candidate-dp-keys");
+        AssertCandidateDecodes(
+            directory,
+            "candidate-dp.json",
+            JsonSettingsValueEncoders.DataProtection(dataProtectionDirectory),
+            JsonConfigurationCandidatePreparations.DataProtection(dataProtectionDirectory));
+
+        _ = JsonConfigurationCandidatePreparations.PhysicalMachineBoundAes();
+        _ = JsonConfigurationCandidatePreparations.Default("candidate-password", dataProtectionDirectory);
+        _ = JsonConfigurationCandidatePreparations.Default(
+            Encoding.ASCII.GetBytes("candidate-password"),
+            dataProtectionDirectory);
+
+        if (OperatingSystem.IsWindows())
+        {
+            _ = JsonConfigurationCandidatePreparations.DpapiMachine;
+            _ = JsonConfigurationCandidatePreparations.DpapiMachineBase64Url;
+            _ = JsonConfigurationCandidatePreparations.DpapiWithRot13();
+            _ = JsonConfigurationCandidatePreparations.DpapiWithCaesar(4);
+            _ = JsonConfigurationCandidatePreparations.DefaultWindows("candidate-password", dataProtectionDirectory);
+            _ = JsonConfigurationCandidatePreparations.DefaultWindows(
+                Encoding.ASCII.GetBytes("candidate-password"),
+                dataProtectionDirectory);
+        }
+    }
+
+    [TestMethod]
+    public void CandidatePreparationComposeBundlesStepsInExecutionOrder()
+    {
+        using var directory = new TemporaryDirectory();
+        string encoded = JsonSettingsValueEncoders.Base64.Encode("bundled-value");
+        string settingsPath = directory.Write(
+            "candidate-compose.json",
+            $$"""{ "Value": "{{encoded}}" }""");
+        JsonConfigurationCandidatePreparation preparation = JsonConfigurationCandidatePreparations.Compose(
+            JsonConfigurationCandidatePreparations.Base64,
+            new CopyPreparedValuePreparation());
+
+        IConfigurationRoot configuration = new ConfigurationBuilder()
+            .AddPreparedJsonFile(settingsPath, preparation)
+            .Build();
+
+        Assert.AreEqual("bundled-value", configuration["Value"]);
+        Assert.AreEqual("bundled-value", configuration["ObservedAfterDecode"]);
+        StringAssert.Contains(preparation.Name, "Decode(Base64)");
     }
 
     [TestMethod]
@@ -879,6 +998,36 @@ public sealed class JsonSettingsTests
         public void Prepare(JsonConfigurationSourcePreparationContext context)
         {
             RetainedValues = context.Values;
+        }
+    }
+
+    private static string CreateFactorySignature(MethodInfo method)
+    {
+        return $"{method.Name}({string.Join(",", method.GetParameters().Select(parameter => parameter.ParameterType.FullName))})";
+    }
+
+    private static void AssertCandidateDecodes(
+        TemporaryDirectory directory,
+        string fileName,
+        JsonSettingsValueCodec codec,
+        JsonConfigurationCandidatePreparation preparation)
+    {
+        string encoded = codec.Encode("candidate-secret");
+        string settingsPath = directory.Write(
+            fileName,
+            $$"""{ "Value": "{{encoded}}" }""");
+        IConfigurationRoot configuration = new ConfigurationBuilder()
+            .AddPreparedJsonFile(settingsPath, preparation)
+            .Build();
+
+        Assert.AreEqual("candidate-secret", configuration["Value"]);
+    }
+
+    private sealed class CopyPreparedValuePreparation : IJsonConfigurationSourcePreparation
+    {
+        public void Prepare(JsonConfigurationSourcePreparationContext context)
+        {
+            context.Values["ObservedAfterDecode"] = context.Values["Value"];
         }
     }
 

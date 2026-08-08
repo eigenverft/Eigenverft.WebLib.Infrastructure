@@ -695,13 +695,13 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
         public void ConfigurationSetSwitchAppliesParticipantSourcePreparationsBeforePublishingCandidate()
         {
             using var directory = new TemporaryDirectory();
-            var xor = new XorBase64JsonConfigurationSourcePreparation(0x41, "Secret");
+            JsonConfigurationCandidatePreparation preparation = JsonConfigurationCandidatePreparations.Base92JsonSafe;
             directory.Write(
                 Path.Combine("Routing", "Stable", "Settings.json"),
-                $$"""{ "Mode": "Stable", "Secret": "{{xor.EncodeValue("stable-secret")}}" }""");
+                $$"""{ "Mode": "Stable", "Secret": "{{JsonSettingsValueEncoders.Base92JsonSafe.Encode("stable-secret")}}" }""");
             directory.Write(
                 Path.Combine("Routing", "Candidate", "Settings.json"),
-                $$"""{ "Mode": "Candidate", "Secret": "{{xor.EncodeValue("candidate-secret")}}" }""");
+                $$"""{ "Mode": "Candidate", "Secret": "{{JsonSettingsValueEncoders.Base92JsonSafe.Encode("candidate-secret")}}" }""");
             HostApplicationBuilder builder = CreateBuilder(directory.Path);
 
             builder
@@ -710,7 +710,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                     "Routing",
                     new SwitchableJsonRegistrationOptions
                     {
-                        SourcePreparations = new IJsonConfigurationSourcePreparation[] { xor },
+                        CandidatePreparation = preparation,
                     },
                     "Settings.json");
 

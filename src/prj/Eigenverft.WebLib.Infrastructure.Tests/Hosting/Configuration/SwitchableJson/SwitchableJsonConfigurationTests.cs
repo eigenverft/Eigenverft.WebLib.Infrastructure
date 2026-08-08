@@ -108,8 +108,8 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
         public void SourcePreparationTransformsInitialSnapshotWithoutMutatingSourceFile()
         {
             using var directory = new TemporaryDirectory();
-            var xor = new XorBase64JsonConfigurationSourcePreparation(0x5A, "*Secret*");
-            string encoded = xor.EncodeValue("alpha-secret");
+            JsonConfigurationCandidatePreparation preparation = JsonConfigurationCandidatePreparations.Base64;
+            string encoded = JsonSettingsValueEncoders.Base64.Encode("alpha-secret");
             directory.Write("A.json", $$"""
                 {
                   "SecretValue": "{{encoded}}",
@@ -123,7 +123,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
                 "A.json",
                 new SwitchableJsonRegistrationOptions
                 {
-                    SourcePreparations = new IJsonConfigurationSourcePreparation[] { xor },
+                    CandidatePreparation = preparation,
                 });
 
             Assert.AreEqual("alpha-secret", builder.Configuration["SecretValue"]);
@@ -138,6 +138,8 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
             var xor = new XorBase64JsonConfigurationSourcePreparation(0x33, "Secret");
             string encodedA = xor.EncodeValue("stable-secret");
             string encodedB = xor.EncodeValue("candidate-secret");
+            JsonConfigurationCandidatePreparation candidatePreparation =
+                JsonConfigurationCandidatePreparations.From("Xor", xor);
             directory.Write("A.json", $$"""{ "Mode": "Stable", "Secret": "{{encodedA}}" }""");
             directory.Write("B.json", $$"""{ "Mode": "Candidate", "Secret": "{{encodedB}}" }""");
             HostApplicationBuilder builder = CreateBuilder(directory.Path);
@@ -147,7 +149,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
                 "A.json",
                 new SwitchableJsonRegistrationOptions
                 {
-                    SourcePreparations = new IJsonConfigurationSourcePreparation[] { xor },
+                    CandidatePreparation = candidatePreparation,
                 });
             using IHost host = builder.Build();
             ISwitchableJsonConfiguration runtime =
@@ -168,6 +170,8 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
             directory.Write("A.json", """{ "Mode": "Stable" }""");
             directory.Write("B.json", """{ "Mode": "Candidate" }""");
             var preparation = new ConcurrentRuntimeReadPreparation("B.json");
+            JsonConfigurationCandidatePreparation candidatePreparation =
+                JsonConfigurationCandidatePreparations.From("ConcurrentRuntimeRead", preparation);
             HostApplicationBuilder builder = CreateBuilder(directory.Path);
 
             builder.AddSwitchableJsonFile(
@@ -175,7 +179,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
                 "A.json",
                 new SwitchableJsonRegistrationOptions
                 {
-                    SourcePreparations = new IJsonConfigurationSourcePreparation[] { preparation },
+                    CandidatePreparation = candidatePreparation,
                 });
             using IHost host = builder.Build();
             ISwitchableJsonConfiguration runtime =
@@ -196,6 +200,8 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
             directory.Write("A.json", """{ "Mode": "Stable" }""");
             directory.Write("B.json", """{ "Mode": "Candidate" }""");
             var preparation = new RetainingPreparation("B.json");
+            JsonConfigurationCandidatePreparation candidatePreparation =
+                JsonConfigurationCandidatePreparations.From("Retaining", preparation);
             HostApplicationBuilder builder = CreateBuilder(directory.Path);
 
             builder.AddSwitchableJsonFile(
@@ -203,7 +209,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
                 "A.json",
                 new SwitchableJsonRegistrationOptions
                 {
-                    SourcePreparations = new IJsonConfigurationSourcePreparation[] { preparation },
+                    CandidatePreparation = candidatePreparation,
                 });
             using IHost host = builder.Build();
             ISwitchableJsonConfiguration runtime =
@@ -224,6 +230,8 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
         {
             using var directory = new TemporaryDirectory();
             var xor = new XorBase64JsonConfigurationSourcePreparation(0x17, "Secret");
+            JsonConfigurationCandidatePreparation candidatePreparation =
+                JsonConfigurationCandidatePreparations.From("Xor", xor);
             directory.Write("A.json", $$"""{ "Mode": "Stable", "Secret": "{{xor.EncodeValue("stable-secret")}}" }""");
             directory.Write("B.json", """{ "Mode": "Candidate", "Secret": "xor1:not-valid-base64!" }""");
             HostApplicationBuilder builder = CreateBuilder(directory.Path);
@@ -233,7 +241,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
                 "A.json",
                 new SwitchableJsonRegistrationOptions
                 {
-                    SourcePreparations = new IJsonConfigurationSourcePreparation[] { xor },
+                    CandidatePreparation = candidatePreparation,
                 });
             using IHost host = builder.Build();
             ISwitchableJsonConfiguration runtime =

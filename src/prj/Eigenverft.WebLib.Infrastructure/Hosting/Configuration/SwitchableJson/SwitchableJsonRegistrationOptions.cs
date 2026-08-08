@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings;
 
@@ -25,13 +23,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             SwitchableJsonRuntimeFailurePolicy.KeepLastKnownGood;
 
         /// <summary>
-        /// Gets or initializes candidate preparation steps applied after JSON parsing and before any provider snapshot is committed.
+        /// Gets or initializes the reusable candidate preparation applied after JSON parsing and before provider state is committed.
         /// </summary>
         /// <remarks>
-        /// Steps run in order for initial loads, manual switches, framework reloads and active-file watcher reloads.
+        /// Use <see cref="JsonConfigurationCandidatePreparations.Compose"/> when several preparation steps should behave as one bundle.
         /// </remarks>
-        public IReadOnlyList<IJsonConfigurationSourcePreparation> SourcePreparations { get; init; } =
-            Array.Empty<IJsonConfigurationSourcePreparation>();
+        public JsonConfigurationCandidatePreparation? CandidatePreparation { get; init; }
 
         internal void Validate()
         {
@@ -43,11 +40,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             if (!Enum.IsDefined(RuntimeFailurePolicy))
             {
                 throw new ArgumentOutOfRangeException(nameof(RuntimeFailurePolicy));
-            }
-            ArgumentNullException.ThrowIfNull(SourcePreparations);
-            if (SourcePreparations.Any(preparation => preparation is null))
-            {
-                throw new ArgumentException("SourcePreparations cannot contain null entries.", nameof(SourcePreparations));
             }
         }
     }
