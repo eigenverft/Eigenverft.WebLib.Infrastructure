@@ -471,6 +471,45 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual(2, coordinator.BoundParticipantNames.Count);
         }
 
+        [TestMethod]
+        public void SingleValueSetCanOwnSwitchableJsonWithoutAnyAlternativeValue()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write(
+                Path.Combine("AppSettings", "Stable", "Settings.json"),
+                "{ \"Mode\": \"StableOnly\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            ConfigurationSetRegistration registration = builder.AddConfigurationSet(
+                "ProxySet",
+                "Stable");
+            registration.AddSwitchableJson(
+                "proxy-settings",
+                "AppSettings",
+                "Settings.json");
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("ProxySet");
+            IConfigurationSetEventHub hub = host.Services.GetRequiredService<IConfigurationSetEventHub>();
+            ConfigurationSetNotification? observed = null;
+            using IDisposable subscription = hub.Subscribe("ProxySet", notification => observed = notification);
+
+            Assert.AreEqual(1, coordinator.AllowedValues.Count);
+            Assert.AreEqual("Stable", coordinator.AllowedValues[0]);
+            Assert.AreEqual("Stable", coordinator.ActiveValue);
+            Assert.AreEqual("StableOnly", builder.Configuration["Mode"]);
+            CollectionAssert.AreEqual(new[] { "proxy-settings" }, coordinator.BoundParticipantNames.ToArray());
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Stable");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.AlreadyActive, result.Status);
+            Assert.IsFalse(result.HasChanges);
+            Assert.IsNotNull(observed);
+            Assert.AreEqual(ConfigurationSetEventKind.SwitchAlreadyActive, observed.Kind);
+            Assert.AreSame(result, observed.Result);
+        }
+
         private static HostApplicationBuilder CreateBuilder(string contentRootPath)
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings

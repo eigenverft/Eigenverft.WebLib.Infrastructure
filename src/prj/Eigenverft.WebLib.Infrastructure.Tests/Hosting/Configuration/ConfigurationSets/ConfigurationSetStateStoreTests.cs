@@ -384,6 +384,55 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreSame(result, status.LastApplyResult);
         }
 
+        [TestMethod]
+        public void ReloadDisabledKeepsRuntimeValueUntilARecreatedBuilderReadsTheEditedStateFile()
+        {
+            using var directory = new TemporaryDirectory();
+
+            HostApplicationBuilder firstBuilder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator firstCoordinator = firstBuilder.AddConfigurationSet(
+                "ProxySet",
+                "Stable",
+                "Experimental").Coordinator;
+            _ = firstBuilder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+
+            using (IHost firstHost = firstBuilder.Build())
+            {
+                firstHost.StartAsync().GetAwaiter().GetResult();
+
+                directory.Write(
+                    "ConfigurationSets.json",
+                    """
+                    {
+                      "Sets": {
+                        "ProxySet": {
+                          "Value": "Experimental",
+                          "AllowedValues": [ "Stable", "Experimental" ]
+                        }
+                      }
+                    }
+                    """);
+
+                Thread.Sleep(600);
+                Assert.AreEqual("Stable", firstCoordinator.ActiveValue);
+
+                firstHost.StopAsync().GetAwaiter().GetResult();
+            }
+
+            HostApplicationBuilder secondBuilder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator secondCoordinator = secondBuilder.AddConfigurationSet(
+                "ProxySet",
+                "Stable",
+                "Experimental").Coordinator;
+            _ = secondBuilder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+
+            Assert.AreEqual("Experimental", secondCoordinator.ActiveValue);
+        }
+
         private static HostApplicationBuilder CreateBuilder(string contentRootPath)
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings
