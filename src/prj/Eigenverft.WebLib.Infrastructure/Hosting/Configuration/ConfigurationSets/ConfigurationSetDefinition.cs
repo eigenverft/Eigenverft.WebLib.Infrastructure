@@ -66,6 +66,31 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             AllowedValues = new ReadOnlyCollection<string>(values);
         }
 
+        /// <summary>
+        /// Creates a definition without requiring callers to repeat the initial value in the additional allowed values.
+        /// </summary>
+        /// <param name="name">Caller-defined identity of the independent set axis.</param>
+        /// <param name="initialValue">Value active when the coordinator is created; it is always included in the allowed values.</param>
+        /// <param name="additionalAllowedValues">Additional values that may become active.</param>
+        /// <returns>A validated configuration-set definition whose allowed values start with <paramref name="initialValue"/>.</returns>
+        public static ConfigurationSetDefinition Create(
+            string name,
+            string initialValue,
+            params string[] additionalAllowedValues)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+            ArgumentException.ThrowIfNullOrWhiteSpace(initialValue);
+            ArgumentNullException.ThrowIfNull(additionalAllowedValues);
+
+            var allowedValues = new List<string>(additionalAllowedValues.Length + 1)
+            {
+                initialValue,
+            };
+
+            allowedValues.AddRange(additionalAllowedValues);
+            return new ConfigurationSetDefinition(name, initialValue, allowedValues);
+        }
+
         /// <summary>Gets the caller-defined identity of this set axis.</summary>
         public string Name { get; }
 

@@ -271,6 +271,119 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual("Stable", proxyState.GetProperty("Value").GetString());
         }
 
+        [TestMethod]
+        public void ProgramMainConvenienceFlowWatchesStateFileAndSwitchesBoundJsonAcrossTwoSets()
+        {
+            using var directory = new TemporaryDirectory();
+            Directory.CreateDirectory(Path.Combine(directory.Path, "ProxySet", "Stable"));
+            Directory.CreateDirectory(Path.Combine(directory.Path, "ProxySet", "Experimental"));
+            Directory.CreateDirectory(Path.Combine(directory.Path, "FeatureSet", "Default"));
+            Directory.CreateDirectory(Path.Combine(directory.Path, "FeatureSet", "Next"));
+            directory.Write(Path.Combine("ProxySet", "Stable", "ProxySettings.json"), "{ \"ProxyMarker\": \"Stable\" }");
+            directory.Write(Path.Combine("ProxySet", "Experimental", "ProxySettings.json"), "{ \"ProxyMarker\": \"Experimental\" }");
+            directory.Write(Path.Combine("FeatureSet", "Default", "FeatureSettings.json"), "{ \"FeatureMarker\": \"Default\" }");
+            directory.Write(Path.Combine("FeatureSet", "Next", "FeatureSettings.json"), "{ \"FeatureMarker\": \"Next\" }");
+
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("proxy-settings", Path.Combine("ProxySet", "Stable", "ProxySettings.json"));
+            builder.AddSwitchableJsonFile("feature-settings", Path.Combine("FeatureSet", "Default", "FeatureSettings.json"));
+            IConfigurationSetStateStore store = builder.AddConfigurationSetsWithStateFile(
+                "ConfigurationSets.json",
+                ConfigurationSetDefinition.Create("ProxySet", "Stable", "Experimental"),
+                ConfigurationSetDefinition.Create("FeatureSet", "Default", "Next"));
+            builder.BindSwitchableJsonDirectoryToConfigurationSet("ProxySet", "proxy-settings", "ProxySet", "ProxySettings.json");
+            builder.BindSwitchableJsonDirectoryToConfigurationSet("FeatureSet", "feature-settings", "FeatureSet", "FeatureSettings.json");
+
+            using IHost host = builder.Build();
+            host.StartAsync().GetAwaiter().GetResult();
+            Assert.AreEqual("Stable", builder.Configuration["ProxyMarker"]);
+            Assert.AreEqual("Default", builder.Configuration["FeatureMarker"]);
+
+            using var observed = new ManualResetEventSlim();
+            store.LifecycleChanged += (_, args) =>
+            {
+                if (args.Kind == ConfigurationSetStateStoreEventKind.StateApplied &&
+                    builder.Configuration["ProxyMarker"] == "Experimental" &&
+                    builder.Configuration["FeatureMarker"] == "Next")
+                {
+                    observed.Set();
+                }
+            };
+
+            directory.Write(
+                "ConfigurationSets.json",
+                """
+                {
+                  "Sets": {
+                    "ProxySet": { "Value": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] },
+                    "FeatureSet": { "Value": "Next", "AllowedValues": [ "Default", "Next" ] }
+                  }
+                }
+                """);
+
+            Assert.IsTrue(observed.Wait(TimeSpan.FromSeconds(5)), "The complete state-file to IConfiguration switch did not finish in time.");
+            Assert.AreEqual("Experimental", builder.Configuration["ProxyMarker"]);
+            Assert.AreEqual("Next", builder.Configuration["FeatureMarker"]);
+
+            ConfigurationSetStateStoreStatus status = store.GetStatus();
+            Assert.AreEqual(2, status.Sets.Count);
+            Assert.AreEqual("Experimental", status.Sets.Single(set => set.Name == "ProxySet").ActiveValue);
+            Assert.AreEqual("Next", status.Sets.Single(set => set.Name == "FeatureSet").ActiveValue);
+            Assert.IsTrue(status.Sets.All(set => set.IsConsistent));
+            CollectionAssert.AreEqual(new[] { "proxy-settings" }, status.Sets.Single(set => set.Name == "ProxySet").BoundParticipantNames.ToArray());
+            Assert.AreEqual(ConfigurationSetStateApplyStatus.Succeeded, status.LastApplyResult?.Status);
+
+            host.StopAsync().GetAwaiter().GetResult();
+        }
+
+        [TestMethod]
+        public void StateFileApplyKeepsRejectedBoundSetOnLastKnownGoodWhileIndependentSetSwitches()
+        {
+            using var directory = new TemporaryDirectory();
+            Directory.CreateDirectory(Path.Combine(directory.Path, "EnvironmentSet", "Development"));
+            Directory.CreateDirectory(Path.Combine(directory.Path, "EnvironmentSet", "Production"));
+            Directory.CreateDirectory(Path.Combine(directory.Path, "ProxySet", "Stable"));
+            directory.Write(Path.Combine("EnvironmentSet", "Development", "Environment.json"), "{ \"EnvironmentMarker\": \"Development\" }");
+            directory.Write(Path.Combine("EnvironmentSet", "Production", "Environment.json"), "{ \"EnvironmentMarker\": \"Production\" }");
+            directory.Write(Path.Combine("ProxySet", "Stable", "Proxy.json"), "{ \"ProxyMarker\": \"Stable\" }");
+
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("environment-settings", Path.Combine("EnvironmentSet", "Development", "Environment.json"));
+            builder.AddSwitchableJsonFile("proxy-settings", Path.Combine("ProxySet", "Stable", "Proxy.json"));
+            IConfigurationSetStateStore store = builder.AddConfigurationSetsWithStateFile(
+                "ConfigurationSets.json",
+                ConfigurationSetDefinition.Create("EnvironmentSet", "Development", "Production"),
+                ConfigurationSetDefinition.Create("ProxySet", "Stable", "Experimental"));
+            builder.BindSwitchableJsonDirectoryToConfigurationSet("EnvironmentSet", "environment-settings", "EnvironmentSet", "Environment.json");
+            builder.BindSwitchableJsonDirectoryToConfigurationSet("ProxySet", "proxy-settings", "ProxySet", "Proxy.json");
+
+            directory.Write(
+                "ConfigurationSets.json",
+                """
+                {
+                  "Sets": {
+                    "EnvironmentSet": { "Value": "Production", "AllowedValues": [ "Development", "Production" ] },
+                    "ProxySet": { "Value": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] }
+                  }
+                }
+                """);
+
+            ConfigurationSetStateApplyResult result = store.Reload();
+
+            Assert.AreEqual(ConfigurationSetStateApplyStatus.CompletedWithFailures, result.Status);
+            Assert.AreEqual(ConfigurationSetStateFailureKind.SetSwitchRejected, result.FailureKind);
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.SetResults.Single(item => item.Name == "EnvironmentSet").Status);
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Rejected, result.SetResults.Single(item => item.Name == "ProxySet").Status);
+            Assert.AreEqual("Production", builder.Configuration["EnvironmentMarker"]);
+            Assert.AreEqual("Stable", builder.Configuration["ProxyMarker"]);
+
+            ConfigurationSetStateStoreStatus status = store.GetStatus();
+            Assert.AreEqual("Production", status.Sets.Single(set => set.Name == "EnvironmentSet").ActiveValue);
+            Assert.AreEqual("Stable", status.Sets.Single(set => set.Name == "ProxySet").ActiveValue);
+            Assert.IsTrue(status.Sets.All(set => set.IsConsistent));
+            Assert.AreSame(result, status.LastApplyResult);
+        }
+
         private static HostApplicationBuilder CreateBuilder(string contentRootPath)
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings

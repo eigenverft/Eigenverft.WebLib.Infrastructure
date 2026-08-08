@@ -45,6 +45,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// </remarks>
         event EventHandler<ConfigurationSetEventArgs>? LifecycleChanged;
 
+        /// <summary>Captures an immutable, internally consistent snapshot of this coordinator's current runtime state.</summary>
+        ConfigurationSetStatus GetStatus();
+
         /// <summary>Returns whether a value is valid for this set.</summary>
         bool IsAllowed(string value);
 

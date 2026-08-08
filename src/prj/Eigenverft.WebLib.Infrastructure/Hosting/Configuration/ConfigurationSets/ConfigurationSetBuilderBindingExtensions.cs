@@ -10,6 +10,32 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     public static class ConfigurationSetBuilderBindingExtensions
     {
         /// <summary>
+        /// Binds a switchable JSON source using the common directory layout <c>{rootPath}/{setValue}/{fileName}</c>.
+        /// </summary>
+        /// <param name="builder">The host application builder containing both registrations.</param>
+        /// <param name="setName">The keyed configuration-set coordinator name.</param>
+        /// <param name="switchableName">The keyed switchable JSON runtime name.</param>
+        /// <param name="rootPath">Root directory containing one subdirectory per allowed set value.</param>
+        /// <param name="fileName">JSON file name located inside each set-value directory.</param>
+        /// <returns>The same builder for chaining.</returns>
+        public static IHostApplicationBuilder BindSwitchableJsonDirectoryToConfigurationSet(
+            this IHostApplicationBuilder builder,
+            string setName,
+            string switchableName,
+            string rootPath,
+            string fileName)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+
+            return builder.BindSwitchableJsonToConfigurationSet(
+                setName,
+                switchableName,
+                value => System.IO.Path.Combine(rootPath, value, fileName));
+        }
+
+        /// <summary>
         /// Binds an already registered switchable JSON source to an already registered configuration set before the host is built.
         /// </summary>
         /// <param name="builder">The host application builder containing both registrations.</param>
@@ -20,7 +46,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <remarks>
         /// The coordinator and switchable source may be registered in either order, but both must exist before this method is called.
         /// Binding is completed immediately during startup, so no hosted-service timing or post-Build initialization is required.
-        /// The existing binding contract verifies that the switchable source already represents the coordinator's active value.
+        /// The binding verifies that the switchable source already represents the coordinator's active value.
         /// </remarks>
         public static IHostApplicationBuilder BindSwitchableJsonToConfigurationSet(
             this IHostApplicationBuilder builder,

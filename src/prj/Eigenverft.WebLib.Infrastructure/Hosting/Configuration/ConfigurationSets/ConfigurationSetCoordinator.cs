@@ -68,6 +68,25 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         public event EventHandler<ConfigurationSetEventArgs>? LifecycleChanged;
 
+        public ConfigurationSetStatus GetStatus()
+        {
+            lock (_gate)
+            {
+                string[] participantNames = new string[_bindings.Count];
+                for (int index = 0; index < _bindings.Count; index++)
+                {
+                    participantNames[index] = _bindings[index].Name;
+                }
+
+                return new ConfigurationSetStatus(
+                    Name,
+                    _activeValue,
+                    _isConsistent,
+                    _definition.AllowedValues,
+                    Array.AsReadOnly(participantNames));
+            }
+        }
+
         public bool IsAllowed(string value)
         {
             return _definition.IsAllowed(value);

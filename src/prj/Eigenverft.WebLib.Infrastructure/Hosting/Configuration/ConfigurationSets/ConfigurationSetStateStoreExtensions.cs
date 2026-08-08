@@ -6,9 +6,29 @@ using Microsoft.Extensions.Hosting;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSets
 {
-    /// <summary>Registers a self-describing JSON control file for all configuration-set coordinators known at startup.</summary>
+    /// <summary>Registers a self-describing JSON control file for configuration-set coordinators known at startup.</summary>
     public static class ConfigurationSetStateStoreExtensions
     {
+        /// <summary>
+        /// Registers multiple configuration sets and their shared self-describing state file in one startup declaration.
+        /// </summary>
+        /// <param name="builder">The host application builder receiving the coordinators and state store.</param>
+        /// <param name="path">Absolute state-file path, or a path relative to the host content root.</param>
+        /// <param name="definitions">Configuration-set definitions to register before the state file is initialized.</param>
+        /// <returns>The runtime state-store instance.</returns>
+        public static IConfigurationSetStateStore AddConfigurationSetsWithStateFile(
+            this IHostApplicationBuilder builder,
+            string path,
+            params ConfigurationSetDefinition[] definitions)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentException.ThrowIfNullOrWhiteSpace(path);
+            ArgumentNullException.ThrowIfNull(definitions);
+
+            _ = builder.AddConfigurationSets(definitions);
+            return builder.AddConfigurationSetStateFile(path);
+        }
+
         /// <summary>
         /// Adds one configuration-set state file, materializes authoritative allowed-value metadata, and optionally watches it.
         /// </summary>
@@ -19,10 +39,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <returns>The runtime state-store instance, also registered as a singleton through DI.</returns>
         /// <remarks>
         /// The store captures the coordinators registered before this call. Missing files are created from the current coordinator
-        /// state. Existing files may request different allowed values, but their AllowedValues arrays are descriptive metadata only:
-        /// the registered coordinator definitions remain authoritative. Unknown set names or disallowed values reject the document
-        /// before any set is switched. Operational failures in one otherwise-valid independent set do not roll back successful
-        /// transitions of another independent set; such an apply completes with failures and reports every attempted set result.
+        /// state. AllowedValues arrays in the file are descriptive metadata only; registered coordinator definitions remain
+        /// authoritative. Unknown set names or disallowed values reject the document before any set is switched. Operational
+        /// failures in one otherwise-valid independent set do not roll back successful transitions of another independent set.
         /// </remarks>
         public static IConfigurationSetStateStore AddConfigurationSetStateFile(
             this IHostApplicationBuilder builder,

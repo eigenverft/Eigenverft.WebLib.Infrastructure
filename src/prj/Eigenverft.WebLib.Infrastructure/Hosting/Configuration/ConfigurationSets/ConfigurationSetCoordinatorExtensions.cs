@@ -30,28 +30,78 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             IEnumerable<string> allowedValues)
         {
             ArgumentNullException.ThrowIfNull(builder);
-            ArgumentException.ThrowIfNullOrWhiteSpace(name);
-            ArgumentException.ThrowIfNullOrWhiteSpace(initialValue);
-            ArgumentNullException.ThrowIfNull(allowedValues);
+            return builder.AddConfigurationSet(
+                new ConfigurationSetDefinition(name, initialValue, allowedValues));
+        }
+
+        /// <summary>Adds one validated configuration-set definition and exposes its coordinator through keyed DI.</summary>
+        /// <param name="builder">The host application builder receiving the coordinator.</param>
+        /// <param name="definition">The complete set definition to register.</param>
+        /// <returns>The created coordinator runtime.</returns>
+        public static IConfigurationSetCoordinator AddConfigurationSet(
+            this IHostApplicationBuilder builder,
+            ConfigurationSetDefinition definition)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(definition);
 
             if (builder.Services.Any(descriptor =>
                     descriptor.ServiceType == typeof(IConfigurationSetCoordinator) &&
                     descriptor.IsKeyedService &&
-                    Equals(descriptor.ServiceKey, name)))
+                    Equals(descriptor.ServiceKey, definition.Name)))
             {
                 throw new InvalidOperationException(
-                    $"A configuration set coordinator named '{name}' is already registered.");
+                    $"A configuration set coordinator named '{definition.Name}' is already registered.");
             }
 
-            var definition = new ConfigurationSetDefinition(name, initialValue, allowedValues);
             IConfigurationSetCoordinator coordinator = new ConfigurationSetCoordinator(definition);
 
             builder.Services.AddKeyedSingleton<IConfigurationSetCoordinator>(
-                name,
+                definition.Name,
                 (_, _) => coordinator);
 
-            GetRegisteredCoordinators(builder).Add(name, coordinator);
+            GetRegisteredCoordinators(builder).Add(definition.Name, coordinator);
             return coordinator;
+        }
+
+        /// <summary>Registers multiple independent configuration-set definitions in declaration order.</summary>
+        /// <param name="builder">The host application builder receiving the coordinators.</param>
+        /// <param name="definitions">The definitions to register.</param>
+        /// <returns>The same builder for chaining.</returns>
+        public static IHostApplicationBuilder AddConfigurationSets(
+            this IHostApplicationBuilder builder,
+            params ConfigurationSetDefinition[] definitions)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(definitions);
+
+            var names = new HashSet<string>(StringComparer.Ordinal);
+            foreach (ConfigurationSetDefinition definition in definitions)
+            {
+                ArgumentNullException.ThrowIfNull(definition);
+
+                if (!names.Add(definition.Name))
+                {
+                    throw new InvalidOperationException(
+                        $"Configuration set batch contains duplicate name '{definition.Name}'.");
+                }
+
+                if (builder.Services.Any(descriptor =>
+                        descriptor.ServiceType == typeof(IConfigurationSetCoordinator) &&
+                        descriptor.IsKeyedService &&
+                        Equals(descriptor.ServiceKey, definition.Name)))
+                {
+                    throw new InvalidOperationException(
+                        $"A configuration set coordinator named '{definition.Name}' is already registered.");
+                }
+            }
+
+            foreach (ConfigurationSetDefinition definition in definitions)
+            {
+                _ = builder.AddConfigurationSet(definition);
+            }
+
+            return builder;
         }
 
         internal static bool TryGetRegisteredCoordinator(

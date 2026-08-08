@@ -139,6 +139,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// </summary>
         event EventHandler<ConfigurationSetStateStoreEventArgs>? LifecycleChanged;
 
+        /// <summary>Captures the current managed state-file and coordinator runtime status.</summary>
+        ConfigurationSetStateStoreStatus GetStatus();
+
         /// <summary>Loads the current state file and applies requested values to the registered independent set coordinators.</summary>
         ConfigurationSetStateApplyResult Reload();
 

@@ -25,6 +25,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         private readonly bool _reloadOnChange;
         private readonly int _reloadDelayMilliseconds;
         private ConfigurationSetStateFileWatcher? _watcher;
+        private ConfigurationSetStateApplyResult? _lastApplyResult;
         private long _sequence;
         private bool _disposed;
 
@@ -79,6 +80,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 if (File.Exists(FilePath))
                 {
                     ConfigurationSetStateApplyResult result = ReloadLocked(canonicalizeOnSuccess: true);
+                    _lastApplyResult = result;
                     if (!result.Succeeded)
                     {
                         throw new InvalidOperationException(
@@ -113,6 +115,25 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             }
         }
 
+        public ConfigurationSetStateStoreStatus GetStatus()
+        {
+            lock (_gate)
+            {
+                ThrowIfDisposed();
+
+                var sets = new List<ConfigurationSetStatus>(_coordinators.Count);
+                foreach (IConfigurationSetCoordinator coordinator in _coordinators)
+                {
+                    sets.Add(coordinator.GetStatus());
+                }
+
+                return new ConfigurationSetStateStoreStatus(
+                    FilePath,
+                    new ReadOnlyCollection<ConfigurationSetStatus>(sets),
+                    _lastApplyResult);
+            }
+        }
+
         public ConfigurationSetStateApplyResult Reload()
         {
             ConfigurationSetStateApplyResult result;
@@ -121,6 +142,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             {
                 ThrowIfDisposed();
                 result = ReloadLocked(canonicalizeOnSuccess: true);
+                _lastApplyResult = result;
             }
 
             PublishApplyLifecycle(result);
@@ -395,6 +417,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 }
 
                 result = ReloadLocked(canonicalizeOnSuccess: true);
+                _lastApplyResult = result;
             }
 
             PublishApplyLifecycle(result);

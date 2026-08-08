@@ -221,6 +221,60 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.IsTrue(results.All(result => result.ActiveValue is "Next" or "Experimental"));
         }
 
+        [TestMethod]
+        public void ConvenienceDefinitionAutomaticallyIncludesInitialValue()
+        {
+            ConfigurationSetDefinition definition = ConfigurationSetDefinition.Create(
+                "ProxySet",
+                "Stable",
+                "Next",
+                "Experimental");
+
+            Assert.AreEqual("Stable", definition.InitialValue);
+            CollectionAssert.AreEqual(
+                new[] { "Stable", "Next", "Experimental" },
+                definition.AllowedValues.ToArray());
+        }
+
+        [TestMethod]
+        public void BatchRegistrationExposesEveryDefinitionThroughKeyedDi()
+        {
+            HostApplicationBuilder builder = CreateBuilder();
+            _ = builder.AddConfigurationSets(
+                ConfigurationSetDefinition.Create("EnvironmentSet", "Development", "Production"),
+                ConfigurationSetDefinition.Create("ProxySet", "Stable", "Next", "Experimental"));
+
+            using IHost host = builder.Build();
+
+            IConfigurationSetCoordinator environment =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("EnvironmentSet");
+            IConfigurationSetCoordinator proxy =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("ProxySet");
+
+            Assert.AreEqual("Development", environment.ActiveValue);
+            Assert.AreEqual("Stable", proxy.ActiveValue);
+            CollectionAssert.AreEqual(
+                new[] { "Stable", "Next", "Experimental" },
+                proxy.AllowedValues.ToArray());
+        }
+
+        [TestMethod]
+        public void BatchRegistrationValidatesAllNamesBeforeRegisteringAnyCoordinator()
+        {
+            HostApplicationBuilder builder = CreateBuilder();
+            _ = builder.AddConfigurationSet(
+                ConfigurationSetDefinition.Create("ExistingSet", "A", "B"));
+
+            _ = Assert.ThrowsExactly<InvalidOperationException>(() =>
+                builder.AddConfigurationSets(
+                    ConfigurationSetDefinition.Create("NewSet", "A", "B"),
+                    ConfigurationSetDefinition.Create("ExistingSet", "A", "B")));
+
+            using IHost host = builder.Build();
+            Assert.IsNull(host.Services.GetKeyedService<IConfigurationSetCoordinator>("NewSet"));
+            Assert.IsNotNull(host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("ExistingSet"));
+        }
+
         private static HostApplicationBuilder CreateBuilder()
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings
