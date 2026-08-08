@@ -172,6 +172,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
         internal SwitchableJsonSwitchResult CommitPreparation(SwitchableJsonSwitchPreparation preparation)
         {
+            SwitchableJsonDeferredCommit deferred = CommitPreparationDeferred(preparation);
+            deferred.Publish();
+            return deferred.Result;
+        }
+
+        internal SwitchableJsonDeferredCommit CommitPreparationDeferred(SwitchableJsonSwitchPreparation preparation)
+        {
             ArgumentNullException.ThrowIfNull(preparation);
 
             if (!ReferenceEquals(preparation.Runtime, this))
@@ -188,8 +195,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             }
 
             // Explicit prepared commits are result-driven for coordinators and therefore never apply Throw failure policy.
-            PublishCommitOutcome(outcome);
-            return outcome.Result;
+            return new SwitchableJsonDeferredCommit(this, outcome.Result, outcome.ProviderToReload);
+        }
+
+        internal void PublishDeferredCommit(
+            SwitchableJsonSwitchResult result,
+            SwitchableJsonConfigurationProvider? providerToReload)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+            PublishCommitOutcome(new CommitOutcome(result, providerToReload));
         }
 
         internal void AbortPreparationResources(SwitchableJsonSwitchPreparation preparation)

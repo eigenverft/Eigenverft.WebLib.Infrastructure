@@ -38,13 +38,13 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             JsonElement sets = document.RootElement.GetProperty("ConfigurationSets");
 
             JsonElement environment = sets.GetProperty("EnvironmentSet");
-            Assert.AreEqual("Development", environment.GetProperty("Value").GetString());
+            Assert.AreEqual("Development", environment.GetProperty("DesiredValue").GetString());
             CollectionAssert.AreEqual(
                 new[] { "Development", "Production" },
                 environment.GetProperty("AllowedValues").EnumerateArray().Select(value => value.GetString()).ToArray());
 
             JsonElement proxy = sets.GetProperty("ProxySet");
-            Assert.AreEqual("Stable", proxy.GetProperty("Value").GetString());
+            Assert.AreEqual("Stable", proxy.GetProperty("DesiredValue").GetString());
             CollectionAssert.AreEqual(
                 new[] { "Stable", "Next", "Experimental" },
                 proxy.GetProperty("AllowedValues").EnumerateArray().Select(value => value.GetString()).ToArray());
@@ -63,7 +63,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 {
                   "ConfigurationSets": {
                     "ProxySet": {
-                      "Value": "Experimental",
+                      "DesiredValue": "Experimental",
                       "AllowedValues": [ "SomethingElse" ]
                     }
                   }
@@ -95,7 +95,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 {
                   "ConfigurationSets": {
                     "ProxySet": {
-                      "Value": "MadeUp",
+                      "DesiredValue": "MadeUp",
                       "AllowedValues": [ "Stable", "MadeUp" ]
                     }
                   }
@@ -130,8 +130,8 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 """
                 {
                   "ConfigurationSets": {
-                    "ProxySet": { "Value": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] },
-                    "TypoSet": { "Value": "Anything", "AllowedValues": [ "Anything" ] }
+                    "ProxySet": { "DesiredValue": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] },
+                    "TypoSet": { "DesiredValue": "Anything", "AllowedValues": [ "Anything" ] }
                   }
                 }
                 """);
@@ -171,8 +171,8 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 """
                 {
                   "ConfigurationSets": {
-                    "EnvironmentSet": { "Value": "Production", "AllowedValues": [ "Development", "Production" ] },
-                    "ProxySet": { "Value": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] }
+                    "EnvironmentSet": { "DesiredValue": "Production", "AllowedValues": [ "Development", "Production" ] },
+                    "ProxySet": { "DesiredValue": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] }
                   }
                 }
                 """);
@@ -222,7 +222,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 {
                   "ConfigurationSets": {
                     "ProxySet": {
-                      "Value": "Experimental",
+                      "DesiredValue": "Experimental",
                       "AllowedValues": [ "Stable", "Experimental" ]
                     }
                   }
@@ -237,7 +237,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
         }
 
         [TestMethod]
-        public void MissingKnownSetInOlderFileUsesCurrentValueAndIsAddedBackDuringCanonicalization()
+        public void MissingRegisteredSetRejectsAuthoritativeStateDocumentBeforeAnySetChanges()
         {
             using var directory = new TemporaryDirectory();
             directory.Write(
@@ -246,7 +246,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 {
                   "ConfigurationSets": {
                     "EnvironmentSet": {
-                      "Value": "Production",
+                      "DesiredValue": "Production",
                       "AllowedValues": [ "Development", "Production" ]
                     }
                   }
@@ -262,13 +262,11 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "Stable",
                 ["Stable", "Experimental"]);
 
-            _ = builder.AddConfigurationSetStateFile("ConfigurationSets.json", reloadOnChange: false);
+            _ = Assert.ThrowsExactly<InvalidOperationException>(() =>
+                builder.AddConfigurationSetStateFile("ConfigurationSets.json", reloadOnChange: false));
 
-            Assert.AreEqual("Production", environment.ActiveValue);
+            Assert.AreEqual("Development", environment.ActiveValue);
             Assert.AreEqual("Stable", proxy.ActiveValue);
-            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory.Path, "ConfigurationSets.json")));
-            Assert.IsTrue(document.RootElement.GetProperty("ConfigurationSets").TryGetProperty("ProxySet", out JsonElement proxyState));
-            Assert.AreEqual("Stable", proxyState.GetProperty("Value").GetString());
         }
 
         [TestMethod]
@@ -315,8 +313,8 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 """
                 {
                   "ConfigurationSets": {
-                    "ProxySet": { "Value": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] },
-                    "FeatureSet": { "Value": "Next", "AllowedValues": [ "Default", "Next" ] }
+                    "ProxySet": { "DesiredValue": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] },
+                    "FeatureSet": { "DesiredValue": "Next", "AllowedValues": [ "Default", "Next" ] }
                   }
                 }
                 """);
@@ -326,11 +324,11 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual("Next", builder.Configuration["FeatureMarker"]);
 
             ConfigurationSetStateStoreStatus status = store.GetStatus();
-            Assert.AreEqual(2, status.Sets.Count);
-            Assert.AreEqual("Experimental", status.Sets.Single(set => set.Name == "ProxySet").ActiveValue);
-            Assert.AreEqual("Next", status.Sets.Single(set => set.Name == "FeatureSet").ActiveValue);
-            Assert.IsTrue(status.Sets.All(set => set.IsConsistent));
-            CollectionAssert.AreEqual(new[] { "proxy-settings" }, status.Sets.Single(set => set.Name == "ProxySet").BoundParticipantNames.ToArray());
+            Assert.AreEqual(2, status.SetStates.Count);
+            Assert.AreEqual("Experimental", status.SetStates.Single(set => set.Name == "ProxySet").ActiveValue);
+            Assert.AreEqual("Next", status.SetStates.Single(set => set.Name == "FeatureSet").ActiveValue);
+            Assert.IsTrue(status.SetStates.All(set => set.IsConsistent));
+            CollectionAssert.AreEqual(new[] { "proxy-settings" }, status.SetStates.Single(set => set.Name == "ProxySet").BoundParticipantNames.ToArray());
             Assert.AreEqual(ConfigurationSetStateApplyStatus.Succeeded, status.LastApplyResult?.Status);
 
             host.StopAsync().GetAwaiter().GetResult();
@@ -362,8 +360,8 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 """
                 {
                   "ConfigurationSets": {
-                    "EnvironmentSet": { "Value": "Production", "AllowedValues": [ "Development", "Production" ] },
-                    "ProxySet": { "Value": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] }
+                    "EnvironmentSet": { "DesiredValue": "Production", "AllowedValues": [ "Development", "Production" ] },
+                    "ProxySet": { "DesiredValue": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] }
                   }
                 }
                 """);
@@ -378,9 +376,9 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual("Stable", builder.Configuration["ProxyMarker"]);
 
             ConfigurationSetStateStoreStatus status = store.GetStatus();
-            Assert.AreEqual("Production", status.Sets.Single(set => set.Name == "EnvironmentSet").ActiveValue);
-            Assert.AreEqual("Stable", status.Sets.Single(set => set.Name == "ProxySet").ActiveValue);
-            Assert.IsTrue(status.Sets.All(set => set.IsConsistent));
+            Assert.AreEqual("Production", status.SetStates.Single(set => set.Name == "EnvironmentSet").ActiveValue);
+            Assert.AreEqual("Stable", status.SetStates.Single(set => set.Name == "ProxySet").ActiveValue);
+            Assert.IsTrue(status.SetStates.All(set => set.IsConsistent));
             Assert.AreSame(result, status.LastApplyResult);
         }
 
@@ -408,7 +406,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                     {
                       "ConfigurationSets": {
                         "ProxySet": {
-                          "Value": "Experimental",
+                          "DesiredValue": "Experimental",
                           "AllowedValues": [ "Stable", "Experimental" ]
                         }
                       }
@@ -457,12 +455,12 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 {
                   "ConfigurationSets": {
                     "RoutingProfile": {
-                      "Value": "Failover",
+                      "DesiredValue": "Failover",
                       "AllowedValues": [ "Primary", "Failover" ],
                       "ApplyMode": "StartupOnly"
                     },
                     "ReleaseChannel": {
-                      "Value": "Beta",
+                      "DesiredValue": "Beta",
                       "AllowedValues": [ "Stable", "Beta" ],
                       "ApplyMode": "Runtime"
                     }
@@ -497,7 +495,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             JsonElement sets = document.RootElement.GetProperty("ConfigurationSets");
             Assert.AreEqual("Runtime", sets.GetProperty("RoutingProfile").GetProperty("ApplyMode").GetString());
             Assert.AreEqual("StartupOnly", sets.GetProperty("ReleaseChannel").GetProperty("ApplyMode").GetString());
-            Assert.AreEqual("Beta", sets.GetProperty("ReleaseChannel").GetProperty("Value").GetString());
+            Assert.AreEqual("Beta", sets.GetProperty("ReleaseChannel").GetProperty("DesiredValue").GetString());
         }
 
         [TestMethod]
@@ -520,7 +518,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 {
                   "ConfigurationSets": {
                     "ReleaseChannel": {
-                      "Value": "Beta",
+                      "DesiredValue": "Beta",
                       "AllowedValues": [ "Stable", "Beta" ],
                       "ApplyMode": "StartupOnly"
                     }
@@ -584,11 +582,11 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 {
                   "ConfigurationSets": {
                     "RoutingProfile": {
-                      "Value": "Failover",
+                      "DesiredValue": "Failover",
                       "AllowedValues": [ "Primary", "Failover" ]
                     },
                     "ReleaseChannel": {
-                      "Value": "Beta",
+                      "DesiredValue": "Beta",
                       "AllowedValues": [ "Stable", "Beta" ]
                     }
                   }
@@ -603,6 +601,53 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.IsTrue(store.GetStatus().HasPendingRestart);
 
             host.StopAsync().GetAwaiter().GetResult();
+        }
+
+        [TestMethod]
+        public void EventHubSubscriberCanReadStateStoreFromAnotherThreadDuringPersistentRuntimeSwitch()
+        {
+            using var directory = new TemporaryDirectory();
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            _ = builder.AddConfigurationSet("RoutingProfile", "Primary", "Failover");
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+            using IHost host = builder.Build();
+            IConfigurationSetEventHub eventHub = host.Services.GetRequiredService<IConfigurationSetEventHub>();
+            int blockedStatusReadCount = 0;
+            int observedCount = 0;
+            using IDisposable subscription = eventHub.Subscribe("RoutingProfile", notification =>
+            {
+                if (notification.Kind != ConfigurationSetEventKind.SwitchSucceeded)
+                {
+                    return;
+                }
+
+                Interlocked.Increment(ref observedCount);
+                using var statusReadCompleted = new ManualResetEventSlim();
+                var statusThread = new Thread(() =>
+                {
+                    _ = store.GetStatus();
+                    statusReadCompleted.Set();
+                })
+                {
+                    IsBackground = true,
+                };
+                statusThread.Start();
+
+                if (!statusReadCompleted.Wait(TimeSpan.FromSeconds(1)))
+                {
+                    Interlocked.Increment(ref blockedStatusReadCount);
+                }
+            });
+
+            ConfigurationSetStateApplyResult result =
+                store.TrySetDesiredValue("RoutingProfile", "Failover");
+
+            Assert.IsTrue(result.Succeeded);
+            Assert.AreEqual(1, observedCount);
+            Assert.AreEqual(0, blockedStatusReadCount);
+            Assert.AreEqual("Failover", store.GetStatus().SetStates.Single().ActiveValue);
         }
 
         [TestMethod]
@@ -642,7 +687,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(store.FilePath));
             JsonElement routingState = document.RootElement.GetProperty("ConfigurationSets").GetProperty("RoutingProfile");
-            Assert.AreEqual("Failover", routingState.GetProperty("Value").GetString());
+            Assert.AreEqual("Failover", routingState.GetProperty("DesiredValue").GetString());
             Assert.AreEqual("Runtime", routingState.GetProperty("ApplyMode").GetString());
         }
 
@@ -676,7 +721,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(store.FilePath));
             JsonElement releaseState = document.RootElement.GetProperty("ConfigurationSets").GetProperty("ReleaseChannel");
-            Assert.AreEqual("Beta", releaseState.GetProperty("Value").GetString());
+            Assert.AreEqual("Beta", releaseState.GetProperty("DesiredValue").GetString());
             Assert.AreEqual("StartupOnly", releaseState.GetProperty("ApplyMode").GetString());
         }
 
@@ -716,7 +761,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                     document.RootElement
                         .GetProperty("ConfigurationSets")
                         .GetProperty("RoutingProfile")
-                        .GetProperty("Value")
+                        .GetProperty("DesiredValue")
                         .GetString());
             }
 
@@ -757,7 +802,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 document.RootElement
                     .GetProperty("ConfigurationSets")
                     .GetProperty("RoutingProfile")
-                    .GetProperty("Value")
+                    .GetProperty("DesiredValue")
                     .GetString());
         }
 

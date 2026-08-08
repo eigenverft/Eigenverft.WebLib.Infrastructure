@@ -62,7 +62,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the code-defined value used to initialize this set before optional desired state is applied.</summary>
         public string InitialValue => Runtime.InitialValue;
 
-        /// <summary>Gets the value active in the running process.</summary>
+        /// <summary>Gets the last fully coordinated active value; interpret it together with <see cref="IsConsistent"/>.</summary>
         public string ActiveValue => Runtime.ActiveValue;
 
         /// <summary>Gets the desired value owned by the state store.</summary>
@@ -71,7 +71,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the code-owned desired-state apply policy.</summary>
         public ConfigurationSetApplyMode ApplyMode { get; }
 
-        /// <summary>Gets whether the desired state differs from the value active in the running process.</summary>
+        /// <summary>Gets whether desired state differs from the last fully coordinated active value.</summary>
         public bool HasDesiredStateDrift =>
             !string.Equals(ActiveValue, DesiredValue, System.StringComparison.Ordinal);
 
@@ -95,21 +95,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     {
         internal ConfigurationSetStateStoreStatus(
             string filePath,
-            IReadOnlyList<ConfigurationSetStatus> sets,
             IReadOnlyList<ConfigurationSetStateStatus> setStates,
             ConfigurationSetStateApplyResult? lastApplyResult)
         {
             FilePath = filePath;
-            Sets = sets;
             SetStates = setStates;
             LastApplyResult = lastApplyResult;
         }
 
         /// <summary>Gets the normalized state-file path.</summary>
         public string FilePath { get; }
-
-        /// <summary>Gets coordinator runtime snapshots in registration order.</summary>
-        public IReadOnlyList<ConfigurationSetStatus> Sets { get; }
 
         /// <summary>Gets state-store snapshots including desired values and apply modes in registration order.</summary>
         public IReadOnlyList<ConfigurationSetStateStatus> SetStates { get; }

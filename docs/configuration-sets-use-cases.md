@@ -4,7 +4,7 @@ This document is product/marketing-oriented. For the exact current API and guara
 
 ## Core positioning
 
-> Feature flags switch behavior. Configuration Sets switch entire known-good configuration baselines.
+> Feature flags switch behavior. Configuration Sets switch complete reviewed configuration baselines.
 
 A configuration profile gives a semantic name to a group of settings that belong together. Instead of changing several production keys individually, an application can select a reviewed state such as:
 
@@ -65,7 +65,7 @@ ContentRoot/
 {
   "ConfigurationSets": {
     "ReleaseChannel": {
-      "Value": "Beta",
+      "DesiredValue": "Beta",
       "AllowedValues": [
         "Stable",
         "Beta",
@@ -132,7 +132,7 @@ ContentRoot/
 {
   "ConfigurationSets": {
     "OperationalProfile": {
-      "Value": "Degraded",
+      "DesiredValue": "Degraded",
       "AllowedValues": [
         "Normal",
         "Degraded",
@@ -199,7 +199,7 @@ ContentRoot/
 {
   "ConfigurationSets": {
     "ResilienceProfile": {
-      "Value": "UpstreamDegraded",
+      "DesiredValue": "UpstreamDegraded",
       "AllowedValues": [
         "Normal",
         "UpstreamDegraded",
@@ -286,7 +286,7 @@ ContentRoot/
 {
   "ConfigurationSets": {
     "RoutingProfile": {
-      "Value": "Failover",
+      "DesiredValue": "Failover",
       "AllowedValues": [
         "Primary",
         "Canary",
@@ -343,7 +343,7 @@ ContentRoot/
 {
   "ConfigurationSets": {
     "DiagnosticsProfile": {
-      "Value": "Incident",
+      "DesiredValue": "Incident",
       "AllowedValues": [
         "Standard",
         "Verbose",
@@ -391,7 +391,7 @@ Programmatic runtime control is available through the persistence-neutral `IConf
 
 ## Short positioning candidates
 
-> Feature flags switch behavior. Configuration Sets switch entire known-good configuration baselines.
+> Feature flags switch behavior. Configuration Sets switch complete reviewed configuration baselines.
 
 > Switch between reviewed configuration profiles instead of editing production settings one key at a time.
 

@@ -89,6 +89,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// </remarks>
         public SwitchableJsonSwitchResult Commit()
         {
+            SwitchableJsonDeferredCommit deferred = CommitDeferred();
+            deferred.Publish();
+            return deferred.Result;
+        }
+
+        internal SwitchableJsonDeferredCommit CommitDeferred()
+        {
             if (Status == SwitchableJsonPreparationStatus.Rejected)
             {
                 throw new InvalidOperationException("A rejected switch preparation cannot be committed.");
@@ -101,7 +108,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
             try
             {
-                return Runtime.CommitPreparation(this);
+                return Runtime.CommitPreparationDeferred(this);
             }
             catch
             {

@@ -93,17 +93,21 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         public void Initialize()
         {
+            ConfigurationSetStateApplyResult? result = null;
+            var deferredSwitches = new List<ConfigurationSetDeferredSwitch>();
+            InvalidOperationException? startupException = null;
+
             lock (_gate)
             {
                 ThrowIfDisposed();
 
                 if (File.Exists(FilePath))
                 {
-                    ConfigurationSetStateApplyResult result = ReloadLocked(canonicalizeOnSuccess: true, isStartup: true);
+                    result = ReloadLocked(canonicalizeOnSuccess: true, isStartup: true, deferredSwitches);
                     _lastApplyResult = result;
                     if (!result.Succeeded)
                     {
-                        throw new InvalidOperationException(
+                        startupException = new InvalidOperationException(
                             $"Configuration set state file '{FilePath}' could not be applied during startup. " +
                             $"Status: {result.Status}; failure: {result.FailureKind}.",
                             result.Exception);
@@ -113,7 +117,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 {
                     WriteCanonicalLocked();
                 }
+            }
 
+            PublishDeferredSwitches(deferredSwitches);
+
+            if (startupException is not null)
+            {
+                throw startupException;
             }
         }
 
@@ -141,13 +151,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             {
                 ThrowIfDisposed();
 
-                var sets = new List<ConfigurationSetStatus>(_coordinators.Count);
                 var setStates = new List<ConfigurationSetStateStatus>(_coordinators.Count);
 
                 foreach (IConfigurationSetCoordinator coordinator in _coordinators)
                 {
                     ConfigurationSetStatus runtime = coordinator.GetStatus();
-                    sets.Add(runtime);
                     setStates.Add(
                         new ConfigurationSetStateStatus(
                             runtime,
@@ -157,7 +165,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
                 return new ConfigurationSetStateStoreStatus(
                     FilePath,
-                    new ReadOnlyCollection<ConfigurationSetStatus>(sets),
                     new ReadOnlyCollection<ConfigurationSetStateStatus>(setStates),
                     _lastApplyResult);
             }
@@ -171,14 +178,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         public ConfigurationSetStateApplyResult Reload()
         {
             ConfigurationSetStateApplyResult result;
+            var deferredSwitches = new List<ConfigurationSetDeferredSwitch>();
 
             lock (_gate)
             {
                 ThrowIfDisposed();
-                result = ReloadLocked(canonicalizeOnSuccess: true, isStartup: false);
+                result = ReloadLocked(canonicalizeOnSuccess: true, isStartup: false, deferredSwitches);
                 _lastApplyResult = result;
             }
 
+            PublishDeferredSwitches(deferredSwitches);
             PublishApplyLifecycle(result);
             return result;
         }
@@ -189,6 +198,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             ArgumentException.ThrowIfNullOrWhiteSpace(value);
 
             ConfigurationSetStateApplyResult result;
+            ConfigurationSetDeferredSwitch? coordinatorOperation = null;
 
             lock (_gate)
             {
@@ -268,7 +278,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     }
                     else
                     {
-                        ConfigurationSetSwitchResult switchResult = coordinator.TrySwitch(value);
+                        coordinatorOperation = GetDeferredSwitch(coordinator, value);
+                        ConfigurationSetSwitchResult switchResult = coordinatorOperation.Result;
                         IReadOnlyList<ConfigurationSetSwitchResult> switchResults =
                             new ReadOnlyCollection<ConfigurationSetSwitchResult>(
                                 new List<ConfigurationSetSwitchResult> { switchResult });
@@ -291,6 +302,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 _lastApplyResult = result;
             }
 
+            coordinatorOperation?.Publish();
             PublishDesiredValueLifecycle(result);
             return result;
         }
@@ -336,7 +348,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             watcher?.Dispose();
         }
 
-        private ConfigurationSetStateApplyResult ReloadLocked(bool canonicalizeOnSuccess, bool isStartup)
+        private ConfigurationSetStateApplyResult ReloadLocked(
+            bool canonicalizeOnSuccess,
+            bool isStartup,
+            List<ConfigurationSetDeferredSwitch> deferredSwitches)
         {
             long sequence = ++_sequence;
             DateTimeOffset timestamp = DateTimeOffset.UtcNow;
@@ -402,23 +417,37 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         timestamp);
                 }
 
-                if (entry is null || string.IsNullOrWhiteSpace(entry.Value))
+                if (entry is null || string.IsNullOrWhiteSpace(entry.DesiredValue))
                 {
                     return CreateRejected(
                         ConfigurationSetStateFailureKind.InvalidDocument,
-                        new InvalidDataException($"Configuration set '{name}' must contain a non-empty 'Value'."),
+                        new InvalidDataException($"Configuration set '{name}' must contain a non-empty 'DesiredValue'."),
                         sequence,
                         timestamp);
                 }
 
                 // AllowedValues and ApplyMode in the file are descriptive metadata only.
                 // Runtime authorization and apply policy always come from registered code.
-                if (!coordinator.IsAllowed(entry.Value))
+                if (!coordinator.IsAllowed(entry.DesiredValue))
                 {
                     return CreateRejected(
                         ConfigurationSetStateFailureKind.ValueNotAllowed,
                         new InvalidDataException(
-                            $"Value '{entry.Value}' is not allowed by registered configuration set '{name}'."),
+                            $"Value '{entry.DesiredValue}' is not allowed by registered configuration set '{name}'."),
+                        sequence,
+                        timestamp);
+                }
+            }
+
+            foreach (IConfigurationSetCoordinator coordinator in _coordinators)
+            {
+                if (!document.ConfigurationSets.TryGetValue(coordinator.Name, out ConfigurationSetStateEntry? registeredEntry) ||
+                    registeredEntry is null)
+                {
+                    return CreateRejected(
+                        ConfigurationSetStateFailureKind.InvalidDocument,
+                        new InvalidDataException(
+                            $"Configuration set state document is missing registered set '{coordinator.Name}'."),
                         sequence,
                         timestamp);
                 }
@@ -428,7 +457,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             {
                 if (entry is not null)
                 {
-                    _desiredValues[name] = entry.Value!;
+                    _desiredValues[name] = entry.DesiredValue!;
                 }
             }
 
@@ -438,12 +467,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
             foreach (IConfigurationSetCoordinator coordinator in _coordinators)
             {
-                if (!document.ConfigurationSets.TryGetValue(coordinator.Name, out ConfigurationSetStateEntry? entry) || entry is null)
-                {
-                    continue;
-                }
-
-                string desiredValue = entry.Value!;
+                ConfigurationSetStateEntry entry = document.ConfigurationSets[coordinator.Name]!;
+                string desiredValue = entry.DesiredValue!;
                 ConfigurationSetApplyMode applyMode = _applyModes[coordinator.Name];
 
                 if (!isStartup && applyMode == ConfigurationSetApplyMode.StartupOnly)
@@ -461,7 +486,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     continue;
                 }
 
-                ConfigurationSetSwitchResult result = coordinator.TrySwitch(desiredValue);
+                ConfigurationSetDeferredSwitch deferredSwitch = GetDeferredSwitch(coordinator, desiredValue);
+                deferredSwitches.Add(deferredSwitch);
+                ConfigurationSetSwitchResult result = deferredSwitch.Result;
                 results.Add(result);
                 if (!result.Succeeded)
                 {
@@ -542,7 +569,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     coordinator.Name,
                     new ConfigurationSetStateEntry
                     {
-                        Value = _desiredValues[coordinator.Name],
+                        DesiredValue = _desiredValues[coordinator.Name],
                         AllowedValues = coordinator.AllowedValues.ToList(),
                         ApplyMode = _applyModes[coordinator.Name].ToString(),
                     });
@@ -591,6 +618,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         private void ReloadFromWatcher()
         {
             ConfigurationSetStateApplyResult result;
+            var deferredSwitches = new List<ConfigurationSetDeferredSwitch>();
 
             lock (_gate)
             {
@@ -624,11 +652,33 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     }
                 }
 
-                result = ReloadLocked(canonicalizeOnSuccess: true, isStartup: false);
+                result = ReloadLocked(canonicalizeOnSuccess: true, isStartup: false, deferredSwitches);
                 _lastApplyResult = result;
             }
 
+            PublishDeferredSwitches(deferredSwitches);
             PublishApplyLifecycle(result);
+        }
+
+        private static ConfigurationSetDeferredSwitch GetDeferredSwitch(
+            IConfigurationSetCoordinator coordinator,
+            string value)
+        {
+            if (coordinator is not ConfigurationSetCoordinator concrete)
+            {
+                throw new InvalidOperationException(
+                    "The built-in configuration-set state store can only manage coordinators created by the library registration API.");
+            }
+
+            return concrete.TrySwitchDeferred(value);
+        }
+
+        private static void PublishDeferredSwitches(IEnumerable<ConfigurationSetDeferredSwitch> deferredSwitches)
+        {
+            foreach (ConfigurationSetDeferredSwitch deferredSwitch in deferredSwitches)
+            {
+                deferredSwitch.Publish();
+            }
         }
 
         private void PublishDesiredValueLifecycle(ConfigurationSetStateApplyResult result)
@@ -702,7 +752,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         private sealed class ConfigurationSetStateEntry
         {
-            public string? Value { get; set; }
+            public string? DesiredValue { get; set; }
 
             public List<string>? AllowedValues { get; set; }
 

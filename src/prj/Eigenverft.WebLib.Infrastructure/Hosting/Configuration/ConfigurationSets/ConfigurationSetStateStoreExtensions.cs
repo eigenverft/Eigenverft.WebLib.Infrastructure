@@ -35,7 +35,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Sets the code-owned desired-state apply mode for one already registered configuration set.</summary>
         /// <param name="builder">The host application builder containing the configuration set.</param>
         /// <param name="setName">The registered configuration-set name.</param>
-        /// <param name="applyMode">Whether state-file changes may apply at runtime or only during startup.</param>
+        /// <param name="applyMode">Whether desired-state changes may apply at runtime or only during startup.</param>
         /// <returns>The same builder for chaining.</returns>
         /// <remarks>
         /// This policy belongs to desired-state control, not to <see cref="IConfigurationSetCoordinator"/>. Direct coordinator

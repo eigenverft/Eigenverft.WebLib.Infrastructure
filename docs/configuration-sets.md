@@ -133,9 +133,9 @@ builder
         "Diagnostics.json");
 ```
 
-The files remain independent `ISwitchableJsonConfiguration` runtimes. The set coordinator performs a preflight across every bound participant before the first commit.
+The files remain independent `ISwitchableJsonConfiguration` runtimes. The set coordinator performs a preflight across every bound participant before the first commit. Prepared participant state is then committed without publishing observer notifications; after all successful commits and coordinator state finalization, `IConfiguration` reload and lifecycle notifications are released outside coordinator locks. A consumer reacting to a successful multi-file switch therefore sees the final committed baseline rather than a notification after each intermediate participant commit.
 
-A preparation rejection leaves every participant on the previous known-good set value. A rare failure after an earlier participant has already committed is reported as `PartiallyCommitted` and sets `IsConsistent` to `false`; the library does not claim a transaction that it cannot guarantee.
+A preparation rejection leaves every participant on the previous successfully coordinated set value. A rare race can still make a later prepared commit stale after an earlier participant has already committed; that outcome is reported as `PartiallyCommitted` and sets `IsConsistent` to `false`. This improves observer semantics but deliberately does not claim a fully atomic multi-provider transaction.
 
 ## Central state file
 
@@ -149,7 +149,7 @@ builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 {
   "ConfigurationSets": {
     "RoutingProfile": {
-      "Value": "Primary",
+      "DesiredValue": "Primary",
       "AllowedValues": [
         "Primary",
         "Canary",
@@ -160,7 +160,9 @@ builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 }
 ```
 
-`Value` is the selected state. `AllowedValues` is descriptive metadata materialized from code; editing it does not authorize new values.
+`DesiredValue` is the persisted requested state and may differ from the running `ActiveValue`, for example with `StartupOnly` or after a rejected runtime activation. `AllowedValues` and `ApplyMode` are descriptive metadata materialized from code; editing them does not authorize new values or change policy.
+
+The built-in JSON store treats this as a complete authoritative desired-state document: every configuration set registered before the store is added must be present, and unknown or missing set entries reject the document before any set is changed. Canonical materialization always writes the full registered set collection.
 
 A relative state-file path is resolved from the host content root:
 
@@ -172,7 +174,7 @@ ContentRoot/
         └── ...
 ```
 
-With state-file watching enabled, editing `Value` can trigger a coordinated runtime switch. With `reloadOnChange: false`, the file is applied at startup and not watched during the running host.
+With state-file watching enabled, editing `DesiredValue` can trigger a coordinated runtime switch. With `reloadOnChange: false`, the file is applied at startup and not watched during the running host.
 
 Each set can additionally declare a code-owned desired-state apply mode:
 
@@ -197,12 +199,12 @@ The canonical state file materializes that policy as read-only descriptive metad
 {
   "ConfigurationSets": {
     "ReleaseChannel": {
-      "Value": "Beta",
+      "DesiredValue": "Beta",
       "AllowedValues": [ "Stable", "Beta" ],
       "ApplyMode": "StartupOnly"
     },
     "RoutingProfile": {
-      "Value": "Failover",
+      "DesiredValue": "Failover",
       "AllowedValues": [ "Primary", "Failover" ],
       "ApplyMode": "Runtime"
     }
@@ -379,7 +381,7 @@ They add a semantic coordination layer above configuration sources: a named valu
 - thread-safe coordinator switching;
 - observable set-level events with participant detail;
 - self-describing central state file;
-- per-set `Runtime` / `StartupOnly` state-file policy;
+- per-set `Runtime` / `StartupOnly` desired-state apply policy;
 - visible code-owned `ApplyMode` metadata;
 - desired-vs-active status, generic desired-state drift, and pending-restart reporting;
 - explicit persistent `TrySetDesiredValue(...)` control distinct from ephemeral coordinator switching;

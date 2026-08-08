@@ -6,10 +6,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     /// <summary>Controls when a desired configuration-set value is applied to its runtime coordinator.</summary>
     public enum ConfigurationSetApplyMode
     {
-        /// <summary>State-file changes may be applied while the host is running.</summary>
+        /// <summary>Desired-state changes may be applied while the host is running.</summary>
         Runtime = 0,
 
-        /// <summary>State-file changes are applied during startup and remain pending while the current host is running.</summary>
+        /// <summary>Desired-state changes are applied during startup and remain pending while the current host is running.</summary>
         StartupOnly = 1,
     }
 
@@ -93,7 +93,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the configuration-set identity.</summary>
         public string Name { get; }
 
-        /// <summary>Gets the value active in the running process.</summary>
+        /// <summary>Gets the last fully coordinated active value; interpret it together with consistency state.</summary>
         public string ActiveValue { get; }
 
         /// <summary>Gets the desired value owned by the configured desired-state store.</summary>

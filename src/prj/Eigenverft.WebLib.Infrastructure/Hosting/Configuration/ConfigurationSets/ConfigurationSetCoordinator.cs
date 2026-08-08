@@ -97,8 +97,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         public ConfigurationSetSwitchResult TrySwitch(string value)
         {
+            ConfigurationSetDeferredSwitch deferred = TrySwitchDeferred(value);
+            deferred.Publish();
+            return deferred.Result;
+        }
+
+        internal ConfigurationSetDeferredSwitch TrySwitchDeferred(string value)
+        {
             ArgumentException.ThrowIfNullOrWhiteSpace(value);
-            ConfigurationSetSwitchResult result;
 
             lock (_gate)
             {
@@ -106,59 +112,83 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
                 if (_switchInProgress)
                 {
-                    result = CreateResult(
-                        ConfigurationSetSwitchStatus.Rejected,
-                        previousValue,
-                        value,
-                        previousValue,
-                        valueChanged: false,
-                        _isConsistent,
-                        ConfigurationSetSwitchFailureKind.SwitchInProgress,
-                        failedParticipantName: null,
-                        exception: null);
+                    return CreateDeferredSwitch(
+                        CreateResult(
+                            ConfigurationSetSwitchStatus.Rejected,
+                            previousValue,
+                            value,
+                            previousValue,
+                            valueChanged: false,
+                            _isConsistent,
+                            ConfigurationSetSwitchFailureKind.SwitchInProgress,
+                            failedParticipantName: null,
+                            exception: null),
+                        Array.Empty<SwitchableJsonDeferredCommit>(),
+                        completesSwitchInProgress: false);
                 }
-                else if (!_definition.IsAllowed(value))
+
+                if (!_definition.IsAllowed(value))
                 {
-                    result = CreateResult(
-                        ConfigurationSetSwitchStatus.Rejected,
-                        previousValue,
-                        value,
-                        previousValue,
-                        valueChanged: false,
-                        _isConsistent,
-                        ConfigurationSetSwitchFailureKind.ValueNotAllowed,
-                        failedParticipantName: null,
-                        exception: null);
+                    return CreateDeferredSwitch(
+                        CreateResult(
+                            ConfigurationSetSwitchStatus.Rejected,
+                            previousValue,
+                            value,
+                            previousValue,
+                            valueChanged: false,
+                            _isConsistent,
+                            ConfigurationSetSwitchFailureKind.ValueNotAllowed,
+                            failedParticipantName: null,
+                            exception: null),
+                        Array.Empty<SwitchableJsonDeferredCommit>(),
+                        completesSwitchInProgress: false);
                 }
-                else if (_isConsistent && string.Equals(previousValue, value, StringComparison.Ordinal))
+
+                if (_isConsistent && string.Equals(previousValue, value, StringComparison.Ordinal))
                 {
-                    result = CreateResult(
-                        ConfigurationSetSwitchStatus.AlreadyActive,
-                        previousValue,
-                        value,
-                        previousValue,
-                        valueChanged: false,
-                        isConsistent: true,
-                        ConfigurationSetSwitchFailureKind.None,
-                        failedParticipantName: null,
-                        exception: null);
+                    return CreateDeferredSwitch(
+                        CreateResult(
+                            ConfigurationSetSwitchStatus.AlreadyActive,
+                            previousValue,
+                            value,
+                            previousValue,
+                            valueChanged: false,
+                            isConsistent: true,
+                            ConfigurationSetSwitchFailureKind.None,
+                            failedParticipantName: null,
+                            exception: null),
+                        Array.Empty<SwitchableJsonDeferredCommit>(),
+                        completesSwitchInProgress: false);
                 }
-                else
+
+                _switchInProgress = true;
+                try
                 {
-                    _switchInProgress = true;
-                    try
-                    {
-                        result = CoordinateSwitchLocked(previousValue, value);
-                    }
-                    finally
-                    {
-                        _switchInProgress = false;
-                    }
+                    return CoordinateSwitchLocked(previousValue, value);
+                }
+                catch
+                {
+                    _switchInProgress = false;
+                    throw;
+                }
+            }
+        }
+
+        internal void CompleteDeferredSwitchPublication(
+            ConfigurationSetSwitchResult result,
+            bool completesSwitchInProgress)
+        {
+            ArgumentNullException.ThrowIfNull(result);
+
+            if (completesSwitchInProgress)
+            {
+                lock (_gate)
+                {
+                    _switchInProgress = false;
                 }
             }
 
             PublishLifecycle(result);
-            return result;
         }
 
         internal void AddSwitchableJsonBinding(SwitchableJsonConfigurationSetBinding binding)
@@ -232,26 +262,30 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             }
         }
 
-        private ConfigurationSetSwitchResult CoordinateSwitchLocked(string previousValue, string requestedValue)
+        private ConfigurationSetDeferredSwitch CoordinateSwitchLocked(string previousValue, string requestedValue)
         {
             if (_bindings.Count == 0)
             {
                 _activeValue = requestedValue;
                 _isConsistent = true;
-                return CreateResult(
-                    ConfigurationSetSwitchStatus.Succeeded,
-                    previousValue,
-                    requestedValue,
-                    requestedValue,
-                    !string.Equals(previousValue, requestedValue, StringComparison.Ordinal),
-                    isConsistent: true,
-                    ConfigurationSetSwitchFailureKind.None,
-                    failedParticipantName: null,
-                    exception: null);
+                return CreateDeferredSwitch(
+                    CreateResult(
+                        ConfigurationSetSwitchStatus.Succeeded,
+                        previousValue,
+                        requestedValue,
+                        requestedValue,
+                        !string.Equals(previousValue, requestedValue, StringComparison.Ordinal),
+                        isConsistent: true,
+                        ConfigurationSetSwitchFailureKind.None,
+                        failedParticipantName: null,
+                        exception: null),
+                    Array.Empty<SwitchableJsonDeferredCommit>(),
+                    completesSwitchInProgress: true);
             }
 
             bool consistencyBefore = _isConsistent;
             var preparations = new List<PreparedBinding>(_bindings.Count);
+            var deferredCommits = new List<SwitchableJsonDeferredCommit>(_bindings.Count);
 
             try
             {
@@ -264,32 +298,38 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     }
                     catch (Exception exception)
                     {
-                        return CreateResult(
-                            ConfigurationSetSwitchStatus.Rejected,
-                            previousValue,
-                            requestedValue,
-                            previousValue,
-                            valueChanged: false,
-                            consistencyBefore,
-                            ConfigurationSetSwitchFailureKind.ParticipantOperationFailed,
-                            binding.Name,
-                            exception);
+                        return CreateDeferredSwitch(
+                            CreateResult(
+                                ConfigurationSetSwitchStatus.Rejected,
+                                previousValue,
+                                requestedValue,
+                                previousValue,
+                                valueChanged: false,
+                                consistencyBefore,
+                                ConfigurationSetSwitchFailureKind.ParticipantOperationFailed,
+                                binding.Name,
+                                exception),
+                            deferredCommits,
+                            completesSwitchInProgress: true);
                     }
 
                     preparations.Add(new PreparedBinding(binding, preparation));
 
                     if (preparation.Status == SwitchableJsonPreparationStatus.Rejected)
                     {
-                        return CreateResult(
-                            ConfigurationSetSwitchStatus.Rejected,
-                            previousValue,
-                            requestedValue,
-                            previousValue,
-                            valueChanged: false,
-                            consistencyBefore,
-                            ConfigurationSetSwitchFailureKind.ParticipantPreparationRejected,
-                            binding.Name,
-                            preparation.Exception);
+                        return CreateDeferredSwitch(
+                            CreateResult(
+                                ConfigurationSetSwitchStatus.Rejected,
+                                previousValue,
+                                requestedValue,
+                                previousValue,
+                                valueChanged: false,
+                                consistencyBefore,
+                                ConfigurationSetSwitchFailureKind.ParticipantPreparationRejected,
+                                binding.Name,
+                                preparation.Exception),
+                            deferredCommits,
+                            completesSwitchInProgress: true);
                     }
                 }
 
@@ -303,32 +343,40 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
                     try
                     {
-                        participantResult = prepared.Preparation.Commit();
+                        SwitchableJsonDeferredCommit deferredCommit = prepared.Preparation.CommitDeferred();
+                        deferredCommits.Add(deferredCommit);
+                        participantResult = deferredCommit.Result;
                     }
                     catch (Exception exception)
                     {
-                        return CompleteCommitFailureLocked(
-                            previousValue,
-                            requestedValue,
-                            consistencyBefore,
-                            anyParticipantSourceChanged,
-                            participantResults,
-                            prepared.Binding.Name,
-                            ConfigurationSetSwitchFailureKind.ParticipantOperationFailed,
-                            exception);
+                        return CreateDeferredSwitch(
+                            CompleteCommitFailureLocked(
+                                previousValue,
+                                requestedValue,
+                                consistencyBefore,
+                                anyParticipantSourceChanged,
+                                participantResults,
+                                prepared.Binding.Name,
+                                ConfigurationSetSwitchFailureKind.ParticipantOperationFailed,
+                                exception),
+                            deferredCommits,
+                            completesSwitchInProgress: true);
                     }
 
                     if (participantResult.Status == SwitchableJsonSwitchStatus.Rejected)
                     {
-                        return CompleteCommitFailureLocked(
-                            previousValue,
-                            requestedValue,
-                            consistencyBefore,
-                            anyParticipantSourceChanged,
-                            participantResults,
-                            prepared.Binding.Name,
-                            ConfigurationSetSwitchFailureKind.ParticipantCommitRejected,
-                            participantResult.Exception);
+                        return CreateDeferredSwitch(
+                            CompleteCommitFailureLocked(
+                                previousValue,
+                                requestedValue,
+                                consistencyBefore,
+                                anyParticipantSourceChanged,
+                                participantResults,
+                                prepared.Binding.Name,
+                                ConfigurationSetSwitchFailureKind.ParticipantCommitRejected,
+                                participantResult.Exception),
+                            deferredCommits,
+                            completesSwitchInProgress: true);
                     }
 
                     participantResults.Add(
@@ -344,17 +392,20 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 _activeValue = requestedValue;
                 _isConsistent = true;
 
-                return CreateResult(
-                    ConfigurationSetSwitchStatus.Succeeded,
-                    previousValue,
-                    requestedValue,
-                    requestedValue,
-                    !string.Equals(previousValue, requestedValue, StringComparison.Ordinal),
-                    isConsistent: true,
-                    ConfigurationSetSwitchFailureKind.None,
-                    failedParticipantName: null,
-                    exception: null,
-                    participantResults: participantResults);
+                return CreateDeferredSwitch(
+                    CreateResult(
+                        ConfigurationSetSwitchStatus.Succeeded,
+                        previousValue,
+                        requestedValue,
+                        requestedValue,
+                        !string.Equals(previousValue, requestedValue, StringComparison.Ordinal),
+                        isConsistent: true,
+                        ConfigurationSetSwitchFailureKind.None,
+                        failedParticipantName: null,
+                        exception: null,
+                        participantResults: participantResults),
+                    deferredCommits,
+                    completesSwitchInProgress: true);
             }
             finally
             {
@@ -403,6 +454,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 failedParticipantName,
                 exception,
                 participantResults);
+        }
+
+        private ConfigurationSetDeferredSwitch CreateDeferredSwitch(
+            ConfigurationSetSwitchResult result,
+            IReadOnlyList<SwitchableJsonDeferredCommit> participantCommits,
+            bool completesSwitchInProgress)
+        {
+            return new ConfigurationSetDeferredSwitch(this, result, participantCommits, completesSwitchInProgress);
         }
 
         private ConfigurationSetSwitchResult CreateResult(

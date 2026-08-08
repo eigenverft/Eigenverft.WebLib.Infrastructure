@@ -98,7 +98,7 @@ the central file is still valid and self-describing:
 {
   "ConfigurationSets": {
     "ProxySet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable" ]
     }
   }
@@ -317,7 +317,7 @@ The central control file still only selects the logical lane:
 {
   "ConfigurationSets": {
     "ProxySet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Candidate" ]
     }
   }
@@ -363,7 +363,7 @@ proxySet
 
 The resolver is evaluated once for every allowed value during registration and that mapping is frozen. Runtime switching does not call arbitrary application code again.
 
-It is also valid for two different set values to resolve to the same physical file. In that case the logical `Value` can change while `SourceChanged` and `ConfigurationChanged` remain false.
+It is also valid for two different set values to resolve to the same physical file. In that case the logical set value can change while `SourceChanged` and `ConfigurationChanged` remain false.
 
 ---
 
@@ -466,14 +466,14 @@ For the relative path above, the store materializes `ContentRoot/ConfigurationSe
 {
   "ConfigurationSets": {
     "EnvironmentSet": {
-      "Value": "Development",
+      "DesiredValue": "Development",
       "AllowedValues": [
         "Development",
         "Production"
       ]
     },
     "ProxySet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [
         "Stable",
         "Next",
@@ -481,7 +481,7 @@ For the relative path above, the store materializes `ContentRoot/ConfigurationSe
       ]
     },
     "BuildSet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [
         "Stable",
         "Candidate"
@@ -494,7 +494,7 @@ For the relative path above, the store materializes `ContentRoot/ConfigurationSe
 Important ownership rule:
 
 ```text
-Value
+DesiredValue
   = operator-controlled desired value
 
 AllowedValues
@@ -514,12 +514,12 @@ The canonical state file materializes `ApplyMode` next to `AllowedValues`:
 {
   "ConfigurationSets": {
     "ProxySet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Next", "Experimental" ],
       "ApplyMode": "Runtime"
     },
     "BuildSet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Candidate" ],
       "ApplyMode": "StartupOnly"
     }
@@ -530,7 +530,7 @@ The canonical state file materializes `ApplyMode` next to `AllowedValues`:
 The ownership should be obvious to the editor:
 
 ```text
-Value
+DesiredValue
   = editable desired value
 
 AllowedValues
@@ -538,10 +538,12 @@ AllowedValues
 
 ApplyMode
   = read-only/descriptive metadata materialized from code
-  = tells the editor whether changing Value applies live or on next startup
+  = tells the editor whether changing DesiredValue applies live or on next startup
 ```
 
 "Read-only" here means **not authoritative through file editing**. The file is still physically editable, but successful canonicalization should restore the code-owned metadata just as it already does for `AllowedValues`.
+
+The built-in JSON store treats `ConfigurationSets.json` as a **complete desired-state document**, not a patch document. Every set registered before the store is added must have an entry. Unknown or missing set entries reject the document before any requested switch is applied. This avoids a deleted set entry silently inheriting an older in-memory desired value.
 
 ---
 
@@ -570,7 +572,7 @@ Changing:
 
 ```json
 "ProxySet": {
-  "Value": "Experimental"
+  "DesiredValue": "Experimental"
 }
 ```
 
@@ -585,16 +587,18 @@ ProxySet.TrySwitch("Experimental")
         ↓
 all ProxySet participants prepare
         ↓
-commit
+all prepared provider snapshots commit without observer publication
         ↓
-IConfiguration updated when effective values changed
+Coordinator + StateStore state finalize and their locks are released
+        ↓
+IConfiguration / participant notifications publish against the final committed baseline
         ↓
 ConfigurationSet EventHub notification
 ```
 
 This path is covered by end-to-end tests using a real host, real filesystem watcher, real switchable JSON providers, and `IConfiguration`.
 
----
+## 8. Global state-file watcher disable
 
 ## 8. Restart-only behavior already exists globally
 
@@ -611,16 +615,16 @@ builder.AddConfigurationSetStateFile(
 Behavior:
 
 ```text
-startup
+  → configured DesiredValue is applied
   → ConfigurationSets.json is read
-  → configured Value is applied
+  → configured DesiredValue is applied
 
 host is running
   → file may be edited
   → no automatic set switch happens
-
-next application start
-  → edited Value is read
+  → edited DesiredValue is read
+  → new desired value is applied
+  → edited DesiredValue is read
   → new value is applied
 ```
 
@@ -636,7 +640,7 @@ Current running state:
 {
   "ConfigurationSets": {
     "BuildSet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Candidate" ]
     }
   }
@@ -649,7 +653,7 @@ Operator edits it to:
 {
   "ConfigurationSets": {
     "BuildSet": {
-      "Value": "Candidate",
+      "DesiredValue": "Candidate",
       "AllowedValues": [ "Stable", "Candidate" ]
     }
   }
@@ -670,7 +674,7 @@ new process starts as Candidate
 
 ### Current and tested
 
-Per-set state-file policy is now first-class even when one `ConfigurationSets.json` controls several independent axes:
+Per-set desired-state apply policy is now first-class even when one `ConfigurationSets.json` controls several independent axes:
 
 ```csharp
 var routingProfile = builder
@@ -703,12 +707,12 @@ If the running host receives:
 {
   "ConfigurationSets": {
     "RoutingProfile": {
-      "Value": "Failover",
+      "DesiredValue": "Failover",
       "AllowedValues": [ "Primary", "Canary", "Failover" ],
       "ApplyMode": "Runtime"
     },
     "ReleaseChannel": {
-      "Value": "Beta",
+      "DesiredValue": "Beta",
       "AllowedValues": [ "Stable", "Beta" ],
       "ApplyMode": "StartupOnly"
     }
@@ -780,7 +784,7 @@ The state file materializes the policy:
 {
   "ConfigurationSets": {
     "ReleaseChannel": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Beta" ],
       "ApplyMode": "StartupOnly"
     }
@@ -850,7 +854,7 @@ The policy must be set before the state store is registered because the store fr
 
 ### Current
 
-Per-set state-file policy defaults to:
+Per-set desired-state apply policy defaults to:
 
 ```text
 Runtime
@@ -914,7 +918,7 @@ var store = services.GetRequiredService<IConfigurationSetStateStore>();
 store.Materialize();
 ```
 
-Otherwise the next startup will apply whatever `Value` is still stored in `ConfigurationSets.json`.
+Otherwise the next startup will apply whatever `DesiredValue` is still stored in `ConfigurationSets.json`.
 
 ---
 
@@ -1105,7 +1109,7 @@ Central `ConfigurationSets.json` in the content root:
 {
   "ConfigurationSets": {
     "ThemeSet": {
-      "Value": "Light",
+      "DesiredValue": "Light",
       "AllowedValues": [ "Light", "Dark", "HighContrast" ],
       "ApplyMode": "Runtime"
     }
@@ -1113,7 +1117,7 @@ Central `ConfigurationSets.json` in the content root:
 }
 ```
 
-`Value` is the operator-controlled selector. `AllowedValues` and `ApplyMode` are code-owned descriptive metadata. This example uses the default per-set `Runtime` policy; changing the JSON `ApplyMode` does not change that registered policy.
+`DesiredValue` is the operator-controlled selector. `AllowedValues` and `ApplyMode` are code-owned descriptive metadata. This example uses the default per-set `Runtime` policy; changing the JSON `ApplyMode` does not change that registered policy.
 
 Layout:
 
@@ -1196,14 +1200,14 @@ Central `ConfigurationSets.json`:
 {
   "ConfigurationSets": {
     "FeatureSet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Beta", "Lab" ]
     }
   }
 }
 ```
 
-Changing only `Value` to `Beta` selects the entire `Beta/Features.json` lane. The Microsoft feature flags inside that file are still evaluated by Microsoft.FeatureManagement.
+Changing only `DesiredValue` to `Beta` selects the entire `Beta/Features.json` lane. The Microsoft feature flags inside that file are still evaluated by Microsoft.FeatureManagement.
 
 Directory layout:
 
@@ -1383,12 +1387,12 @@ Central `ConfigurationSets.json` with the **current API**:
 {
   "ConfigurationSets": {
     "BuildSet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Candidate" ],
       "ApplyMode": "StartupOnly"
     },
     "EnvironmentSet": {
-      "Value": "Development",
+      "DesiredValue": "Development",
       "AllowedValues": [ "Development", "Production" ],
       "ApplyMode": "StartupOnly"
     }
@@ -1430,14 +1434,14 @@ Central `ConfigurationSets.json`:
 {
   "ConfigurationSets": {
     "ProxySet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Next", "Experimental" ]
     }
   }
 }
 ```
 
-Changing only `Value` to `Next` or `Experimental` selects the matching directory for **all three bound files as one coordinated set operation**.
+Changing only `DesiredValue` to `Next` or `Experimental` selects the matching directory for **all three bound files as one coordinated set operation**.
 
 
 Directory layout:
@@ -1691,12 +1695,12 @@ Central `ConfigurationSets.json`:
 {
   "ConfigurationSets": {
     "ProxySet": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Next", "Experimental" ],
       "ApplyMode": "Runtime"
     },
     "ThemeSet": {
-      "Value": "Light",
+      "DesiredValue": "Light",
       "AllowedValues": [ "Light", "Dark" ],
       "ApplyMode": "Runtime"
     }
@@ -1704,7 +1708,7 @@ Central `ConfigurationSets.json`:
 }
 ```
 
-Both sets use the default `Runtime` state-file policy, so edits to either `Value` can apply while the watcher is running.
+Both sets use the default `Runtime` desired-state apply policy, so edits to either `DesiredValue` can apply while the watcher is running.
 
 
 Directory layout for this `Program.Main`:
@@ -1770,12 +1774,12 @@ Central state:
 {
   "ConfigurationSets": {
     "ReleaseChannel": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Beta" ],
       "ApplyMode": "StartupOnly"
     },
     "ServiceTopology": {
-      "Value": "Primary",
+      "DesiredValue": "Primary",
       "AllowedValues": [ "Primary", "Alternate" ],
       "ApplyMode": "StartupOnly"
     }
@@ -1864,17 +1868,17 @@ Central state:
 {
   "ConfigurationSets": {
     "RoutingProfile": {
-      "Value": "Primary",
+      "DesiredValue": "Primary",
       "AllowedValues": [ "Primary", "Canary", "Failover" ],
       "ApplyMode": "Runtime"
     },
     "OperationalProfile": {
-      "Value": "Normal",
+      "DesiredValue": "Normal",
       "AllowedValues": [ "Normal", "Degraded", "Incident" ],
       "ApplyMode": "Runtime"
     },
     "ReleaseChannel": {
-      "Value": "Stable",
+      "DesiredValue": "Stable",
       "AllowedValues": [ "Stable", "Beta" ],
       "ApplyMode": "StartupOnly"
     }
@@ -1969,6 +1973,9 @@ This information lives in `ConfigurationSetStateStoreStatus.SetStates` and `Conf
 ✓ per-set event subscription
 ✓ set-level aggregated change information
 ✓ distinction between logical/source/effective-config change
+✓ successful multi-file observer notifications are deferred until the final committed baseline is in place
+✓ ConfigurationSet and StateStore callbacks run outside their state locks
+✓ ConfigurationSets.json is a complete authoritative desired-state document
 ### Programmatic control is now explicit
 
 ```text
@@ -1982,11 +1989,4 @@ stateStore.TrySetDesiredValue(name, value)
   = StartupOnly: remains pending until restart
   = rejected Runtime candidate: desired stays persisted, active stays LKG
 ```
-
-This separation gives a later Admin API, CLI, or operator service a deliberate choice instead of hidden persistence behavior.
-
-The implemented per-set default remains `Runtime`; `StartupOnly` is explicit opt-in. The remaining closure work is integration/regression coverage and optional higher-level diagnostics/control surfaces rather than another missing core state primitive.
-
-That persistent control-plane API is the next state-management block. The implemented per-set default is `Runtime`; `StartupOnly` is explicit opt-in.
-
-Given the stability-oriented use case, `StartupOnly` as the per-set default with explicit opt-in to runtime switching is worth serious consideration before the feature is considered final.
+The implemented per-set default remains `Runtime`; `StartupOnly` is explicit opt-in. Runtime control is available without any state file through `IConfigurationSetManager`, while persistent desired-state control is optional through `IConfigurationSetDesiredStateStore`. Higher-level HTTP/auth/farm orchestration remains intentionally outside this library's core scope.

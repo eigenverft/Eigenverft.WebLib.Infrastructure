@@ -33,8 +33,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the caller-defined set identity.</summary>
         public string Name => Coordinator.Name;
 
-        /// <summary>Configures how this set's value from <c>ConfigurationSets.json</c> may be applied.</summary>
-        /// <param name="applyMode">Whether state-file changes may apply at runtime or only during host startup.</param>
+        /// <summary>Configures how this set's desired value may be applied when a desired-state store is used.</summary>
+        /// <param name="applyMode">Whether desired-state changes may apply at runtime or only during host startup.</param>
         /// <returns>This registration handle for chaining.</returns>
         public ConfigurationSetRegistration ApplyMode(ConfigurationSetApplyMode applyMode)
         {

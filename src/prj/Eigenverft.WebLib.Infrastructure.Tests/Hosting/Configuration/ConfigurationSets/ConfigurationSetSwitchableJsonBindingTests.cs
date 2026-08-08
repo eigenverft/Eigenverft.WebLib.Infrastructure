@@ -153,14 +153,13 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
         }
 
         [TestMethod]
-        public void CommitRaceMarksSetInconsistentAndLaterSwitchCanReconcileIt()
+        public void SuccessfulMultiFileSwitchPublishesOnlyAfterFinalBaselineAndOutsideCoordinatorLock()
         {
             using var directory = new TemporaryDirectory();
             directory.Write("FirstStable.json", "{ \"First\": \"Stable\" }");
             directory.Write("FirstExperimental.json", "{ \"First\": \"Experimental\" }");
             directory.Write("SecondStable.json", "{ \"Second\": \"Stable\" }");
             directory.Write("SecondExperimental.json", "{ \"Second\": \"Experimental\" }");
-            directory.Write("SecondExternal.json", "{ \"Second\": \"External\" }");
             HostApplicationBuilder builder = CreateBuilder(directory.Path);
             builder.AddSwitchableJsonFile("first", "FirstStable.json");
             builder.AddSwitchableJsonFile("second", "SecondStable.json");
@@ -178,45 +177,46 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .BindSwitchableJson(first, value => $"First{value}.json")
                 .BindSwitchableJson(second, value => $"Second{value}.json");
 
-            EventHandler<SwitchableJsonConfigurationEventArgs>? sabotage = null;
-            sabotage = (_, args) =>
-            {
-                if (args.Kind == SwitchableJsonConfigurationEventKind.SwitchSucceeded &&
-                    Path.GetFileName(args.CurrentSourcePath) == "FirstExperimental.json")
+            int reloadCount = 0;
+            int intermediateBaselineCount = 0;
+            int blockedStatusReadCount = 0;
+            using IDisposable subscription = ChangeToken.OnChange(
+                ((IConfiguration)builder.Configuration).GetReloadToken,
+                () =>
                 {
-                    _ = second.TrySwitch("SecondExternal.json");
-                }
-            };
-            first.LifecycleChanged += sabotage;
+                    Interlocked.Increment(ref reloadCount);
+                    if (builder.Configuration["First"] != "Experimental" ||
+                        builder.Configuration["Second"] != "Experimental")
+                    {
+                        Interlocked.Increment(ref intermediateBaselineCount);
+                    }
 
-            ConfigurationSetSwitchResult partial = coordinator.TrySwitch("Experimental");
-            first.LifecycleChanged -= sabotage;
+                    using var statusReadCompleted = new ManualResetEventSlim();
+                    var statusThread = new Thread(() =>
+                    {
+                        _ = coordinator.GetStatus();
+                        statusReadCompleted.Set();
+                    })
+                    {
+                        IsBackground = true,
+                    };
+                    statusThread.Start();
 
-            Assert.AreEqual(ConfigurationSetSwitchStatus.PartiallyCommitted, partial.Status);
-            Assert.AreEqual(ConfigurationSetSwitchFailureKind.PartialCommit, partial.FailureKind);
-            Assert.AreEqual("second", partial.FailedParticipantName);
-            Assert.IsTrue(partial.SourceChanged);
-            Assert.IsTrue(partial.ConfigurationChanged);
-            Assert.IsTrue(partial.HasChanges);
-            Assert.AreEqual(1, partial.ParticipantResults.Count);
-            Assert.AreEqual("first", partial.ParticipantResults[0].Name);
-            Assert.IsTrue(partial.ParticipantResults[0].SourceChanged);
-            Assert.IsTrue(partial.ParticipantResults[0].ConfigurationChanged);
-            Assert.IsFalse(partial.IsConsistent);
-            Assert.IsFalse(coordinator.IsConsistent);
-            Assert.AreEqual("Stable", coordinator.ActiveValue);
+                    if (!statusReadCompleted.Wait(TimeSpan.FromSeconds(1)))
+                    {
+                        Interlocked.Increment(ref blockedStatusReadCount);
+                    }
+                });
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Experimental");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("Experimental", coordinator.ActiveValue);
             Assert.AreEqual("Experimental", builder.Configuration["First"]);
-            Assert.AreEqual("External", builder.Configuration["Second"]);
-
-            ConfigurationSetSwitchResult reconciled = coordinator.TrySwitch("Stable");
-
-            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, reconciled.Status);
-            Assert.IsFalse(reconciled.ValueChanged);
-            Assert.IsTrue(reconciled.IsConsistent);
-            Assert.IsTrue(coordinator.IsConsistent);
-            Assert.AreEqual("Stable", coordinator.ActiveValue);
-            Assert.AreEqual("Stable", builder.Configuration["First"]);
-            Assert.AreEqual("Stable", builder.Configuration["Second"]);
+            Assert.AreEqual("Experimental", builder.Configuration["Second"]);
+            Assert.AreEqual(2, reloadCount);
+            Assert.AreEqual(0, intermediateBaselineCount);
+            Assert.AreEqual(0, blockedStatusReadCount);
         }
 
         [TestMethod]

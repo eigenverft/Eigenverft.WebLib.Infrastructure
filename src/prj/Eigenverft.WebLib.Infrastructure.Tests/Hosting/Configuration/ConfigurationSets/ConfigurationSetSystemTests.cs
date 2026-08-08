@@ -61,17 +61,17 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 {
                   "ConfigurationSets": {
                     "RoutingProfile": {
-                      "Value": "Failover",
+                      "DesiredValue": "Failover",
                       "AllowedValues": [ "Primary", "Canary", "Failover" ],
                       "ApplyMode": "Runtime"
                     },
                     "OperationalProfile": {
-                      "Value": "Degraded",
+                      "DesiredValue": "Degraded",
                       "AllowedValues": [ "Normal", "Degraded", "Incident" ],
                       "ApplyMode": "Runtime"
                     },
                     "ReleaseChannel": {
-                      "Value": "Beta",
+                      "DesiredValue": "Beta",
                       "AllowedValues": [ "Stable", "Beta" ],
                       "ApplyMode": "StartupOnly"
                     }
