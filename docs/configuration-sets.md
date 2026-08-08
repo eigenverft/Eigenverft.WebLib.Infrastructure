@@ -4,6 +4,279 @@
 
 The feature is built on normal .NET `IConfiguration`. It does not introduce a second settings system. Instead, it coordinates one or more switchable JSON configuration sources so that application code can reason about a semantic state such as `RoutingProfile = Failover` instead of editing several unrelated settings individually.
 
+## Usage first: complete `Program.cs` examples
+
+The examples in this section are intentionally application-oriented. They show the complete registration flow first; the detailed contracts and failure semantics follow afterward.
+
+### 1. Code-only runtime switching
+
+Use this when the process should always start from a code-defined `InitialValue` and runtime switches do not need to survive a restart.
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSets;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder
+    .AddConfigurationSet(
+        "OperationalProfile",
+        initialValue: "Normal",
+        "Degraded",
+        "Incident")
+    .AddSwitchableJson(
+        "AppSettings/Operations",
+        "Features.json",
+        "Resilience.json",
+        "Diagnostics.json");
+
+var app = builder.Build();
+
+app.MapGet(
+    "/configuration-sets",
+    (IConfigurationSetManager sets) => sets.GetStatus());
+
+app.MapPost(
+    "/configuration-sets/{name}/{value}",
+    (string name, string value, IConfigurationSetManager sets) =>
+    {
+        bool switched = sets.TrySwitchRuntime(name, value, out ConfigurationSetSwitchResult? result);
+
+        if (switched)
+        {
+            return Results.Ok(result);
+        }
+
+        return result is null
+            ? Results.NotFound()
+            : Results.Conflict(result);
+    });
+
+app.Run();
+```
+
+The endpoint is only an integration example; authentication, authorization and fleet orchestration belong to the application/control plane.
+
+```text
+ContentRoot/
+└── AppSettings/
+    └── Operations/
+        ├── Normal/
+        │   ├── Features.json
+        │   ├── Resilience.json
+        │   └── Diagnostics.json
+        ├── Degraded/
+        │   ├── Features.json
+        │   ├── Resilience.json
+        │   └── Diagnostics.json
+        └── Incident/
+            ├── Features.json
+            ├── Resilience.json
+            └── Diagnostics.json
+```
+
+No `ConfigurationSets.json` is required. The process starts on `Normal`; a successful runtime switch can move it to `Degraded` or `Incident`. After a restart it starts on `Normal` again.
+
+### 2. Persistent desired state
+
+Add the optional state store when an operator or control plane should select a value that survives process restarts.
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSets;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder
+    .AddConfigurationSet(
+        "OperationalProfile",
+        initialValue: "Normal",
+        "Degraded",
+        "Incident")
+    .AddSwitchableJson(
+        "AppSettings/Operations",
+        "Features.json",
+        "Resilience.json",
+        "Diagnostics.json");
+
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
+
+var app = builder.Build();
+
+app.MapGet(
+    "/configuration-sets/desired",
+    (IConfigurationSetDesiredStateStore desiredState) =>
+        desiredState.GetDesiredStateStatus());
+
+app.MapPut(
+    "/configuration-sets/{name}/desired/{value}",
+    (string name, string value, IConfigurationSetDesiredStateStore desiredState) =>
+        Results.Ok(desiredState.TrySetDesiredValue(name, value)));
+
+app.Run();
+```
+
+```text
+ContentRoot/
+├── ConfigurationSets.json
+└── AppSettings/
+    └── Operations/
+        ├── Normal/
+        │   ├── Features.json
+        │   ├── Resilience.json
+        │   └── Diagnostics.json
+        ├── Degraded/
+        │   ├── Features.json
+        │   ├── Resilience.json
+        │   └── Diagnostics.json
+        └── Incident/
+            ├── Features.json
+            ├── Resilience.json
+            └── Diagnostics.json
+```
+
+A canonical state document is self-describing:
+
+```json
+{
+  "ConfigurationSets": {
+    "OperationalProfile": {
+      "DesiredValue": "Degraded",
+      "AllowedValues": [
+        "Normal",
+        "Degraded",
+        "Incident"
+      ],
+      "ApplyMode": "Runtime"
+    }
+  }
+}
+```
+
+`DesiredValue` is operator/control-plane state. `AllowedValues` and `ApplyMode` are code-owned metadata and cannot grant the file additional capabilities.
+
+### 3. Mixed production-style setup
+
+Independent sets can use different source layouts and different apply policies in the same process. This example combines runtime routing, an operational baseline and a release channel that is intentionally applied only on startup.
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSets;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder
+    .AddConfigurationSet(
+        "RoutingProfile",
+        initialValue: "Primary",
+        "Canary",
+        "Failover")
+    .AddSwitchableJson(value => value switch
+    {
+        "Primary" => "AppSettings/Routing/routes-primary.json",
+        "Canary" => "AppSettings/Routing/routes-canary.json",
+        "Failover" => "AppSettings/Routing/emergency-routing.json",
+        _ => throw new ArgumentOutOfRangeException(nameof(value)),
+    })
+    .AddSwitchableJson(value => value switch
+    {
+        "Primary" => "AppSettings/Routing/clusters-primary.json",
+        "Canary" => "AppSettings/Routing/clusters-canary.json",
+        "Failover" => "AppSettings/Routing/clusters-failover.json",
+        _ => throw new ArgumentOutOfRangeException(nameof(value)),
+    });
+
+builder
+    .AddConfigurationSet(
+        "OperationalProfile",
+        initialValue: "Normal",
+        "Degraded",
+        "Incident")
+    .AddSwitchableJson(
+        "AppSettings/Operations",
+        "Features.json",
+        "Resilience.json",
+        "Diagnostics.json");
+
+builder
+    .AddConfigurationSet(
+        "ReleaseChannel",
+        initialValue: "Stable",
+        "Beta")
+    .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
+    .AddSwitchableJson(
+        "AppSettings/Features",
+        "Features.json");
+
+// Register the state file after all sets it should manage.
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
+
+var app = builder.Build();
+
+app.MapGet(
+    "/configuration-sets/runtime",
+    (IConfigurationSetManager sets) => sets.GetStatus());
+
+app.MapGet(
+    "/configuration-sets/desired",
+    (IConfigurationSetDesiredStateStore desiredState) =>
+        desiredState.GetDesiredStateStatus());
+
+app.Run();
+```
+
+```text
+ContentRoot/
+├── ConfigurationSets.json
+└── AppSettings/
+    ├── Routing/
+    │   ├── routes-primary.json
+    │   ├── routes-canary.json
+    │   ├── emergency-routing.json
+    │   ├── clusters-primary.json
+    │   ├── clusters-canary.json
+    │   └── clusters-failover.json
+    ├── Operations/
+    │   ├── Normal/
+    │   │   ├── Features.json
+    │   │   ├── Resilience.json
+    │   │   └── Diagnostics.json
+    │   ├── Degraded/
+    │   │   ├── Features.json
+    │   │   ├── Resilience.json
+    │   │   └── Diagnostics.json
+    │   └── Incident/
+    │       ├── Features.json
+    │       ├── Resilience.json
+    │       └── Diagnostics.json
+    └── Features/
+        ├── Stable/
+        │   └── Features.json
+        └── Beta/
+            └── Features.json
+```
+
+```json
+{
+  "ConfigurationSets": {
+    "RoutingProfile": {
+      "DesiredValue": "Failover",
+      "AllowedValues": [ "Primary", "Canary", "Failover" ],
+      "ApplyMode": "Runtime"
+    },
+    "OperationalProfile": {
+      "DesiredValue": "Degraded",
+      "AllowedValues": [ "Normal", "Degraded", "Incident" ],
+      "ApplyMode": "Runtime"
+    },
+    "ReleaseChannel": {
+      "DesiredValue": "Beta",
+      "AllowedValues": [ "Stable", "Beta" ],
+      "ApplyMode": "StartupOnly"
+    }
+  }
+}
+```
+
+In that state, routing and operational changes may become active immediately. `ReleaseChannel = Beta` is persisted as desired state but remains pending until the next host startup.
+
 ## Core model
 
 A configuration set has:
