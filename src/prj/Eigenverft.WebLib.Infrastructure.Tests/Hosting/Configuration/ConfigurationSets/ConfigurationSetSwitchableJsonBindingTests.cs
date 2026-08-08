@@ -320,6 +320,150 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                     value => $"{value}.json"));
         }
 
+        [TestMethod]
+        public void SingleFileConvenienceDerivesInitialSourceAndSwitchesConfiguration()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write(Path.Combine("Proxy", "Stable", "ProxySettings.json"), "{ \"ProxyMode\": \"Stable\" }");
+            directory.Write(Path.Combine("Proxy", "Experimental", "ProxySettings.json"), "{ \"ProxyMode\": \"Experimental\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            _ = builder.AddConfigurationSetCoordinator(
+                "ProxySet",
+                "Stable",
+                ["Stable", "Experimental"]);
+
+            builder.AddSwitchableJsonToConfigurationSet(
+                setName: "ProxySet",
+                switchableName: "proxy-settings",
+                rootPath: "Proxy",
+                fileName: "ProxySettings.json");
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("ProxySet");
+            ISwitchableJsonConfiguration settings =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("proxy-settings");
+
+            Assert.AreEqual("Stable", builder.Configuration["ProxyMode"]);
+            Assert.AreEqual(
+                Path.Combine(directory.Path, "Proxy", "Stable", "ProxySettings.json"),
+                settings.CurrentSourcePath);
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Experimental");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("Experimental", builder.Configuration["ProxyMode"]);
+            Assert.AreEqual(
+                Path.Combine(directory.Path, "Proxy", "Experimental", "ProxySettings.json"),
+                settings.CurrentSourcePath);
+        }
+
+        [TestMethod]
+        public void MultipleFileConvenienceRegistersIndependentSourcesInSharedSetDirectory()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write(Path.Combine("AppSettings", "Stable", "ProxySettings.json"), "{ \"ProxyMode\": \"Stable\" }");
+            directory.Write(Path.Combine("AppSettings", "Stable", "EdgeFilters.json"), "{ \"FilterMode\": \"Stable\" }");
+            directory.Write(Path.Combine("AppSettings", "Stable", "Behaviors.json"), "{ \"BehaviorMode\": \"Stable\" }");
+            directory.Write(Path.Combine("AppSettings", "Experimental", "ProxySettings.json"), "{ \"ProxyMode\": \"Experimental\" }");
+            directory.Write(Path.Combine("AppSettings", "Experimental", "EdgeFilters.json"), "{ \"FilterMode\": \"Experimental\" }");
+            directory.Write(Path.Combine("AppSettings", "Experimental", "Behaviors.json"), "{ \"BehaviorMode\": \"Experimental\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            _ = builder.AddConfigurationSetCoordinator(
+                "ProxySet",
+                "Stable",
+                ["Stable", "Experimental"]);
+
+            builder.AddSwitchableJsonToConfigurationSet(
+                "ProxySet",
+                "AppSettings",
+                [
+                    ("proxy-settings", "ProxySettings.json"),
+                    ("edge-filters", "EdgeFilters.json"),
+                    ("behaviors", "Behaviors.json"),
+                ]);
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("ProxySet");
+
+            CollectionAssert.AreEqual(
+                new[] { "proxy-settings", "edge-filters", "behaviors" },
+                coordinator.BoundParticipantNames.ToArray());
+            Assert.AreEqual("Stable", builder.Configuration["ProxyMode"]);
+            Assert.AreEqual("Stable", builder.Configuration["FilterMode"]);
+            Assert.AreEqual("Stable", builder.Configuration["BehaviorMode"]);
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Experimental");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("Experimental", builder.Configuration["ProxyMode"]);
+            Assert.AreEqual("Experimental", builder.Configuration["FilterMode"]);
+            Assert.AreEqual("Experimental", builder.Configuration["BehaviorMode"]);
+            Assert.AreEqual(
+                Path.Combine(directory.Path, "AppSettings", "Experimental", "ProxySettings.json"),
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("proxy-settings").CurrentSourcePath);
+            Assert.AreEqual(
+                Path.Combine(directory.Path, "AppSettings", "Experimental", "EdgeFilters.json"),
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("edge-filters").CurrentSourcePath);
+        }
+
+        [TestMethod]
+        public void MultipleFileConvenienceRollsBackWholeBatchWhenLaterInitialSourceIsInvalid()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write(Path.Combine("AppSettings", "Stable", "First.json"), "{ \"First\": \"Stable\" }");
+            directory.Write(Path.Combine("AppSettings", "Stable", "Second.json"), "{ invalid json");
+            directory.Write(Path.Combine("AppSettings", "Experimental", "First.json"), "{ \"First\": \"Experimental\" }");
+            directory.Write(Path.Combine("AppSettings", "Experimental", "Second.json"), "{ \"Second\": \"Experimental\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator coordinator = builder.AddConfigurationSetCoordinator(
+                "ProxySet",
+                "Stable",
+                ["Stable", "Experimental"]);
+
+            bool failed = false;
+            try
+            {
+                builder.AddSwitchableJsonToConfigurationSet(
+                    "ProxySet",
+                    "AppSettings",
+                    [
+                        ("first", "First.json"),
+                        ("second", "Second.json"),
+                    ]);
+            }
+            catch (Exception)
+            {
+                failed = true;
+            }
+
+            Assert.IsTrue(failed, "The invalid second initial JSON source should reject the batch.");
+            Assert.AreEqual(0, coordinator.BoundParticipantNames.Count);
+            Assert.AreEqual("Stable", coordinator.ActiveValue);
+
+            directory.Write(Path.Combine("AppSettings", "Stable", "Second.json"), "{ \"Second\": \"Stable\" }");
+
+            builder.AddSwitchableJsonToConfigurationSet(
+                "ProxySet",
+                "AppSettings",
+                [
+                    ("first", "First.json"),
+                    ("second", "Second.json"),
+                ]);
+
+            using IHost host = builder.Build();
+            Assert.AreEqual("Stable", builder.Configuration["First"]);
+            Assert.AreEqual("Stable", builder.Configuration["Second"]);
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Experimental");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("Experimental", builder.Configuration["First"]);
+            Assert.AreEqual("Experimental", builder.Configuration["Second"]);
+            Assert.AreEqual(2, coordinator.BoundParticipantNames.Count);
+        }
+
         private static HostApplicationBuilder CreateBuilder(string contentRootPath)
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings
@@ -345,6 +489,12 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             public string Write(string fileName, string content)
             {
                 string filePath = System.IO.Path.Combine(Path, fileName);
+                string? parent = System.IO.Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrWhiteSpace(parent))
+                {
+                    Directory.CreateDirectory(parent);
+                }
+
                 File.WriteAllText(filePath, content);
                 return filePath;
             }

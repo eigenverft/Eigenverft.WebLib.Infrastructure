@@ -204,6 +204,31 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             }
         }
 
+        internal bool RemoveSwitchableJsonBinding(string participantName)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(participantName);
+
+            lock (_gate)
+            {
+                if (_switchInProgress)
+                {
+                    throw new InvalidOperationException(
+                        $"Configuration set '{Name}' cannot remove bindings while a switch is in progress.");
+                }
+
+                for (int index = _bindings.Count - 1; index >= 0; index--)
+                {
+                    if (string.Equals(_bindings[index].Name, participantName, StringComparison.Ordinal))
+                    {
+                        _bindings.RemoveAt(index);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         private ConfigurationSetSwitchResult CoordinateSwitchLocked(string previousValue, string requestedValue)
         {
             if (_bindings.Count == 0)
