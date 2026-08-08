@@ -387,7 +387,7 @@ Current implementation can credibly claim:
 
 Mixed per-profile `Runtime` / `StartupOnly` behavior is now part of the implementation. A startup-only edit remains visible as desired state with pending-restart status until the next host startup.
 
-Programmatic runtime control is available through the persistence-neutral `IConfigurationSetManager`; `TrySwitch(...)` is intentionally ephemeral. Optional persistent desired-state control is available through `IConfigurationSetDesiredStateStore.TrySetDesiredValue(...)`, which honors `Runtime` / `StartupOnly` without requiring a controller to know about the built-in JSON file implementation.
+Programmatic runtime control is available through the persistence-neutral `IConfigurationSetManager`; `TrySwitchRuntime(...)` is intentionally ephemeral. Optional persistent desired-state control is available through `IConfigurationSetDesiredStateStore.TrySetDesiredValue(...)`, which honors `Runtime` / `StartupOnly` without requiring a controller to know about the built-in JSON file implementation.
 
 ## Short positioning candidates
 

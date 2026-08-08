@@ -75,7 +75,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// </summary>
         /// <param name="builder">The host application builder containing the set coordinators to manage.</param>
         /// <param name="path">Absolute path, or a path relative to the host content root.</param>
-        /// <param name="reloadOnChange">Whether physical state-file edits are considered after startup.</param>
+        /// <param name="watchForChanges">Whether the desired-state control file is watched for edits after startup.</param>
         /// <param name="reloadDelayMilliseconds">Debounce delay for physical file notifications.</param>
         /// <returns>The runtime state-store instance, also registered as a singleton through DI.</returns>
         /// <remarks>
@@ -87,7 +87,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         public static IConfigurationSetStateStore AddConfigurationSetStateFile(
             this IHostApplicationBuilder builder,
             string path,
-            bool reloadOnChange = true,
+            bool watchForChanges = true,
             int reloadDelayMilliseconds = 250)
         {
             ArgumentNullException.ThrowIfNull(builder);
@@ -119,7 +119,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 filePath,
                 coordinators,
                 GetStateApplyModeSnapshot(builder, coordinators),
-                reloadOnChange,
+                watchForChanges,
                 reloadDelayMilliseconds);
 
             try

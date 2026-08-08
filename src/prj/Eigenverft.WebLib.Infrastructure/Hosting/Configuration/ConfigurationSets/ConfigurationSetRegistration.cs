@@ -10,8 +10,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     /// Startup registration handle for one named configuration set.
     /// </summary>
     /// <remarks>
-    /// This type is convenience only. Runtime consumers should continue to depend on
-    /// <see cref="IConfigurationSetCoordinator"/> and <see cref="IConfigurationSetEventHub"/> through DI.
+    /// This type is startup convenience only. Application-level runtime control should normally use
+    /// <see cref="IConfigurationSetManager"/> for ephemeral switches or <see cref="IConfigurationSetDesiredStateStore"/>
+    /// when desired state must persist. Keyed <see cref="IConfigurationSetCoordinator"/> access remains available for
+    /// advanced set-specific integration, while <see cref="IConfigurationSetEventHub"/> provides host-wide observation.
     /// </remarks>
     public sealed class ConfigurationSetRegistration
     {
@@ -94,9 +96,30 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         }
 
         /// <summary>
-        /// Registers multiple independent switchable JSON sources in the same <c>{rootPath}/{setValue}</c> directory.
+        /// Registers multiple independent switchable JSON sources in the same <c>{rootPath}/{setValue}</c> directory
+        /// while applying the same source options to every file.
+        /// </summary>
+        /// <param name="rootPath">Root directory containing one subdirectory per allowed set value.</param>
+        /// <param name="options">Shared switchable JSON registration options applied to every file.</param>
+        /// <param name="fileNames">JSON file paths within each set-value directory.</param>
+        /// <returns>This registration handle for chaining.</returns>
+        public ConfigurationSetRegistration AddSwitchableJson(
+            string rootPath,
+            SwitchableJsonRegistrationOptions options,
+            params string[] fileNames)
+        {
+            ArgumentNullException.ThrowIfNull(options);
+            _builder.AddSwitchableJsonToConfigurationSet(Name, rootPath, options, fileNames);
+            return this;
+        }
+
+        /// <summary>
+        /// Registers multiple independent switchable JSON sources in the same <c>{rootPath}/{setValue}</c> directory using default source options.
         /// Technical participant identities are derived automatically from the set and logical file paths.
         /// </summary>
+        /// <param name="rootPath">Root directory containing one subdirectory per allowed set value.</param>
+        /// <param name="fileNames">JSON file paths within each set-value directory.</param>
+        /// <returns>This registration handle for chaining.</returns>
         public ConfigurationSetRegistration AddSwitchableJson(
             string rootPath,
             params string[] fileNames)

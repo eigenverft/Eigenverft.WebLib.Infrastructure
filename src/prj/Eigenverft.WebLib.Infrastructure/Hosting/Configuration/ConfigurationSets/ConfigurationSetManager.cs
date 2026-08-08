@@ -8,8 +8,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     /// </summary>
     /// <remarks>
     /// This service is registered automatically when the first configuration set is added. It is intentionally persistence-neutral:
-    /// <see cref="TrySwitch"/> performs an ephemeral runtime switch and returns only after the coordinator has completed the request.
-    /// A caller that needs persistent desired state may combine this facade with an optional desired-state store.
+    /// <see cref="TrySwitchRuntime"/> performs an ephemeral runtime switch and returns only after the coordinator has completed the request.
+    /// Callers that need persistent desired state should use <see cref="IConfigurationSetDesiredStateStore"/> instead.
+    /// The runtime API remains synchronous by design because the underlying IConfigurationProvider and local JSON file operations are synchronous;
+    /// an asynchronous wrapper would not make the configuration work itself asynchronous.
     /// </remarks>
     public interface IConfigurationSetManager
     {
@@ -20,16 +22,19 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         bool TryGetStatus(string setName, out ConfigurationSetStatus? status);
 
         /// <summary>
-        /// Attempts to switch one named configuration set and waits for the complete coordinated outcome.
+        /// Attempts an ephemeral runtime switch of one named configuration set and waits for the complete coordinated outcome.
         /// </summary>
         /// <param name="setName">Registered configuration-set name.</param>
         /// <param name="value">Allowed value to request.</param>
         /// <param name="result">
         /// Completed coordinator result when the set exists; otherwise <see langword="null"/>.
-        /// A <see langword="true"/> return value means the set was found, not that the switch itself succeeded.
+        /// A non-null rejected result distinguishes a known set whose switch failed from an unknown set name.
         /// </param>
-        /// <returns><see langword="true"/> when the named set exists; otherwise <see langword="false"/>.</returns>
-        bool TrySwitch(string setName, string value, out ConfigurationSetSwitchResult? result);
+        /// <returns>
+        /// <see langword="true"/> when the requested value is the fully coordinated active value after the call;
+        /// otherwise <see langword="false"/>.
+        /// </returns>
+        bool TrySwitchRuntime(string setName, string value, out ConfigurationSetSwitchResult? result);
     }
 
     internal sealed class ConfigurationSetManager : IConfigurationSetManager
@@ -92,7 +97,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             return true;
         }
 
-        public bool TrySwitch(string setName, string value, out ConfigurationSetSwitchResult? result)
+        public bool TrySwitchRuntime(string setName, string value, out ConfigurationSetSwitchResult? result)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(setName);
             ArgumentException.ThrowIfNullOrWhiteSpace(value);
@@ -110,7 +115,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             }
 
             result = coordinator.TrySwitch(value);
-            return true;
+            return result.Succeeded;
         }
     }
 }

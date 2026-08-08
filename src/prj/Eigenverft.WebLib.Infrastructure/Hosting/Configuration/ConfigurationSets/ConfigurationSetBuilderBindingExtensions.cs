@@ -112,10 +112,30 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             string rootPath,
             params string[] fileNames)
         {
+            return builder.AddSwitchableJsonToConfigurationSet(
+                setName,
+                rootPath,
+                new SwitchableJsonRegistrationOptions(),
+                fileNames);
+        }
+
+        /// <summary>
+        /// Registers multiple switchable JSON sources in one set directory using internally derived runtime identities and
+        /// the same source options for every file.
+        /// </summary>
+        public static IHostApplicationBuilder AddSwitchableJsonToConfigurationSet(
+            this IHostApplicationBuilder builder,
+            string setName,
+            string rootPath,
+            SwitchableJsonRegistrationOptions options,
+            params string[] fileNames)
+        {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentException.ThrowIfNullOrWhiteSpace(setName);
             ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+            ArgumentNullException.ThrowIfNull(options);
             ArgumentNullException.ThrowIfNull(fileNames);
+            options.Validate();
 
             var files = new (string SwitchableName, string FileName)[fileNames.Length];
             for (int index = 0; index < fileNames.Length; index++)
@@ -125,7 +145,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 files[index] = (CreateGeneratedSwitchableName(setName, rootPath, fileName), fileName);
             }
 
-            return builder.AddSwitchableJsonToConfigurationSet(setName, rootPath, files);
+            return builder.AddSwitchableJsonToConfigurationSet(setName, rootPath, options, files);
         }
 
         /// <summary>
@@ -211,10 +231,36 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             string rootPath,
             params (string SwitchableName, string FileName)[] files)
         {
+            return builder.AddSwitchableJsonToConfigurationSet(
+                setName,
+                rootPath,
+                new SwitchableJsonRegistrationOptions(),
+                files);
+        }
+
+        /// <summary>
+        /// Registers and binds multiple independent switchable JSON sources that share the same
+        /// <c>{rootPath}/{setValue}</c> directory layout and source options.
+        /// </summary>
+        /// <param name="builder">The host application builder receiving all switchable sources and bindings.</param>
+        /// <param name="setName">The already registered keyed configuration-set coordinator name.</param>
+        /// <param name="rootPath">Root directory containing one subdirectory per allowed set value.</param>
+        /// <param name="options">Shared switchable JSON registration options applied to every source.</param>
+        /// <param name="files">Pairs of keyed switchable runtime name and JSON file path within each set-value directory.</param>
+        /// <returns>The same builder for chaining.</returns>
+        public static IHostApplicationBuilder AddSwitchableJsonToConfigurationSet(
+            this IHostApplicationBuilder builder,
+            string setName,
+            string rootPath,
+            SwitchableJsonRegistrationOptions options,
+            params (string SwitchableName, string FileName)[] files)
+        {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentException.ThrowIfNullOrWhiteSpace(setName);
             ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
+            ArgumentNullException.ThrowIfNull(options);
             ArgumentNullException.ThrowIfNull(files);
+            options.Validate();
 
             IConfigurationSetCoordinator coordinator = GetRequiredCoordinator(builder, setName);
             if (coordinator is not ConfigurationSetCoordinator implementation)
@@ -260,7 +306,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         setName,
                         switchableName,
                         rootPath,
-                        fileName);
+                        fileName,
+                        options.Optional,
+                        options.ReloadOnChange,
+                        options.ReloadDelayMilliseconds,
+                        options.RuntimeFailurePolicy);
                     registeredNames.Add(switchableName);
                 }
 

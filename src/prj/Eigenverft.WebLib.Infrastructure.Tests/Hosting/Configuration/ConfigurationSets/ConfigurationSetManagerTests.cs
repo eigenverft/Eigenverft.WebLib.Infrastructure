@@ -53,13 +53,20 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                     new[] { "Primary", "Failover" },
                     all[0].AllowedValues.ToArray());
 
-                bool found = manager.TrySwitch("RoutingProfile", "Failover", out ConfigurationSetSwitchResult? result);
+                bool switched = manager.TrySwitchRuntime("RoutingProfile", "Failover", out ConfigurationSetSwitchResult? result);
 
-                Assert.IsTrue(found);
+                Assert.IsTrue(switched);
                 Assert.IsNotNull(result);
                 Assert.IsTrue(result.Succeeded);
                 Assert.AreEqual("Failover", result.ActiveValue);
                 Assert.AreEqual("fallback-backend", configuration["Routing:Backend"]);
+
+                Assert.IsTrue(manager.TrySwitchRuntime(
+                    "RoutingProfile",
+                    "Failover",
+                    out ConfigurationSetSwitchResult? alreadyActive));
+                Assert.IsNotNull(alreadyActive);
+                Assert.AreEqual(ConfigurationSetSwitchStatus.AlreadyActive, alreadyActive.Status);
 
                 Assert.IsTrue(manager.TryGetStatus("RoutingProfile", out ConfigurationSetStatus? status));
                 Assert.IsNotNull(status);
@@ -73,7 +80,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
         }
 
         [TestMethod]
-        public void ManagerDistinguishesUnknownSetFromRejectedSwitch()
+        public void ManagerTrySwitchRuntimeReturnsFalseForUnknownOrRejectedAndResultDistinguishesThem()
         {
             HostApplicationBuilder builder = Host.CreateApplicationBuilder();
             _ = builder.AddConfigurationSet("OperationalProfile", "Normal", "Degraded", "Incident");
@@ -81,10 +88,10 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             using IHost host = builder.Build();
             IConfigurationSetManager manager = host.Services.GetRequiredService<IConfigurationSetManager>();
 
-            Assert.IsFalse(manager.TrySwitch("MissingProfile", "Degraded", out ConfigurationSetSwitchResult? missing));
+            Assert.IsFalse(manager.TrySwitchRuntime("MissingProfile", "Degraded", out ConfigurationSetSwitchResult? missing));
             Assert.IsNull(missing);
 
-            Assert.IsTrue(manager.TrySwitch("OperationalProfile", "Unknown", out ConfigurationSetSwitchResult? rejected));
+            Assert.IsFalse(manager.TrySwitchRuntime("OperationalProfile", "Unknown", out ConfigurationSetSwitchResult? rejected));
             Assert.IsNotNull(rejected);
             Assert.AreEqual(ConfigurationSetSwitchStatus.Rejected, rejected.Status);
             Assert.AreEqual(ConfigurationSetSwitchFailureKind.ValueNotAllowed, rejected.FailureKind);
@@ -102,7 +109,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 });
 
                 _ = builder.AddConfigurationSet("OperationalProfile", "Normal", "Degraded", "Incident");
-                _ = builder.AddConfigurationSetStateFile("ConfigurationSets.json", reloadOnChange: false);
+                _ = builder.AddConfigurationSetStateFile("ConfigurationSets.json", watchForChanges: false);
 
                 using IHost host = builder.Build();
                 IConfigurationSetDesiredStateStore desiredState =

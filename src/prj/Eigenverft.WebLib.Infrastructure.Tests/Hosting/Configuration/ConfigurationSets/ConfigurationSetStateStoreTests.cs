@@ -31,7 +31,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             Assert.IsTrue(File.Exists(store.FilePath));
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(store.FilePath));
@@ -75,7 +75,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "Stable",
                 ["Stable", "Next", "Experimental"]);
 
-            _ = builder.AddConfigurationSetStateFile("ConfigurationSets.json", reloadOnChange: false);
+            _ = builder.AddConfigurationSetStateFile("ConfigurationSets.json", watchForChanges: false);
 
             Assert.AreEqual("Experimental", proxy.ActiveValue);
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory.Path, "ConfigurationSets.json")));
@@ -108,7 +108,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 ["Stable", "Experimental"]);
 
             _ = Assert.ThrowsExactly<InvalidOperationException>(() =>
-                builder.AddConfigurationSetStateFile("ConfigurationSets.json", reloadOnChange: false));
+                builder.AddConfigurationSetStateFile("ConfigurationSets.json", watchForChanges: false));
 
             Assert.AreEqual("Stable", proxy.ActiveValue);
         }
@@ -124,7 +124,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 ["Stable", "Experimental"]);
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
             directory.Write(
                 "ConfigurationSets.json",
                 """
@@ -165,7 +165,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 value => $"Proxy{value}.json");
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
             directory.Write(
                 "ConfigurationSets.json",
                 """
@@ -200,7 +200,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 ["Stable", "Experimental"]);
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: true,
+                watchForChanges: true,
                 reloadDelayMilliseconds: 25);
             using IHost host = builder.Build();
             host.StartAsync().GetAwaiter().GetResult();
@@ -263,7 +263,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 ["Stable", "Experimental"]);
 
             _ = Assert.ThrowsExactly<InvalidOperationException>(() =>
-                builder.AddConfigurationSetStateFile("ConfigurationSets.json", reloadOnChange: false));
+                builder.AddConfigurationSetStateFile("ConfigurationSets.json", watchForChanges: false));
 
             Assert.AreEqual("Development", environment.ActiveValue);
             Assert.AreEqual("Stable", proxy.ActiveValue);
@@ -394,7 +394,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "Experimental").Coordinator;
             _ = firstBuilder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             using (IHost firstHost = firstBuilder.Build())
             {
@@ -426,7 +426,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "Experimental").Coordinator;
             _ = secondBuilder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             Assert.AreEqual("Experimental", secondCoordinator.ActiveValue);
         }
@@ -447,7 +447,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             directory.Write(
                 "ConfigurationSets.json",
@@ -510,7 +510,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .Coordinator;
             IConfigurationSetStateStore firstStore = firstBuilder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             directory.Write(
                 "ConfigurationSets.json",
@@ -537,7 +537,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .Coordinator;
             IConfigurationSetStateStore secondStore = secondBuilder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             Assert.AreEqual("Beta", second.ActiveValue);
             Assert.IsFalse(secondStore.GetStatus().HasPendingRestart);
@@ -558,7 +558,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .Coordinator;
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: true,
+                watchForChanges: true,
                 reloadDelayMilliseconds: 25);
 
             using IHost host = builder.Build();
@@ -611,7 +611,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             _ = builder.AddConfigurationSet("RoutingProfile", "Primary", "Failover");
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
             using IHost host = builder.Build();
             IConfigurationSetEventHub eventHub = host.Services.GetRequiredService<IConfigurationSetEventHub>();
             int blockedStatusReadCount = 0;
@@ -660,7 +660,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .Coordinator;
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             ConfigurationSetStateStoreEventArgs? observed = null;
             store.LifecycleChanged += (_, args) =>
@@ -702,7 +702,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .Coordinator;
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             ConfigurationSetStateApplyResult result = store.TrySetDesiredValue("ReleaseChannel", "Beta");
 
@@ -738,7 +738,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .Coordinator;
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             ConfigurationSetStateApplyResult rejected = store.TrySetDesiredValue("RoutingProfile", "Failover");
 
@@ -784,7 +784,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .Coordinator;
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             ConfigurationSetSwitchResult direct = routing.TrySwitch("Failover");
 
@@ -814,7 +814,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             _ = builder.AddConfigurationSet("RoutingProfile", "Primary", "Failover");
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: true,
+                watchForChanges: true,
                 reloadDelayMilliseconds: 25);
 
             using IHost host = builder.Build();
@@ -854,7 +854,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .Coordinator;
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             File.Delete(store.FilePath);
             Directory.CreateDirectory(store.FilePath);

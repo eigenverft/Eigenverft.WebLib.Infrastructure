@@ -27,7 +27,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             RegisterRecordingHostedService(firstBuilder);
             IConfigurationSetStateStore firstStore = firstBuilder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: true,
+                watchForChanges: true,
                 reloadDelayMilliseconds: 25);
 
             using IHost firstHost = firstBuilder.Build();
@@ -133,7 +133,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             RegisterRealisticConfigurationSets(secondBuilder);
             IConfigurationSetStateStore secondStore = secondBuilder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
-                reloadOnChange: false);
+                watchForChanges: false);
 
             using IHost secondHost = secondBuilder.Build();
 

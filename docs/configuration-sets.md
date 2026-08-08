@@ -26,6 +26,8 @@ DiagnosticsProfile = Standard
 
 This avoids constructing combined names such as `Production-Stable-Normal-Primary`.
 
+Set names and values are intentionally strings because they are also stable, operator-visible identities in desired-state documents and external control surfaces. Applications that want compile-time reuse can define constants around those identities. The library does not implicitly serialize enums with `ToString()`, because renaming an enum member should not silently rename persisted configuration state.
+
 ## Smallest registration
 
 ```csharp
@@ -133,6 +135,29 @@ builder
         "Diagnostics.json");
 ```
 
+When the whole group needs non-default source behavior, the same convenience path accepts shared `SwitchableJsonRegistrationOptions` instead of forcing each file back into low-level registration:
+
+```csharp
+builder
+    .AddConfigurationSet(
+        "OperationalProfile",
+        "Normal",
+        "Degraded",
+        "Incident")
+    .AddSwitchableJson(
+        "AppSettings/Operations",
+        new SwitchableJsonRegistrationOptions
+        {
+            Optional = true,
+            ReloadOnChange = true,
+            ReloadDelayMilliseconds = 500,
+            RuntimeFailurePolicy = SwitchableJsonRuntimeFailurePolicy.KeepLastKnownGood,
+        },
+        "Features.json",
+        "Resilience.json",
+        "Diagnostics.json");
+```
+
 The files remain independent `ISwitchableJsonConfiguration` runtimes. The set coordinator performs a preflight across every bound participant before the first commit. Prepared participant state is then committed without publishing observer notifications; after all successful commits and coordinator state finalization, `IConfiguration` reload and lifecycle notifications are released outside coordinator locks. A consumer reacting to a successful multi-file switch therefore sees the final committed baseline rather than a notification after each intermediate participant commit.
 
 A preparation rejection leaves every participant on the previous successfully coordinated set value. A rare race can still make a later prepared commit stale after an earlier participant has already committed; that outcome is reported as `PartiallyCommitted` and sets `IsConsistent` to `false`. This improves observer semantics but deliberately does not claim a fully atomic multi-provider transaction.
@@ -174,7 +199,7 @@ ContentRoot/
         └── ...
 ```
 
-With state-file watching enabled, editing `DesiredValue` can trigger a coordinated runtime switch. With `reloadOnChange: false`, the file is applied at startup and not watched during the running host.
+With state-file watching enabled, editing `DesiredValue` can trigger a coordinated runtime switch. With `watchForChanges: false`, the control file is applied at startup and not watched during the running host.
 
 Each set can additionally declare a code-owned desired-state apply mode:
 
@@ -236,23 +261,35 @@ var sets = services.GetRequiredService<IConfigurationSetManager>();
 IReadOnlyList<ConfigurationSetStatus> status = sets.GetStatus();
 // status[0]: Name, InitialValue, ActiveValue, AllowedValues, IsConsistent, participants
 
-if (!sets.TrySwitch(
-        "RoutingProfile",
-        "Failover",
-        out ConfigurationSetSwitchResult? result))
+bool switched = sets.TrySwitchRuntime(
+    "RoutingProfile",
+    "Failover",
+    out ConfigurationSetSwitchResult? result);
+
+if (!switched)
 {
-    // unknown set name
+    // result == null: unknown set name.
+    // result != null: known set, but the runtime switch was rejected/partially committed.
 }
 else
 {
-    // result is the completed coordinated switch outcome.
-    // When this call returns, successful configuration changes are already published.
+    // The requested value is now the fully coordinated active value.
+    // Successful configuration changes are already published when the call returns.
 }
 ```
 
-This is deliberately **ephemeral runtime control**. No persistence is implied by `TrySwitch(...)`.
+This is deliberately **ephemeral runtime control**. No persistence is implied by `TrySwitchRuntime(...)`. Its boolean follows normal `Try...` expectations: `true` means the requested value became (or already was) the fully coordinated active value; a non-null failed `result` still preserves the detailed rejection/partial-commit diagnostics.
 
-A controller or other control plane therefore does not need keyed DI lookup and does not need a JSON state file merely to inspect or switch configuration sets.
+For application/control-plane code, the intended entry points are deliberately narrow:
+
+| Need | Preferred dependency |
+| --- | --- |
+| Inspect sets or perform an ephemeral live switch | `IConfigurationSetManager` |
+| Read/write persistent desired state | `IConfigurationSetDesiredStateStore` |
+| Explicitly operate the built-in JSON file (`Reload`, `Materialize`, `FilePath`) | `IConfigurationSetStateStore` |
+| Advanced integration with one exact set | keyed `IConfigurationSetCoordinator` |
+
+A controller therefore does not need keyed DI lookup and does not need a JSON state file merely to inspect or switch configuration sets.
 
 ## Optional persistent desired state
 
@@ -387,7 +424,7 @@ They add a semantic coordination layer above configuration sources: a named valu
 - explicit persistent `TrySetDesiredValue(...)` control distinct from ephemeral coordinator switching;
 - persistent Runtime requests retain desired state when last-known-good runtime activation rejects;
 - internal state-file writes do not echo as duplicate watcher apply events;
-- global watcher disable through `reloadOnChange: false`;
+- global desired-state-file watcher disable through `watchForChanges: false`;
 - runtime file watching when enabled.
 
 The core state-management distinction needed by a later administrative HTTP or CLI integration is now explicit: those surfaces can choose persistent state-store control or ephemeral coordinator control rather than relying on hidden behavior.

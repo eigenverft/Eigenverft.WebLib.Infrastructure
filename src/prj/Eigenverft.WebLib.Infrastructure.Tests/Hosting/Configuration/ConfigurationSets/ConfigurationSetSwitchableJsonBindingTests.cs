@@ -472,6 +472,46 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
         }
 
         [TestMethod]
+        public void FluentMultiFileOptionsApplyToEveryGeneratedSwitchableSource()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write(
+                Path.Combine("AppSettings", "Experimental", "First.json"),
+                "{ \"First\": \"Experimental\" }");
+            directory.Write(
+                Path.Combine("AppSettings", "Experimental", "Second.json"),
+                "{ \"Second\": \"Experimental\" }");
+
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            ConfigurationSetRegistration registration = builder.AddConfigurationSet(
+                "ProxySet",
+                "Stable",
+                "Experimental");
+
+            registration.AddSwitchableJson(
+                "AppSettings",
+                new SwitchableJsonRegistrationOptions
+                {
+                    Optional = true,
+                },
+                "First.json",
+                "Second.json");
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator = registration.Coordinator;
+
+            Assert.IsNull(builder.Configuration["First"]);
+            Assert.IsNull(builder.Configuration["Second"]);
+            Assert.AreEqual(2, coordinator.BoundParticipantNames.Count);
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Experimental");
+
+            Assert.IsTrue(result.Succeeded);
+            Assert.AreEqual("Experimental", builder.Configuration["First"]);
+            Assert.AreEqual("Experimental", builder.Configuration["Second"]);
+        }
+
+        [TestMethod]
         public void SingleValueSetCanOwnSwitchableJsonWithoutAnyAlternativeValue()
         {
             using var directory = new TemporaryDirectory();

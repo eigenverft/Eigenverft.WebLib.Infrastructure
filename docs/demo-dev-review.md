@@ -556,7 +556,7 @@ The default is:
 ```csharp
 builder.AddConfigurationSetStateFile(
     "ConfigurationSets.json",
-    reloadOnChange: true);
+    watchForChanges: true);
 ```
 
 or simply:
@@ -600,8 +600,6 @@ This path is covered by end-to-end tests using a real host, real filesystem watc
 
 ## 8. Global state-file watcher disable
 
-## 8. Restart-only behavior already exists globally
-
 ### Current and tested
 
 This is already possible:
@@ -609,26 +607,24 @@ This is already possible:
 ```csharp
 builder.AddConfigurationSetStateFile(
     "ConfigurationSets.json",
-    reloadOnChange: false);
+    watchForChanges: false);
 ```
 
 Behavior:
 
 ```text
-  → configured DesiredValue is applied
+startup
   → ConfigurationSets.json is read
   → configured DesiredValue is applied
 
 host is running
   → file may be edited
-  → no automatic set switch happens
+  → no automatic state-file reload or set switch happens
+
+next application start
   → edited DesiredValue is read
   → new desired value is applied
-  → edited DesiredValue is read
-  → new value is applied
 ```
-
-This is exactly useful for settings that should be selectable through the state file but should only become active on restart.
 
 A regression test now verifies this behavior explicitly.
 
@@ -660,7 +656,7 @@ Operator edits it to:
 }
 ```
 
-With `reloadOnChange: false`:
+With `watchForChanges: false`:
 
 ```text
 running process remains Stable
@@ -863,7 +859,7 @@ Runtime
 and the state-store watcher defaults to enabled:
 
 ```csharp
-reloadOnChange: true
+watchForChanges: true
 ```
 
 So the shortest declaration is runtime-switchable from the central file.
@@ -887,17 +883,21 @@ Even when the state file is restart-only:
 ```csharp
 builder.AddConfigurationSetStateFile(
     "ConfigurationSets.json",
-    reloadOnChange: false);
+    watchForChanges: false);
 ```
 
-an application service can still resolve a coordinator and explicitly call:
+application code can still use the persistence-neutral manager explicitly:
 
 ```csharp
-var proxySet = services.GetRequiredKeyedService<IConfigurationSetCoordinator>(
-    "ProxySet");
+var sets = services.GetRequiredService<IConfigurationSetManager>();
 
-ConfigurationSetSwitchResult result = proxySet.TrySwitch("Experimental");
+bool switched = sets.TrySwitchRuntime(
+    "ProxySet",
+    "Experimental",
+    out ConfigurationSetSwitchResult? result);
 ```
+
+Keyed `IConfigurationSetCoordinator` remains available for advanced set-specific integrations, but it is not the recommended application control-plane entry point.
 
 That is another reason not to equate:
 
@@ -911,13 +911,16 @@ with:
 coordinator can never switch at runtime
 ```
 
-If the manually selected runtime value should survive restart, the application can materialize the current state again:
+If that runtime choice should survive restart, persist it explicitly as desired state instead of assuming `Materialize()` copies the active runtime value:
 
 ```csharp
-var store = services.GetRequiredService<IConfigurationSetStateStore>();
-store.Materialize();
+var desiredState = services.GetRequiredService<IConfigurationSetDesiredStateStore>();
+
+ConfigurationSetStateApplyResult persistResult =
+    desiredState.TrySetDesiredValue("ProxySet", "Experimental");
 ```
 
+`Materialize()` only rewrites the **current desired state** and code-owned metadata; it does not turn an ephemeral manager/coordinator switch into persisted desired state.
 Otherwise the next startup will apply whatever `DesiredValue` is still stored in `ConfigurationSets.json`.
 
 ---
@@ -1681,7 +1684,7 @@ builder
 
 builder.AddConfigurationSetStateFile(
     "ConfigurationSets.json",
-    reloadOnChange: true);
+    watchForChanges: true);
 
 builder.Services.AddHostedService<ConfigurationSetLogger>();
 
