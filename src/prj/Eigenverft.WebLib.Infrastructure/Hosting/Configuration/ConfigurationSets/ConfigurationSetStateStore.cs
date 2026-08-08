@@ -236,16 +236,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     timestamp);
             }
 
-            if (document?.Sets is null)
+            if (document?.ConfigurationSets is null)
             {
                 return CreateRejected(
                     ConfigurationSetStateFailureKind.InvalidDocument,
-                    new InvalidDataException("Configuration set state document must contain a 'Sets' object."),
+                    new InvalidDataException("Configuration set state document must contain a 'ConfigurationSets' object."),
                     sequence,
                     timestamp);
             }
 
-            foreach ((string name, ConfigurationSetStateEntry? entry) in document.Sets)
+            foreach ((string name, ConfigurationSetStateEntry? entry) in document.ConfigurationSets)
             {
                 if (!_coordinatorLookup.TryGetValue(name, out IConfigurationSetCoordinator? coordinator))
                 {
@@ -282,7 +282,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
             foreach (IConfigurationSetCoordinator coordinator in _coordinators)
             {
-                if (!document.Sets.TryGetValue(coordinator.Name, out ConfigurationSetStateEntry? entry) || entry is null)
+                if (!document.ConfigurationSets.TryGetValue(coordinator.Name, out ConfigurationSetStateEntry? entry) || entry is null)
                 {
                     continue;
                 }
@@ -367,7 +367,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     });
             }
 
-            var document = new ConfigurationSetStateDocument { Sets = sets };
+            var document = new ConfigurationSetStateDocument { ConfigurationSets = sets };
             string canonical = JsonSerializer.Serialize(document, JsonOptions) + Environment.NewLine;
 
             if (File.Exists(FilePath) && string.Equals(File.ReadAllText(FilePath, Encoding.UTF8), canonical, StringComparison.Ordinal))
@@ -470,7 +470,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         private sealed class ConfigurationSetStateDocument
         {
-            public Dictionary<string, ConfigurationSetStateEntry>? Sets { get; set; }
+            public Dictionary<string, ConfigurationSetStateEntry>? ConfigurationSets { get; set; }
         }
 
         private sealed class ConfigurationSetStateEntry

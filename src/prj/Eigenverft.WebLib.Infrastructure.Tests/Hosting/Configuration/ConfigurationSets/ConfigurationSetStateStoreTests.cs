@@ -35,7 +35,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             Assert.IsTrue(File.Exists(store.FilePath));
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(store.FilePath));
-            JsonElement sets = document.RootElement.GetProperty("Sets");
+            JsonElement sets = document.RootElement.GetProperty("ConfigurationSets");
 
             JsonElement environment = sets.GetProperty("EnvironmentSet");
             Assert.AreEqual("Development", environment.GetProperty("Value").GetString());
@@ -61,7 +61,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "ConfigurationSets.json",
                 """
                 {
-                  "Sets": {
+                  "ConfigurationSets": {
                     "ProxySet": {
                       "Value": "Experimental",
                       "AllowedValues": [ "SomethingElse" ]
@@ -79,7 +79,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             Assert.AreEqual("Experimental", proxy.ActiveValue);
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory.Path, "ConfigurationSets.json")));
-            JsonElement proxyState = document.RootElement.GetProperty("Sets").GetProperty("ProxySet");
+            JsonElement proxyState = document.RootElement.GetProperty("ConfigurationSets").GetProperty("ProxySet");
             CollectionAssert.AreEqual(
                 new[] { "Stable", "Next", "Experimental" },
                 proxyState.GetProperty("AllowedValues").EnumerateArray().Select(value => value.GetString()).ToArray());
@@ -93,7 +93,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "ConfigurationSets.json",
                 """
                 {
-                  "Sets": {
+                  "ConfigurationSets": {
                     "ProxySet": {
                       "Value": "MadeUp",
                       "AllowedValues": [ "Stable", "MadeUp" ]
@@ -129,7 +129,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "ConfigurationSets.json",
                 """
                 {
-                  "Sets": {
+                  "ConfigurationSets": {
                     "ProxySet": { "Value": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] },
                     "TypoSet": { "Value": "Anything", "AllowedValues": [ "Anything" ] }
                   }
@@ -170,7 +170,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "ConfigurationSets.json",
                 """
                 {
-                  "Sets": {
+                  "ConfigurationSets": {
                     "EnvironmentSet": { "Value": "Production", "AllowedValues": [ "Development", "Production" ] },
                     "ProxySet": { "Value": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] }
                   }
@@ -220,7 +220,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "ConfigurationSets.json",
                 """
                 {
-                  "Sets": {
+                  "ConfigurationSets": {
                     "ProxySet": {
                       "Value": "Experimental",
                       "AllowedValues": [ "Stable", "Experimental" ]
@@ -244,7 +244,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "ConfigurationSets.json",
                 """
                 {
-                  "Sets": {
+                  "ConfigurationSets": {
                     "EnvironmentSet": {
                       "Value": "Production",
                       "AllowedValues": [ "Development", "Production" ]
@@ -267,7 +267,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual("Production", environment.ActiveValue);
             Assert.AreEqual("Stable", proxy.ActiveValue);
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(Path.Combine(directory.Path, "ConfigurationSets.json")));
-            Assert.IsTrue(document.RootElement.GetProperty("Sets").TryGetProperty("ProxySet", out JsonElement proxyState));
+            Assert.IsTrue(document.RootElement.GetProperty("ConfigurationSets").TryGetProperty("ProxySet", out JsonElement proxyState));
             Assert.AreEqual("Stable", proxyState.GetProperty("Value").GetString());
         }
 
@@ -314,7 +314,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "ConfigurationSets.json",
                 """
                 {
-                  "Sets": {
+                  "ConfigurationSets": {
                     "ProxySet": { "Value": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] },
                     "FeatureSet": { "Value": "Next", "AllowedValues": [ "Default", "Next" ] }
                   }
@@ -361,7 +361,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 "ConfigurationSets.json",
                 """
                 {
-                  "Sets": {
+                  "ConfigurationSets": {
                     "EnvironmentSet": { "Value": "Production", "AllowedValues": [ "Development", "Production" ] },
                     "ProxySet": { "Value": "Experimental", "AllowedValues": [ "Stable", "Experimental" ] }
                   }
@@ -406,7 +406,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                     "ConfigurationSets.json",
                     """
                     {
-                      "Sets": {
+                      "ConfigurationSets": {
                         "ProxySet": {
                           "Value": "Experimental",
                           "AllowedValues": [ "Stable", "Experimental" ]

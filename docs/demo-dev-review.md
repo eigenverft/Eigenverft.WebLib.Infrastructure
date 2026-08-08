@@ -97,7 +97,7 @@ the central file is still valid and self-describing:
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "ProxySet": {
       "Value": "Stable",
       "AllowedValues": [ "Stable" ]
@@ -362,7 +362,7 @@ For the relative path above, the store materializes `ContentRoot/ConfigurationSe
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "EnvironmentSet": {
       "Value": "Development",
       "AllowedValues": [
@@ -410,7 +410,7 @@ The target state file should therefore materialize `ApplyMode` next to `AllowedV
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "ProxySet": {
       "Value": "Stable",
       "AllowedValues": [ "Stable", "Next", "Experimental" ],
@@ -532,7 +532,7 @@ Current running state:
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "BuildSet": {
       "Value": "Stable",
       "AllowedValues": [ "Stable", "Candidate" ]
@@ -545,7 +545,7 @@ Operator edits it to:
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "BuildSet": {
       "Value": "Candidate",
       "AllowedValues": [ "Stable", "Candidate" ]
@@ -668,7 +668,7 @@ Conceptual future file:
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "ProxySet": {
       "Value": "Experimental",
       "AllowedValues": [ "Stable", "Next", "Experimental" ],
@@ -1017,7 +1017,7 @@ Central `ConfigurationSets.json` in the content root:
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "ThemeSet": {
       "Value": "Light",
       "AllowedValues": [ "Light", "Dark", "HighContrast" ]
@@ -1108,7 +1108,7 @@ Central `ConfigurationSets.json`:
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "FeatureSet": {
       "Value": "Stable",
       "AllowedValues": [ "Stable", "Beta", "Lab" ]
@@ -1297,7 +1297,7 @@ Central `ConfigurationSets.json` with the **current API**:
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "BuildSet": {
       "Value": "Stable",
       "AllowedValues": [ "Stable", "Candidate" ]
@@ -1345,7 +1345,7 @@ Central `ConfigurationSets.json`:
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "ProxySet": {
       "Value": "Stable",
       "AllowedValues": [ "Stable", "Next", "Experimental" ]
@@ -1608,7 +1608,7 @@ Central `ConfigurationSets.json`:
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "ProxySet": {
       "Value": "Stable",
       "AllowedValues": [ "Stable", "Next", "Experimental" ]
@@ -1689,7 +1689,7 @@ Central `ConfigurationSets.json`:
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "EnvironmentSet": {
       "Value": "Production",
       "AllowedValues": [ "Production" ]
@@ -1828,7 +1828,7 @@ The corresponding future state file should make the policy visible beside the ed
 
 ```json
 {
-  "Sets": {
+  "ConfigurationSets": {
     "ProxySet":       { "Value": "Stable",     "AllowedValues": [ "Stable", "Next", "Experimental" ], "ApplyMode": "Runtime" },
     "ThemeSet":       { "Value": "Light",      "AllowedValues": [ "Light", "Dark" ],                  "ApplyMode": "Runtime" },
     "EnvironmentSet": { "Value": "Production", "AllowedValues": [ "Production" ],                     "ApplyMode": "StartupOnly" },
