@@ -324,7 +324,9 @@ Current implementation can credibly claim:
 - one or many JSON sources per profile;
 - arbitrary per-value source paths;
 - runtime switching;
-- global restart-only state-file behavior by disabling watching;
+- per-profile `Runtime` / `StartupOnly` state-file apply modes;
+- visible read-only `ApplyMode` metadata and pending-restart status;
+- global watcher disable when no runtime state-file edits should be observed;
 - self-describing allowed values;
 - preflight of all bound sources before the first commit;
 - last-known-good behavior when a candidate cannot prepare;
@@ -332,7 +334,7 @@ Current implementation can credibly claim:
 - DI-wide lifecycle events;
 - detailed status and change information.
 
-Do not yet claim per-profile mixed `Runtime` / `StartupOnly` behavior inside one state file until that V1 capability is implemented.
+Mixed per-profile `Runtime` / `StartupOnly` behavior is now part of the implementation. A startup-only edit remains visible as desired state with pending-restart status until the next host startup.
 
 Do not yet imply that a direct programmatic coordinator switch persists desired state across restart; direct `TrySwitch(...)` is currently runtime-only.
 

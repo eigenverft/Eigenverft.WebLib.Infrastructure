@@ -3,10 +3,20 @@ using System.Collections.Generic;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSets
 {
+    /// <summary>Controls when a state-file value is applied to its configuration-set coordinator.</summary>
+    public enum ConfigurationSetStateApplyMode
+    {
+        /// <summary>State-file changes may be applied while the host is running.</summary>
+        Runtime = 0,
+
+        /// <summary>State-file changes are applied during startup and remain pending while the current host is running.</summary>
+        StartupOnly = 1,
+    }
+
     /// <summary>Describes the completed outcome of loading and applying a configuration-set state file.</summary>
     public enum ConfigurationSetStateApplyStatus
     {
-        /// <summary>Every requested set transition completed without rejection.</summary>
+        /// <summary>Every requested runtime transition completed without rejection; startup-only changes may still be pending.</summary>
         Succeeded = 0,
 
         /// <summary>The document was valid, but one or more requested independent set transitions were rejected.</summary>
@@ -44,7 +54,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>A canonical self-describing state file was created or refreshed.</summary>
         StateMaterialized = 0,
 
-        /// <summary>The state file was loaded and every requested set transition completed successfully.</summary>
+        /// <summary>The state file was loaded and every requested runtime transition completed successfully.</summary>
         StateApplied = 1,
 
         /// <summary>The state file was valid, but one or more requested independent set transitions were rejected.</summary>
@@ -54,6 +64,34 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         StateRejected = 3,
     }
 
+    /// <summary>Describes a desired state-file value that is intentionally waiting for the next host startup.</summary>
+    public sealed class ConfigurationSetPendingRestartChange
+    {
+        internal ConfigurationSetPendingRestartChange(
+            string name,
+            string activeValue,
+            string desiredValue,
+            ConfigurationSetStateApplyMode applyMode)
+        {
+            Name = name;
+            ActiveValue = activeValue;
+            DesiredValue = desiredValue;
+            ApplyMode = applyMode;
+        }
+
+        /// <summary>Gets the configuration-set identity.</summary>
+        public string Name { get; }
+
+        /// <summary>Gets the value active in the running process.</summary>
+        public string ActiveValue { get; }
+
+        /// <summary>Gets the desired value stored in the state file.</summary>
+        public string DesiredValue { get; }
+
+        /// <summary>Gets the code-owned state-file apply mode.</summary>
+        public ConfigurationSetStateApplyMode ApplyMode { get; }
+    }
+
     /// <summary>Contains the completed result of one state-file apply operation.</summary>
     public sealed class ConfigurationSetStateApplyResult
     {
@@ -61,6 +99,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             ConfigurationSetStateApplyStatus status,
             ConfigurationSetStateFailureKind failureKind,
             IReadOnlyList<ConfigurationSetSwitchResult> setResults,
+            IReadOnlyList<ConfigurationSetPendingRestartChange> pendingRestartChanges,
             Exception? exception,
             long sequence,
             DateTimeOffset timestamp)
@@ -68,6 +107,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             Status = status;
             FailureKind = failureKind;
             SetResults = setResults;
+            PendingRestartChanges = pendingRestartChanges;
             Exception = exception;
             Sequence = sequence;
             Timestamp = timestamp;
@@ -79,8 +119,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the classified failure kind, or <see cref="ConfigurationSetStateFailureKind.None"/>.</summary>
         public ConfigurationSetStateFailureKind FailureKind { get; }
 
-        /// <summary>Gets the per-set outcomes in coordinator registration order.</summary>
+        /// <summary>Gets the per-set runtime outcomes in coordinator registration order.</summary>
         public IReadOnlyList<ConfigurationSetSwitchResult> SetResults { get; }
+
+        /// <summary>Gets startup-only desired values that remain pending for the next host startup.</summary>
+        public IReadOnlyList<ConfigurationSetPendingRestartChange> PendingRestartChanges { get; }
+
+        /// <summary>Gets whether at least one startup-only set has a desired value different from its active runtime value.</summary>
+        public bool HasPendingRestart => PendingRestartChanges.Count > 0;
 
         /// <summary>Gets the underlying load or validation exception when available.</summary>
         public Exception? Exception { get; }
@@ -91,7 +137,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the UTC timestamp at which the apply operation completed.</summary>
         public DateTimeOffset Timestamp { get; }
 
-        /// <summary>Gets whether the complete requested state was applied without rejection.</summary>
+        /// <summary>Gets whether the state document was accepted without a runtime transition rejection.</summary>
         public bool Succeeded => Status == ConfigurationSetStateApplyStatus.Succeeded;
     }
 
@@ -142,10 +188,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Captures the current managed state-file and coordinator runtime status.</summary>
         ConfigurationSetStateStoreStatus GetStatus();
 
-        /// <summary>Loads the current state file and applies requested values to the registered independent set coordinators.</summary>
+        /// <summary>Loads the current state file and applies values permitted to change in the running host.</summary>
         ConfigurationSetStateApplyResult Reload();
 
-        /// <summary>Writes the current coordinator values and authoritative allowed-value metadata to the state file.</summary>
+        /// <summary>Writes current desired values and authoritative state metadata to the state file.</summary>
         void Materialize();
     }
 }

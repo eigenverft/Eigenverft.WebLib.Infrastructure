@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +10,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     /// <summary>Registers a self-describing JSON control file for configuration-set coordinators known at startup.</summary>
     public static class ConfigurationSetStateStoreExtensions
     {
+        private static readonly object StateApplyModesKey = new();
+
         /// <summary>
         /// Registers multiple configuration sets and their shared self-describing state file in one startup declaration.
         /// </summary>
@@ -29,19 +32,57 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             return builder.AddConfigurationSetStateFile(path);
         }
 
+        /// <summary>Sets the code-owned state-file apply mode for one already registered configuration set.</summary>
+        /// <param name="builder">The host application builder containing the configuration set.</param>
+        /// <param name="setName">The registered configuration-set name.</param>
+        /// <param name="applyMode">Whether state-file changes may apply at runtime or only during startup.</param>
+        /// <returns>The same builder for chaining.</returns>
+        /// <remarks>
+        /// This policy belongs to the state-file control plane, not to <see cref="IConfigurationSetCoordinator"/>. Direct coordinator
+        /// switches remain technically possible regardless of this setting. The policy is frozen when the state store is registered.
+        /// </remarks>
+        public static IHostApplicationBuilder SetConfigurationSetStateApplyMode(
+            this IHostApplicationBuilder builder,
+            string setName,
+            ConfigurationSetStateApplyMode applyMode)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentException.ThrowIfNullOrWhiteSpace(setName);
+
+            if (!Enum.IsDefined(applyMode))
+            {
+                throw new ArgumentOutOfRangeException(nameof(applyMode));
+            }
+
+            if (builder.Services.Any(descriptor => descriptor.ServiceType == typeof(IConfigurationSetStateStore)))
+            {
+                throw new InvalidOperationException(
+                    "Configuration set state apply modes must be configured before the state store is registered.");
+            }
+
+            if (!ConfigurationSetCoordinatorExtensions.TryGetRegisteredCoordinator(builder, setName, out _))
+            {
+                throw new InvalidOperationException(
+                    $"Configuration set coordinator '{setName}' must be registered before its state apply mode is configured.");
+            }
+
+            GetStateApplyModes(builder)[setName] = applyMode;
+            return builder;
+        }
+
         /// <summary>
-        /// Adds one configuration-set state file, materializes authoritative allowed-value metadata, and optionally watches it.
+        /// Adds one configuration-set state file, materializes authoritative metadata, and optionally watches it.
         /// </summary>
         /// <param name="builder">The host application builder containing the set coordinators to manage.</param>
         /// <param name="path">Absolute path, or a path relative to the host content root.</param>
-        /// <param name="reloadOnChange">Whether physical state-file edits are applied after startup.</param>
+        /// <param name="reloadOnChange">Whether physical state-file edits are considered after startup.</param>
         /// <param name="reloadDelayMilliseconds">Debounce delay for physical file notifications.</param>
         /// <returns>The runtime state-store instance, also registered as a singleton through DI.</returns>
         /// <remarks>
-        /// The store captures the coordinators registered before this call. Missing files are created from the current coordinator
-        /// state. AllowedValues arrays in the file are descriptive metadata only; registered coordinator definitions remain
-        /// authoritative. Unknown set names or disallowed values reject the document before any set is switched. Operational
-        /// failures in one otherwise-valid independent set do not roll back successful transitions of another independent set.
+        /// The store captures coordinators and their state apply modes registered before this call. Missing files are created from the
+        /// current desired state. <c>AllowedValues</c> and <c>ApplyMode</c> in the file are descriptive metadata only; registered code
+        /// remains authoritative. Unknown set names or disallowed values reject the document before any set is switched. Runtime
+        /// operational failures in one otherwise-valid independent set do not roll back successful transitions of another independent set.
         /// </remarks>
         public static IConfigurationSetStateStore AddConfigurationSetStateFile(
             this IHostApplicationBuilder builder,
@@ -62,7 +103,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 throw new InvalidOperationException("A configuration set state store is already registered.");
             }
 
-            var coordinators = ConfigurationSetCoordinatorExtensions.GetRegisteredCoordinatorSnapshot(builder);
+            IReadOnlyList<IConfigurationSetCoordinator> coordinators =
+                ConfigurationSetCoordinatorExtensions.GetRegisteredCoordinatorSnapshot(builder);
             if (coordinators.Count == 0)
             {
                 throw new InvalidOperationException(
@@ -76,6 +118,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             var store = new ConfigurationSetStateStore(
                 filePath,
                 coordinators,
+                GetStateApplyModeSnapshot(builder, coordinators),
                 reloadOnChange,
                 reloadDelayMilliseconds);
 
@@ -91,6 +134,41 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 store.Dispose();
                 throw;
             }
+        }
+
+        internal static IReadOnlyDictionary<string, ConfigurationSetStateApplyMode> GetStateApplyModeSnapshot(
+            IHostApplicationBuilder builder,
+            IReadOnlyList<IConfigurationSetCoordinator> coordinators)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentNullException.ThrowIfNull(coordinators);
+
+            Dictionary<string, ConfigurationSetStateApplyMode> configured = GetStateApplyModes(builder);
+            var snapshot = new Dictionary<string, ConfigurationSetStateApplyMode>(StringComparer.Ordinal);
+
+            foreach (IConfigurationSetCoordinator coordinator in coordinators)
+            {
+                snapshot.Add(
+                    coordinator.Name,
+                    configured.TryGetValue(coordinator.Name, out ConfigurationSetStateApplyMode applyMode)
+                        ? applyMode
+                        : ConfigurationSetStateApplyMode.Runtime);
+            }
+
+            return snapshot;
+        }
+
+        private static Dictionary<string, ConfigurationSetStateApplyMode> GetStateApplyModes(IHostApplicationBuilder builder)
+        {
+            if (builder.Properties.TryGetValue(StateApplyModesKey, out object? value) &&
+                value is Dictionary<string, ConfigurationSetStateApplyMode> existing)
+            {
+                return existing;
+            }
+
+            var created = new Dictionary<string, ConfigurationSetStateApplyMode>(StringComparer.Ordinal);
+            builder.Properties[StateApplyModesKey] = created;
+            return created;
         }
     }
 }

@@ -433,6 +433,178 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual("Experimental", secondCoordinator.ActiveValue);
         }
 
+        [TestMethod]
+        public void MixedRuntimeAndStartupOnlyStateFileReloadDefersOnlyStartupOnlyAxis()
+        {
+            using var directory = new TemporaryDirectory();
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            IConfigurationSetCoordinator routing = builder
+                .AddConfigurationSet("RoutingProfile", "Primary", "Failover")
+                .Coordinator;
+            IConfigurationSetCoordinator release = builder
+                .AddConfigurationSet("ReleaseChannel", "Stable", "Beta")
+                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .Coordinator;
+
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+
+            directory.Write(
+                "ConfigurationSets.json",
+                """
+                {
+                  "ConfigurationSets": {
+                    "RoutingProfile": {
+                      "Value": "Failover",
+                      "AllowedValues": [ "Primary", "Failover" ],
+                      "ApplyMode": "StartupOnly"
+                    },
+                    "ReleaseChannel": {
+                      "Value": "Beta",
+                      "AllowedValues": [ "Stable", "Beta" ],
+                      "ApplyMode": "Runtime"
+                    }
+                  }
+                }
+                """);
+
+            ConfigurationSetStateApplyResult result = store.Reload();
+
+            Assert.IsTrue(result.Succeeded);
+            Assert.IsTrue(result.HasPendingRestart);
+            Assert.AreEqual("Failover", routing.ActiveValue);
+            Assert.AreEqual("Stable", release.ActiveValue);
+            Assert.AreEqual(1, result.PendingRestartChanges.Count);
+            Assert.AreEqual("ReleaseChannel", result.PendingRestartChanges[0].Name);
+            Assert.AreEqual("Stable", result.PendingRestartChanges[0].ActiveValue);
+            Assert.AreEqual("Beta", result.PendingRestartChanges[0].DesiredValue);
+            Assert.AreEqual(ConfigurationSetStateApplyMode.StartupOnly, result.PendingRestartChanges[0].ApplyMode);
+
+            ConfigurationSetStateStoreStatus status = store.GetStatus();
+            ConfigurationSetStateStatus routingStatus = status.SetStates.Single(set => set.Name == "RoutingProfile");
+            ConfigurationSetStateStatus releaseStatus = status.SetStates.Single(set => set.Name == "ReleaseChannel");
+            Assert.AreEqual(ConfigurationSetStateApplyMode.Runtime, routingStatus.ApplyMode);
+            Assert.AreEqual("Failover", routingStatus.DesiredValue);
+            Assert.IsFalse(routingStatus.HasPendingRestart);
+            Assert.AreEqual(ConfigurationSetStateApplyMode.StartupOnly, releaseStatus.ApplyMode);
+            Assert.AreEqual("Beta", releaseStatus.DesiredValue);
+            Assert.IsTrue(releaseStatus.HasPendingRestart);
+            Assert.IsTrue(status.HasPendingRestart);
+
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(store.FilePath));
+            JsonElement sets = document.RootElement.GetProperty("ConfigurationSets");
+            Assert.AreEqual("Runtime", sets.GetProperty("RoutingProfile").GetProperty("ApplyMode").GetString());
+            Assert.AreEqual("StartupOnly", sets.GetProperty("ReleaseChannel").GetProperty("ApplyMode").GetString());
+            Assert.AreEqual("Beta", sets.GetProperty("ReleaseChannel").GetProperty("Value").GetString());
+        }
+
+        [TestMethod]
+        public void StartupOnlyDesiredValueIsAppliedWhenNextHostStarts()
+        {
+            using var directory = new TemporaryDirectory();
+
+            HostApplicationBuilder firstBuilder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator first = firstBuilder
+                .AddConfigurationSet("ReleaseChannel", "Stable", "Beta")
+                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .Coordinator;
+            IConfigurationSetStateStore firstStore = firstBuilder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+
+            directory.Write(
+                "ConfigurationSets.json",
+                """
+                {
+                  "ConfigurationSets": {
+                    "ReleaseChannel": {
+                      "Value": "Beta",
+                      "AllowedValues": [ "Stable", "Beta" ],
+                      "ApplyMode": "StartupOnly"
+                    }
+                  }
+                }
+                """);
+
+            ConfigurationSetStateApplyResult runtimeReload = firstStore.Reload();
+            Assert.IsTrue(runtimeReload.HasPendingRestart);
+            Assert.AreEqual("Stable", first.ActiveValue);
+
+            HostApplicationBuilder secondBuilder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator second = secondBuilder
+                .AddConfigurationSet("ReleaseChannel", "Stable", "Beta")
+                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .Coordinator;
+            IConfigurationSetStateStore secondStore = secondBuilder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+
+            Assert.AreEqual("Beta", second.ActiveValue);
+            Assert.IsFalse(secondStore.GetStatus().HasPendingRestart);
+            Assert.AreEqual("Beta", secondStore.GetStatus().SetStates.Single().DesiredValue);
+        }
+
+        [TestMethod]
+        public void StateFileWatcherAppliesRuntimeAxisAndReportsStartupOnlyPendingRestart()
+        {
+            using var directory = new TemporaryDirectory();
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator routing = builder
+                .AddConfigurationSet("RoutingProfile", "Primary", "Failover")
+                .Coordinator;
+            IConfigurationSetCoordinator release = builder
+                .AddConfigurationSet("ReleaseChannel", "Stable", "Beta")
+                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .Coordinator;
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: true,
+                reloadDelayMilliseconds: 25);
+
+            using IHost host = builder.Build();
+            host.StartAsync().GetAwaiter().GetResult();
+            using var observed = new ManualResetEventSlim();
+            ConfigurationSetStateApplyResult? observedResult = null;
+            store.LifecycleChanged += (_, args) =>
+            {
+                if (args.Kind == ConfigurationSetStateStoreEventKind.StateApplied &&
+                    args.ApplyResult?.HasPendingRestart == true &&
+                    routing.ActiveValue == "Failover")
+                {
+                    observedResult = args.ApplyResult;
+                    observed.Set();
+                }
+            };
+
+            directory.Write(
+                "ConfigurationSets.json",
+                """
+                {
+                  "ConfigurationSets": {
+                    "RoutingProfile": {
+                      "Value": "Failover",
+                      "AllowedValues": [ "Primary", "Failover" ]
+                    },
+                    "ReleaseChannel": {
+                      "Value": "Beta",
+                      "AllowedValues": [ "Stable", "Beta" ]
+                    }
+                  }
+                }
+                """);
+
+            Assert.IsTrue(observed.Wait(TimeSpan.FromSeconds(5)), "The mixed apply-mode state-file edit was not observed in time.");
+            Assert.AreEqual("Failover", routing.ActiveValue);
+            Assert.AreEqual("Stable", release.ActiveValue);
+            Assert.IsNotNull(observedResult);
+            Assert.AreEqual(1, observedResult.PendingRestartChanges.Count);
+            Assert.IsTrue(store.GetStatus().HasPendingRestart);
+
+            host.StopAsync().GetAwaiter().GetResult();
+        }
+
         private static HostApplicationBuilder CreateBuilder(string contentRootPath)
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings

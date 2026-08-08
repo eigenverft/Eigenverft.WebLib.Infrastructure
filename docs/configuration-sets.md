@@ -174,7 +174,43 @@ ContentRoot/
 
 With state-file watching enabled, editing `Value` can trigger a coordinated runtime switch. With `reloadOnChange: false`, the file is applied at startup and not watched during the running host.
 
-Per-set mixed `Runtime` / `StartupOnly` behavior is not yet part of the current public contract. See `demo-dev-review.md` for the design discussion until that capability is implemented.
+Each set can additionally declare a code-owned state-file apply mode:
+
+```csharp
+builder
+    .AddConfigurationSet(
+        "ReleaseChannel",
+        "Stable",
+        "Beta")
+    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly);
+
+builder
+    .AddConfigurationSet(
+        "RoutingProfile",
+        "Primary",
+        "Failover"); // Runtime is the default.
+```
+
+The canonical state file materializes that policy as read-only descriptive metadata:
+
+```json
+{
+  "ConfigurationSets": {
+    "ReleaseChannel": {
+      "Value": "Beta",
+      "AllowedValues": [ "Stable", "Beta" ],
+      "ApplyMode": "StartupOnly"
+    },
+    "RoutingProfile": {
+      "Value": "Failover",
+      "AllowedValues": [ "Primary", "Failover" ],
+      "ApplyMode": "Runtime"
+    }
+  }
+}
+```
+
+Editing `ApplyMode` in JSON does not change policy; the code-owned value wins and is rematerialized. During a running host, a changed `StartupOnly` value becomes `DesiredValue` and is reported through `PendingRestartChanges` / `HasPendingRestart` without changing `ActiveValue`. The next host startup applies the desired value.
 
 ## Programmatic switching
 
@@ -265,14 +301,14 @@ They add a semantic coordination layer above configuration sources: a named valu
 - thread-safe coordinator switching;
 - observable set-level events with participant detail;
 - self-describing central state file;
-- startup-only state-file behavior globally through `reloadOnChange: false`;
+- per-set `Runtime` / `StartupOnly` state-file policy;
+- visible code-owned `ApplyMode` metadata;
+- desired-vs-active status and pending-restart reporting;
+- global watcher disable through `reloadOnChange: false`;
 - runtime file watching when enabled.
 
-## Current open V1 decisions
+## Current open V1 decision
 
-Two contracts remain intentionally explicit rather than hidden behind convenience behavior:
+One state-management contract remains intentionally explicit rather than hidden behind convenience behavior: a persistent programmatic switch API that changes desired state in `ConfigurationSets.json` as well as runtime state, distinct from the existing ephemeral `IConfigurationSetCoordinator.TrySwitch(...)` primitive.
 
-1. Mixed per-set `Runtime` / `StartupOnly` policy in one state file, including visible read-only policy metadata and pending-restart state.
-2. A persistent programmatic switch API that changes desired state in `ConfigurationSets.json` as well as runtime state, distinct from the existing ephemeral `IConfigurationSetCoordinator.TrySwitch(...)` primitive.
-
-Those should be resolved before an administrative HTTP integration claims a persistent control-plane contract.
+That should be resolved before an administrative HTTP integration claims a persistent control-plane contract.

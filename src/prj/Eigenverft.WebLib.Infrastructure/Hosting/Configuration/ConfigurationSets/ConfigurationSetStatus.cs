@@ -35,24 +35,89 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         public IReadOnlyList<string> BoundParticipantNames { get; }
     }
 
+    /// <summary>Immutable state-store view of one configuration-set axis, including desired and active values.</summary>
+    public sealed class ConfigurationSetStateStatus
+    {
+        internal ConfigurationSetStateStatus(
+            ConfigurationSetStatus runtime,
+            string desiredValue,
+            ConfigurationSetStateApplyMode applyMode)
+        {
+            Runtime = runtime;
+            DesiredValue = desiredValue;
+            ApplyMode = applyMode;
+        }
+
+        /// <summary>Gets the coordinator runtime snapshot.</summary>
+        public ConfigurationSetStatus Runtime { get; }
+
+        /// <summary>Gets the configuration-set identity.</summary>
+        public string Name => Runtime.Name;
+
+        /// <summary>Gets the value active in the running process.</summary>
+        public string ActiveValue => Runtime.ActiveValue;
+
+        /// <summary>Gets the desired value owned by the state store.</summary>
+        public string DesiredValue { get; }
+
+        /// <summary>Gets the code-owned state-file apply policy.</summary>
+        public ConfigurationSetStateApplyMode ApplyMode { get; }
+
+        /// <summary>Gets whether the desired startup-only value differs from the active runtime value.</summary>
+        public bool HasPendingRestart =>
+            ApplyMode == ConfigurationSetStateApplyMode.StartupOnly &&
+            !string.Equals(ActiveValue, DesiredValue, System.StringComparison.Ordinal);
+
+        /// <summary>Gets whether all bound participants are known to represent <see cref="ActiveValue"/>.</summary>
+        public bool IsConsistent => Runtime.IsConsistent;
+
+        /// <summary>Gets the authoritative allowed values.</summary>
+        public IReadOnlyList<string> AllowedValues => Runtime.AllowedValues;
+
+        /// <summary>Gets the bound switchable JSON participant identities.</summary>
+        public IReadOnlyList<string> BoundParticipantNames => Runtime.BoundParticipantNames;
+    }
+
     /// <summary>Immutable runtime snapshot of the managed configuration-set state file and all captured set axes.</summary>
     public sealed class ConfigurationSetStateStoreStatus
     {
         internal ConfigurationSetStateStoreStatus(
             string filePath,
             IReadOnlyList<ConfigurationSetStatus> sets,
+            IReadOnlyList<ConfigurationSetStateStatus> setStates,
             ConfigurationSetStateApplyResult? lastApplyResult)
         {
             FilePath = filePath;
             Sets = sets;
+            SetStates = setStates;
             LastApplyResult = lastApplyResult;
         }
 
         /// <summary>Gets the normalized state-file path.</summary>
         public string FilePath { get; }
 
-        /// <summary>Gets the current set snapshots in registration order.</summary>
+        /// <summary>Gets coordinator runtime snapshots in registration order.</summary>
         public IReadOnlyList<ConfigurationSetStatus> Sets { get; }
+
+        /// <summary>Gets state-store snapshots including desired values and apply modes in registration order.</summary>
+        public IReadOnlyList<ConfigurationSetStateStatus> SetStates { get; }
+
+        /// <summary>Gets whether any startup-only set has a desired value waiting for the next host startup.</summary>
+        public bool HasPendingRestart
+        {
+            get
+            {
+                foreach (ConfigurationSetStateStatus state in SetStates)
+                {
+                    if (state.HasPendingRestart)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 
         /// <summary>Gets the most recent state-file apply result, or <see langword="null"/> when no state file has been applied yet.</summary>
         public ConfigurationSetStateApplyResult? LastApplyResult { get; }

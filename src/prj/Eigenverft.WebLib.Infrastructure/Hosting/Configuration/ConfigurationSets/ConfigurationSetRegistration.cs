@@ -33,6 +33,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the caller-defined set identity.</summary>
         public string Name => Coordinator.Name;
 
+        /// <summary>Configures how this set's value from <c>ConfigurationSets.json</c> may be applied.</summary>
+        /// <param name="applyMode">Whether state-file changes may apply at runtime or only during host startup.</param>
+        /// <returns>This registration handle for chaining.</returns>
+        public ConfigurationSetRegistration StateFileApplyMode(ConfigurationSetStateApplyMode applyMode)
+        {
+            _builder.SetConfigurationSetStateApplyMode(Name, applyMode);
+            return this;
+        }
+
         /// <summary>
         /// Registers one switchable JSON source using an arbitrary complete path mapping for the allowed set values.
         /// </summary>

@@ -504,11 +504,11 @@ AllowedValues
 
 Changing `AllowedValues` in JSON cannot authorize a value that the registered coordinator rejects.
 
-### Target metadata once per-set apply policy exists
+### Current per-set apply metadata
 
-`AllowedValues` already serves as operator-facing, code-owned metadata. The same principle should apply to a future per-set apply policy: an editor should not have to know from memory whether changing a value is live or restart-only.
+`AllowedValues` serves as operator-facing, code-owned metadata. `ApplyMode` now follows the same principle: an editor does not have to know from memory whether changing a value is live or restart-only.
 
-The target state file should therefore materialize `ApplyMode` next to `AllowedValues`:
+The canonical state file materializes `ApplyMode` next to `AllowedValues`:
 
 ```json
 {
@@ -666,225 +666,211 @@ new process starts as Candidate
 
 ---
 
-## 9. The real missing policy: mixed runtime and restart-only sets
+## 9. Mixed runtime and startup-only sets
 
-### Current limitation
+### Current and tested
 
-`reloadOnChange` currently belongs to the **whole state store**.
+Per-set state-file policy is now first-class even when one `ConfigurationSets.json` controls several independent axes:
 
-So this is easy:
+```csharp
+var routingProfile = builder
+    .AddConfigurationSet(
+        "RoutingProfile",
+        "Primary",
+        "Canary",
+        "Failover");
+
+var releaseChannel = builder
+    .AddConfigurationSet(
+        "ReleaseChannel",
+        "Stable",
+        "Beta")
+    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly);
+
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
+```
+
+`Runtime` is the default, so the explicit call is only needed for `StartupOnly` unless code wants to make the default visible.
 
 ```text
-all sets hot-switch from file
+RoutingProfile  -> Runtime
+ReleaseChannel  -> StartupOnly
 ```
 
-and this is easy:
-
-```text
-all sets only consume file changes at startup
-```
-
-But this mixed policy is not first-class yet:
-
-```text
-ProxySet       → runtime hot-switch allowed
-ThemeSet       → runtime hot-switch allowed
-EnvironmentSet → restart only
-BuildSet       → restart only
-```
-
-That distinction looks practically useful.
-
----
-
-## 10. Where should a per-set switch policy live?
-
-### Recommendation
-
-The **Coordinator should remain technically switchable**.
-
-The policy that says whether a **state-file change automatically calls the coordinator at runtime** belongs to the state-file/controller layer, not to `ConfigurationSetCoordinator` itself.
-
-Reason:
-
-```text
-ConfigurationSetCoordinator
-  = technical primitive that can coordinate a requested transition
-
-ConfigurationSetStateStore
-  = decides whether a file edit should trigger that request
-
-Admin endpoint / application service
-  = may be another trigger entirely
-```
-
-This matters because an application may reasonably want:
-
-```text
-BuildSet file edits: restart only
-
-but
-
-explicit administrative code: maybe still allowed to call TrySwitch()
-```
-
-Making the coordinator itself globally "non-switchable" would remove that distinction.
-
----
-
-## 11. Code, JSON, or both for the policy?
-
-### Recommendation: code is authoritative, JSON may display it
-
-I would **not** make this authoritative:
-
-```json
-{
-  "ApplyMode": "Runtime"
-}
-```
-
-if an operator can change it freely.
-
-Otherwise the same control file could change both:
-
-```text
-what value should be active
-and
-whether the application is allowed to activate it live
-```
-
-That is too much authority for one editable field.
-
-A safer model is:
-
-```text
-Code registration
-  = authoritative policy
-
-JSON ApplyMode
-  = generated / descriptive metadata
-```
-
-Conceptual future file:
+If the running host receives:
 
 ```json
 {
   "ConfigurationSets": {
-    "ProxySet": {
-      "Value": "Experimental",
-      "AllowedValues": [ "Stable", "Next", "Experimental" ],
+    "RoutingProfile": {
+      "Value": "Failover",
+      "AllowedValues": [ "Primary", "Canary", "Failover" ],
       "ApplyMode": "Runtime"
     },
-    "BuildSet": {
-      "Value": "Candidate",
-      "AllowedValues": [ "Stable", "Candidate" ],
+    "ReleaseChannel": {
+      "Value": "Beta",
+      "AllowedValues": [ "Stable", "Beta" ],
       "ApplyMode": "StartupOnly"
     }
   }
 }
 ```
 
-`ApplyMode` would be materialized from code just like `AllowedValues`.
+then the runtime result can be:
 
-Editing it in JSON would not grant another capability.
+```text
+RoutingProfile
+  ActiveValue  = Failover
+  DesiredValue = Failover
+
+ReleaseChannel
+  ActiveValue      = Stable
+  DesiredValue     = Beta
+  HasPendingRestart = true
+```
+
+The next host startup applies `Beta` for the startup-only set.
+
+This mixed path is covered by tests using both explicit `Reload()` and a real file watcher.
 
 ---
 
-## 12. Possible future API for mixed policy
+## 10. Where the per-set switch policy lives
 
-### Proposal only
+### Current architecture
 
-The exact syntax is deliberately not decided yet.
+The **Coordinator remains technically switchable**.
 
-A fluent form could be readable:
+The policy that says whether a **state-file change automatically calls the coordinator at runtime** belongs to the state-file/controller layer, not to `ConfigurationSetCoordinator` itself.
+
+```text
+ConfigurationSetCoordinator
+  = technical primitive that can coordinate a requested transition
+
+ConfigurationSetStateStore
+  = owns desired state and decides whether a state-file edit applies now
+    or waits for startup
+
+Admin endpoint / application service
+  = may be another trigger entirely
+```
+
+That means `StartupOnly` does not make `IConfigurationSetCoordinator.TrySwitch(...)` disappear. It controls the state-file control plane.
+
+---
+
+## 11. Code and JSON ownership for ApplyMode
+
+### Current behavior
+
+Code is authoritative:
 
 ```csharp
-var proxySet = builder
+builder
     .AddConfigurationSet(
-        "ProxySet",
+        "ReleaseChannel",
         "Stable",
-        "Next",
-        "Experimental")
-    .AddSwitchableJson(
-        "AppSettings/Proxy",
-        [
-            "Routes.json",
-            "EdgeFilters.json",
-        ]);
+        "Beta")
+    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly);
+```
 
-var buildSet = builder
+The state file materializes the policy:
+
+```json
+{
+  "ConfigurationSets": {
+    "ReleaseChannel": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable", "Beta" ],
+      "ApplyMode": "StartupOnly"
+    }
+  }
+}
+```
+
+Ownership:
+
+```text
+Value
+  = editable desired state
+
+AllowedValues
+  = read-only/descriptive metadata materialized from code
+
+ApplyMode
+  = read-only/descriptive metadata materialized from code
+```
+
+Changing JSON `ApplyMode` does not grant another capability. A successful canonicalization writes the registered code-owned mode back to the file.
+
+---
+
+## 12. Current mixed-policy API
+
+The concise fluent form is the implemented API:
+
+```csharp
+builder
     .AddConfigurationSet(
-        "BuildSet",
-        "Stable",
-        "Candidate")
+        "RoutingProfile",
+        "Primary",
+        "Canary",
+        "Failover")
     .AddSwitchableJson(
-                "AppSettings/Build",
-        "BuildSettings.json");
+        "AppSettings/Routing",
+        "Routes.json",
+        "Clusters.json");
 
-// Proposal, not current API:
-proxySet.StateFileApplyMode(ConfigurationSetStateApplyMode.Runtime);
-buildSet.StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly);
+builder
+    .AddConfigurationSet(
+        "ReleaseChannel",
+        "Stable",
+        "Beta")
+    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+    .AddSwitchableJson(
+        "AppSettings/Features",
+        "Features.json");
 
 builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 ```
 
-Or the policy could be configured when the store is added:
+For code that does not keep the fluent registration handle, the builder-level equivalent is available:
 
 ```csharp
-// Proposal, not current API:
-builder.AddConfigurationSetStateFile(
-    "ConfigurationSets.json",
-    options =>
-    {
-        options.Runtime("ProxySet");
-        options.StartupOnly("BuildSet");
-    });
+builder.SetConfigurationSetStateApplyMode(
+    "ReleaseChannel",
+    ConfigurationSetStateApplyMode.StartupOnly);
 ```
 
-### Preference after this review
-
-The second form has the cleaner ownership boundary because the policy is explicitly state-store policy.
-
-The first form is shorter in `Program.Main`.
-
-A builder metadata layer could potentially support the short fluent form without putting the policy on the runtime coordinator contract.
-
-This is worth deciding before implementation.
+The policy must be set before the state store is registered because the store freezes its coordinator/policy snapshot during startup.
 
 ---
 
-## 13. Default policy question
+## 13. Default policy
 
 ### Current
 
-The state store defaults to:
-
-```csharp
-reloadOnChange: true
-```
-
-so a file edit is a runtime switch by default.
-
-### Review question
-
-For a stability-oriented infrastructure library, a future **per-set** policy might reasonably default to:
-
-```text
-StartupOnly
-```
-
-and require explicit opt-in for:
+Per-set state-file policy defaults to:
 
 ```text
 Runtime
 ```
 
-That would make hot switching intentional rather than accidental.
+and the state-store watcher defaults to enabled:
 
-On the other hand, changing the existing global default now would change the ergonomics already implemented and tested.
+```csharp
+reloadOnChange: true
+```
 
-I would not change it silently as part of unrelated work. This should be an explicit design decision.
+So the shortest declaration is runtime-switchable from the central file.
+
+A set that must wait for restart opts in explicitly:
+
+```csharp
+.StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+```
+
+This keeps existing runtime-switch ergonomics while making restart-only behavior explicit and visible in `ConfigurationSets.json`.
 
 ---
 
@@ -1334,7 +1320,7 @@ That makes a `FeatureSet` more than an abstract example: it can act as a **coars
 
 For example, the application can switch the whole approved feature baseline from `Stable` to `Beta`, while Microsoft.FeatureManagement still decides individual feature enablement, targeting, time windows, or variants inside that baseline.
 
-This is a good runtime-switch candidate because Microsoft.FeatureManagement is configuration-backed and designed for dynamic feature flag values. A future `ApplyMode` in `ConfigurationSets.json` should still tell the operator explicitly whether this application's `FeatureSet` is allowed to follow file edits live or only at startup.
+This is a good runtime-switch candidate because Microsoft.FeatureManagement is configuration-backed and designed for dynamic feature flag values. `ApplyMode` in `ConfigurationSets.json` now tells the operator explicitly whether this application's release/feature baseline follows file edits live or only at startup.
 
 ---
 
@@ -1350,8 +1336,9 @@ builder
         "BuildSet",
         "Stable",
         "Candidate")
+    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
     .AddSwitchableJson(
-                "AppSettings/Build",
+        "AppSettings/Build",
         "BuildSettings.json");
 
 builder
@@ -1359,8 +1346,9 @@ builder
         "EnvironmentSet",
         "Development",
         "Production")
+    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
     .AddSwitchableJson(
-                "AppSettings/Environment",
+        "AppSettings/Environment",
         "EnvironmentSettings.json");
 ```
 
@@ -1382,12 +1370,10 @@ AppSettings/
 
 If those values affect startup-only DI registrations, connection topology, or other non-reloadable objects, automatic runtime switching may be misleading.
 
-Today the safe global form is:
+The current per-set form keeps the watcher available for other runtime-switchable sets:
 
 ```csharp
-builder.AddConfigurationSetStateFile(
-    "ConfigurationSets.json",
-    reloadOnChange: false);
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 ```
 
 Central `ConfigurationSets.json` with the **current API**:
@@ -1397,20 +1383,19 @@ Central `ConfigurationSets.json` with the **current API**:
   "ConfigurationSets": {
     "BuildSet": {
       "Value": "Stable",
-      "AllowedValues": [ "Stable", "Candidate" ]
+      "AllowedValues": [ "Stable", "Candidate" ],
+      "ApplyMode": "StartupOnly"
     },
     "EnvironmentSet": {
       "Value": "Development",
-      "AllowedValues": [ "Development", "Production" ]
+      "AllowedValues": [ "Development", "Production" ],
+      "ApplyMode": "StartupOnly"
     }
   }
 }
 ```
 
-Important: an operator reading only this current JSON cannot see that changes are startup-only. That policy currently lives only in `reloadOnChange: false` in `Program.Main`. A future per-set `ApplyMode` should close exactly this visibility gap.
-
-
-A future mixed mode should allow these two sets to be startup-only while `ProxySet` remains runtime-switchable.
+The operator can now see directly that edits to these values wait for restart. Other sets in the same file may still use `"ApplyMode": "Runtime"` and hot-switch normally.
 
 ---
 
@@ -1706,17 +1691,19 @@ Central `ConfigurationSets.json`:
   "ConfigurationSets": {
     "ProxySet": {
       "Value": "Stable",
-      "AllowedValues": [ "Stable", "Next", "Experimental" ]
+      "AllowedValues": [ "Stable", "Next", "Experimental" ],
+      "ApplyMode": "Runtime"
     },
     "ThemeSet": {
       "Value": "Light",
-      "AllowedValues": [ "Light", "Dark" ]
+      "AllowedValues": [ "Light", "Dark" ],
+      "ApplyMode": "Runtime"
     }
   }
 }
 ```
 
-Because this current example uses `reloadOnChange: true`, edits to either `Value` are applied at runtime. That runtime policy is global code configuration today and is not encoded per set in the JSON.
+Both sets use the default `Runtime` state-file policy, so edits to either `Value` can apply while the watcher is running.
 
 
 Directory layout for this `Program.Main`:
@@ -1744,218 +1731,210 @@ ContentRoot/
 
 This is fully representable with the current API.
 
----
-
 ## 28. Practical `Program.Main` candidate B – conservative restart-controlled application
 
-The file selects values, but no file edit changes the live process:
+A state file may still be watched globally while selected axes explicitly wait for restart:
 
 ```csharp
 var builder = Host.CreateApplicationBuilder(args);
 
 builder
     .AddConfigurationSet(
-        "EnvironmentSet",
-        "Production")
+        "ReleaseChannel",
+        "Stable",
+        "Beta")
+    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
     .AddSwitchableJson(
-                "AppSettings/Environment",
-        "EnvironmentSettings.json");
+        "AppSettings/Features",
+        "Features.json");
 
 builder
     .AddConfigurationSet(
-        "BuildSet",
-        "Stable",
-        "Candidate")
+        "ServiceTopology",
+        "Primary",
+        "Alternate")
+    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
     .AddSwitchableJson(
-                "AppSettings/Build",
-        "BuildSettings.json");
+        value => $"AppSettings/Topology/Services.{value}.json");
 
-builder.AddConfigurationSetStateFile(
-    "ConfigurationSets.json",
-    reloadOnChange: false);
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 
 var host = builder.Build();
 await host.RunAsync();
 ```
 
-Central `ConfigurationSets.json`:
+Central state:
 
 ```json
 {
   "ConfigurationSets": {
-    "EnvironmentSet": {
-      "Value": "Production",
-      "AllowedValues": [ "Production" ]
-    },
-    "BuildSet": {
+    "ReleaseChannel": {
       "Value": "Stable",
-      "AllowedValues": [ "Stable", "Candidate" ]
+      "AllowedValues": [ "Stable", "Beta" ],
+      "ApplyMode": "StartupOnly"
+    },
+    "ServiceTopology": {
+      "Value": "Primary",
+      "AllowedValues": [ "Primary", "Alternate" ],
+      "ApplyMode": "StartupOnly"
     }
   }
 }
 ```
 
-This current JSON still does not show `StartupOnly`; that behavior comes from the global `reloadOnChange: false` in code. This is the strongest concrete argument for materializing a future read-only per-set `ApplyMode` beside `AllowedValues`.
-
-
-Directory layout for this conservative startup-only example:
-
 ```text
 ContentRoot/
 ├── ConfigurationSets.json
 └── AppSettings/
-    ├── Environment/
-    │   └── Production/
-    │       └── EnvironmentSettings.json
-    └── Build/
-        ├── Stable/
-        │   └── BuildSettings.json
-        └── Candidate/
-            └── BuildSettings.json
+    ├── Features/
+    │   ├── Stable/
+    │   │   └── Features.json
+    │   └── Beta/
+    │       └── Features.json
+    └── Topology/
+        ├── Services.Primary.json
+        └── Services.Alternate.json
 ```
 
-This also works with the current API.
-
-`EnvironmentSet` demonstrates a one-value set that may gain another value later.
+Editing either value changes `DesiredValue`, but the running host keeps its existing `ActiveValue` until restart. `GetStatus().HasPendingRestart` makes that drift observable.
 
 ---
 
-## 29. Practical `Program.Main` candidate C – desired future mixed policy
+## 29. Practical `Program.Main` candidate C – mixed runtime/startup policy
 
-### Proposal only
-
-This is the shape I would like the design to support eventually:
+This is the most representative end-state example:
 
 ```csharp
 var builder = Host.CreateApplicationBuilder(args);
 
-var proxySet = builder
+builder
     .AddConfigurationSet(
-        "ProxySet",
-        "Stable",
-        "Next",
-        "Experimental")
-    .AddSwitchableJson(
-        "AppSettings/Proxy",
-        [
-            "Routes.json",
-            "EdgeFilters.json",
-        ]);
-
-var themeSet = builder
-    .AddConfigurationSet(
-        "ThemeSet",
-        "Light",
-        "Dark")
-    .AddSwitchableJson(
-                "AppSettings/Theme",
-        "Theme.json");
-
-var environmentSet = builder
-    .AddConfigurationSet(
-        "EnvironmentSet",
-        "Production")
-    .AddSwitchableJson(
-                "AppSettings/Environment",
-        "EnvironmentSettings.json");
-
-var buildSet = builder
-    .AddConfigurationSet(
-        "BuildSet",
-        "Stable",
-        "Candidate")
-    .AddSwitchableJson(
-                "AppSettings/Build",
-        "BuildSettings.json");
-
-// Possible future policy API; not implemented yet.
-builder.AddConfigurationSetStateFile(
-    "ConfigurationSets.json",
-    options =>
+        "RoutingProfile",
+        "Primary",
+        "Canary",
+        "Failover")
+    .AddSwitchableJson(value => value switch
     {
-        options.Runtime(proxySet.Name);
-        options.Runtime(themeSet.Name);
-        options.StartupOnly(environmentSet.Name);
-        options.StartupOnly(buildSet.Name);
+        "Primary"  => "AppSettings/Routing/routes-primary.json",
+        "Canary"   => "AppSettings/Routing/routes-canary.json",
+        "Failover" => "AppSettings/Routing/emergency-routing.json",
+        _ => throw new ArgumentOutOfRangeException(nameof(value)),
+    })
+    .AddSwitchableJson(value => value switch
+    {
+        "Primary"  => "AppSettings/Routing/clusters-primary.json",
+        "Canary"   => "AppSettings/Routing/clusters-canary.json",
+        "Failover" => "AppSettings/Routing/clusters-failover.json",
+        _ => throw new ArgumentOutOfRangeException(nameof(value)),
     });
 
+builder
+    .AddConfigurationSet(
+        "OperationalProfile",
+        "Normal",
+        "Degraded",
+        "Incident")
+    .AddSwitchableJson(
+        "AppSettings/Operations",
+        "Features.json",
+        "Resilience.json",
+        "Diagnostics.json");
+
+builder
+    .AddConfigurationSet(
+        "ReleaseChannel",
+        "Stable",
+        "Beta")
+    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+    .AddSwitchableJson(
+        "AppSettings/Features",
+        "Features.json");
+
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 builder.Services.AddHostedService<ConfigurationSetLogger>();
 
 var host = builder.Build();
 await host.RunAsync();
 ```
 
-Directory layout for the mixed-policy target:
-
-```text
-AppSettings/
-├── Proxy/
-│   ├── Stable/
-│   │   ├── Routes.json
-│   │   └── EdgeFilters.json
-│   ├── Next/
-│   │   ├── Routes.json
-│   │   └── EdgeFilters.json
-│   └── Experimental/
-│       ├── Routes.json
-│       └── EdgeFilters.json
-├── Theme/
-│   ├── Light/
-│   │   └── Theme.json
-│   └── Dark/
-│       └── Theme.json
-├── Environment/
-│   └── Production/
-│       └── EnvironmentSettings.json
-└── Build/
-    ├── Stable/
-    │   └── BuildSettings.json
-    └── Candidate/
-        └── BuildSettings.json
-```
-
-The corresponding future state file should make the policy visible beside the editable value:
+Central state:
 
 ```json
 {
   "ConfigurationSets": {
-    "ProxySet":       { "Value": "Stable",     "AllowedValues": [ "Stable", "Next", "Experimental" ], "ApplyMode": "Runtime" },
-    "ThemeSet":       { "Value": "Light",      "AllowedValues": [ "Light", "Dark" ],                  "ApplyMode": "Runtime" },
-    "EnvironmentSet": { "Value": "Production", "AllowedValues": [ "Production" ],                     "ApplyMode": "StartupOnly" },
-    "BuildSet":       { "Value": "Stable",     "AllowedValues": [ "Stable", "Candidate" ],            "ApplyMode": "StartupOnly" }
+    "RoutingProfile": {
+      "Value": "Primary",
+      "AllowedValues": [ "Primary", "Canary", "Failover" ],
+      "ApplyMode": "Runtime"
+    },
+    "OperationalProfile": {
+      "Value": "Normal",
+      "AllowedValues": [ "Normal", "Degraded", "Incident" ],
+      "ApplyMode": "Runtime"
+    },
+    "ReleaseChannel": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable", "Beta" ],
+      "ApplyMode": "StartupOnly"
+    }
   }
 }
 ```
 
-Desired behavior:
-
 ```text
-edit ProxySet       → live switch
-edit ThemeSet       → live switch
-edit EnvironmentSet → value remains pending until restart
-edit BuildSet       → value remains pending until restart
+ContentRoot/
+├── ConfigurationSets.json
+└── AppSettings/
+    ├── Routing/
+    │   ├── routes-primary.json
+    │   ├── routes-canary.json
+    │   ├── emergency-routing.json
+    │   ├── clusters-primary.json
+    │   ├── clusters-canary.json
+    │   └── clusters-failover.json
+    ├── Operations/
+    │   ├── Normal/
+    │   │   ├── Features.json
+    │   │   ├── Resilience.json
+    │   │   └── Diagnostics.json
+    │   ├── Degraded/
+    │   │   ├── Features.json
+    │   │   ├── Resilience.json
+    │   │   └── Diagnostics.json
+    │   └── Incident/
+    │       ├── Features.json
+    │       ├── Resilience.json
+    │       └── Diagnostics.json
+    └── Features/
+        ├── Stable/
+        │   └── Features.json
+        └── Beta/
+            └── Features.json
 ```
 
-This is the main policy gap visible from the current manual review.
+Behavior:
+
+```text
+edit RoutingProfile     -> coordinated live routing-source switch
+edit OperationalProfile -> coordinated live multi-file operational switch
+edit ReleaseChannel     -> desired state changes; active state waits for restart
+```
 
 ---
 
-## 30. Possible future diagnostic for a pending restart value
+## 30. Current pending-restart diagnostics
 
-### Proposal only
-
-If mixed apply modes are implemented, the runtime status could eventually distinguish:
+Runtime state explicitly distinguishes desired and active values:
 
 ```text
-ActiveValue  = Stable
-DesiredValue = Candidate
-ApplyMode    = StartupOnly
+Name           = ReleaseChannel
+ActiveValue    = Stable
+DesiredValue   = Beta
+ApplyMode      = StartupOnly
 PendingRestart = true
 ```
 
-That information belongs more naturally in runtime status / diagnostics than as mutable status written back into the operator control file.
-
-The state file should stay primarily a simple desired-state control document.
+This information lives in `ConfigurationSetStateStoreStatus.SetStates` and `ConfigurationSetStateApplyResult.PendingRestartChanges`. It is intentionally runtime/diagnostic state rather than mutable status fields written into the control file.
 
 ---
 
@@ -1965,59 +1944,45 @@ The state file should stay primarily a simple desired-state control document.
 
 ```text
 ✓ one-value configuration sets
-✓ later extension by adding allowed values/directories
+✓ later extension by adding allowed values
 ✓ several independent set axes
-✓ one JSON participant per set
-✓ several JSON participants per set
+✓ conventional directory layouts
+✓ arbitrary value => sourcePath mappings
+✓ one or several JSON participants per set
 ✓ fluent Program.Main registration
+✓ internally managed participant identities
 ✓ keyed DI coordinator access
-✓ self-describing state file
-✓ authoritative allowed values remain in code
+✓ self-describing ConfigurationSets.json
+✓ AllowedValues remain authoritative in code
+✓ ApplyMode remains authoritative in code
+✓ per-set Runtime / StartupOnly behavior in the same state file
+✓ DesiredValue / ActiveValue / pending-restart diagnostics
 ✓ startup application of state-file values
 ✓ runtime watched state-file switching
-✓ global restart-only state-file mode
+✓ global watcher disable when desired
 ✓ EventHub for arbitrary DI consumers
 ✓ per-set event subscription
 ✓ set-level aggregated change information
 ✓ distinction between logical/source/effective-config change
 ✓ last-known-good on rejected participant preparation
-✓ partial-commit visibility
+✓ partial-commit visibility and explicit inconsistency state
 ```
 
-### Main design question still visible
+### Remaining state-management question
+
+The remaining V1 distinction is programmatic control:
 
 ```text
-How should one state file support a mixture of:
+coordinator.TrySwitch(value)
+  = technical / ephemeral runtime switch
+  = does not rewrite ConfigurationSets.json
 
-- sets that may auto-switch at runtime
-- sets whose edited Value is only applied at next startup?
+StateStore persistent desired-state API
+  = should update ConfigurationSets.json
+  = should honor Runtime / StartupOnly
+  = not implemented yet at this review point
 ```
 
-### Current recommendation
-
-```text
-Coordinator remains generically switch-capable.
-
-StateStore owns whether file edits trigger runtime TrySwitch calls.
-
-Per-set apply policy is authoritative in code/builder metadata.
-
-If ApplyMode is written into ConfigurationSets.json,
-it is descriptive metadata only, like AllowedValues.
-```
-
-### One further question worth deciding
-
-For a future per-set apply policy, should the default be:
-
-```text
-Runtime
-```
-
-or the more conservative:
-
-```text
-StartupOnly
-```
+That persistent control-plane API is the next state-management block. The implemented per-set default is `Runtime`; `StartupOnly` is explicit opt-in.
 
 Given the stability-oriented use case, `StartupOnly` as the per-set default with explicit opt-in to runtime switching is worth serious consideration before the feature is considered final.
