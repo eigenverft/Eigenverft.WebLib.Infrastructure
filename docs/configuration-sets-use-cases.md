@@ -32,6 +32,8 @@ ReleaseChannel = Stable | Beta | Lab
 
 This is a strong companion to feature-management libraries. The feature-management layer still decides how individual flags, filters or variants behave. The Configuration Set chooses a complete reviewed feature baseline.
 
+A particularly direct .NET integration is [`Microsoft.FeatureManagement`](https://learn.microsoft.com/en-us/azure/azure-app-configuration/feature-management-dotnet-reference): Microsoft documents that feature flags are built on the .NET configuration system and that any .NET configuration provider can supply their definitions. A switched `Features.json` therefore remains normal `IConfiguration`; `Microsoft.FeatureManagement` continues to own individual flag/filter/variant evaluation while `ReleaseChannel` selects the reviewed baseline.
+
 ```csharp
 builder
     .AddConfigurationSet(
@@ -42,6 +44,8 @@ builder
     .AddSwitchableJson(
         "AppSettings/Features",
         "Features.json");
+
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 ```
 
 ```text
@@ -66,7 +70,8 @@ ContentRoot/
         "Stable",
         "Beta",
         "Lab"
-      ]
+      ],
+      "ApplyMode": "Runtime"
     }
   }
 }
@@ -97,6 +102,8 @@ builder
         "Resilience.json",
         "Diagnostics.json",
         "Caching.json");
+
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 ```
 
 ```text
@@ -130,7 +137,8 @@ ContentRoot/
         "Normal",
         "Degraded",
         "Incident"
-      ]
+      ],
+      "ApplyMode": "Runtime"
     }
   }
 }
@@ -162,6 +170,8 @@ Avoid claiming fully atomic multi-file switching. The accurate wording is:
 ResilienceProfile = Normal | UpstreamDegraded | FailFast
 ```
 
+This maps naturally to [`Microsoft.Extensions.Http.Resilience`](https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.http.resilience.httpstandardresiliencepipelinebuilderextensions.configure): its standard resilience pipeline can bind options from an `IConfigurationSection`. Microsoft also exposes `ResilienceHandlerContext.EnableReloads<TOptions>(...)` for rebuilding a resilience pipeline when the corresponding options change. Configuration Sets can therefore supply the reviewed configuration baseline while the Microsoft resilience stack owns retry, timeout, circuit-breaker and related runtime behavior.
+
 ```csharp
 builder
     .AddConfigurationSet(
@@ -171,6 +181,8 @@ builder
         "FailFast")
     .AddSwitchableJson(
         value => $"AppSettings/Resilience/HttpResilience.{value}.json");
+
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 ```
 
 ```text
@@ -181,6 +193,22 @@ ContentRoot/
         ├── HttpResilience.Normal.json
         ├── HttpResilience.UpstreamDegraded.json
         └── HttpResilience.FailFast.json
+```
+
+```json
+{
+  "ConfigurationSets": {
+    "ResilienceProfile": {
+      "Value": "UpstreamDegraded",
+      "AllowedValues": [
+        "Normal",
+        "UpstreamDegraded",
+        "FailFast"
+      ],
+      "ApplyMode": "Runtime"
+    }
+  }
+}
 ```
 
 A conceptual profile might represent:
@@ -214,6 +242,8 @@ RoutingProfile = Primary | Canary | Failover
 
 The source mapping does not have to follow a directory convention.
 
+This is also a direct fit for [YARP](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/yarp/config-files?view=aspnetcore-10.0). YARP loads routes and clusters through `IConfiguration`, accepts any `IConfiguration` source, and its configuration contract is reevaluated when configuration changes. A `RoutingProfile` can therefore select the complete route/cluster baseline while YARP remains responsible for proxy behavior.
+
 ```csharp
 builder
     .AddConfigurationSet(
@@ -235,6 +265,8 @@ builder
         "Failover" => "AppSettings/Routing/clusters-failover.json",
         _ => throw new ArgumentOutOfRangeException(nameof(value)),
     });
+
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 ```
 
 ```text
@@ -259,7 +291,8 @@ ContentRoot/
         "Primary",
         "Canary",
         "Failover"
-      ]
+      ],
+      "ApplyMode": "Runtime"
     }
   }
 }
@@ -286,6 +319,8 @@ builder
         "AppSettings/Diagnostics",
         "Logging.json",
         "DependencyDiagnostics.json");
+
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 ```
 
 ```text
@@ -302,6 +337,22 @@ ContentRoot/
         └── Incident/
             ├── Logging.json
             └── DependencyDiagnostics.json
+```
+
+```json
+{
+  "ConfigurationSets": {
+    "DiagnosticsProfile": {
+      "Value": "Incident",
+      "AllowedValues": [
+        "Standard",
+        "Verbose",
+        "Incident"
+      ],
+      "ApplyMode": "Runtime"
+    }
+  }
+}
 ```
 
 Product message:

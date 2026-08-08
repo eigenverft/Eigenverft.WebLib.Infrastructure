@@ -2,7 +2,7 @@
 
 > Purpose: manual review of the current `ConfigurationSetCoordinator` feature from an application developer's point of view.
 >
-> This document intentionally mixes realistic `Program.Main` examples, current behavior, edge cases, and possible next extensions. Anything marked **Current** exists now. Anything marked **Proposal** is review material only and is not implemented by this document.
+> This document records realistic `Program.Main` examples, implemented behavior, and edge cases discovered while the feature was developed. The shorter `configuration-sets.md` is the current technical contract; `configuration-sets-use-cases.md` contains the product-oriented examples.
 
 ## 1. What the feature is trying to be
 
@@ -1106,13 +1106,14 @@ Central `ConfigurationSets.json` in the content root:
   "ConfigurationSets": {
     "ThemeSet": {
       "Value": "Light",
-      "AllowedValues": [ "Light", "Dark", "HighContrast" ]
+      "AllowedValues": [ "Light", "Dark", "HighContrast" ],
+      "ApplyMode": "Runtime"
     }
   }
 }
 ```
 
-`Value` is the operator-controlled selector. `AllowedValues` is materialized descriptive metadata. With the current API, runtime watching comes from `AddConfigurationSetStateFile(...)`; it is **not yet visible as a per-set field in this JSON**.
+`Value` is the operator-controlled selector. `AllowedValues` and `ApplyMode` are code-owned descriptive metadata. This example uses the default per-set `Runtime` policy; changing the JSON `ApplyMode` does not change that registered policy.
 
 Layout:
 

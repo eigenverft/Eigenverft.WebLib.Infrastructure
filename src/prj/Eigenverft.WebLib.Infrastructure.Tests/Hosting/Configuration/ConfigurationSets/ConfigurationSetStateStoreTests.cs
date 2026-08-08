@@ -799,6 +799,35 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             host.StopAsync().GetAwaiter().GetResult();
         }
 
+        [TestMethod]
+        public void PersistentDesiredValueDoesNotSwitchRuntimeWhenStateFilePersistenceFails()
+        {
+            using var directory = new TemporaryDirectory();
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator routing = builder
+                .AddConfigurationSet("RoutingProfile", "Primary", "Failover")
+                .Coordinator;
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+
+            File.Delete(store.FilePath);
+            Directory.CreateDirectory(store.FilePath);
+
+            ConfigurationSetStateApplyResult result =
+                store.TrySetDesiredValue("RoutingProfile", "Failover");
+
+            Assert.AreEqual(ConfigurationSetStateApplyStatus.Rejected, result.Status);
+            Assert.AreEqual(ConfigurationSetStateFailureKind.IoError, result.FailureKind);
+            Assert.IsNotNull(result.Exception);
+            Assert.AreEqual("Primary", routing.ActiveValue);
+
+            ConfigurationSetStateStatus state = store.GetStatus().SetStates.Single();
+            Assert.AreEqual("Primary", state.ActiveValue);
+            Assert.AreEqual("Primary", state.DesiredValue);
+            Assert.IsFalse(state.HasDesiredStateDrift);
+        }
+
         private static HostApplicationBuilder CreateBuilder(string contentRootPath)
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings
