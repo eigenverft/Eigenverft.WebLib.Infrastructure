@@ -270,6 +270,132 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
         }
 
         [TestMethod]
+        public void PersistedNonInitialDesiredStateAppliesAfterParticipantsAreComposed()
+        {
+            using var directory = new TemporaryDirectory();
+            Directory.CreateDirectory(Path.Combine(directory.Path, "ProxySet", "Stable"));
+            Directory.CreateDirectory(Path.Combine(directory.Path, "ProxySet", "Experimental"));
+            directory.Write(
+                Path.Combine("ProxySet", "Stable", "ProxySettings.json"),
+                "{ \"ProxyMarker\": \"Stable\" }");
+            directory.Write(
+                Path.Combine("ProxySet", "Experimental", "ProxySettings.json"),
+                "{ \"ProxyMarker\": \"Experimental\" }");
+            directory.Write(
+                "ConfigurationSets.json",
+                """
+                {
+                  "ConfigurationSets": {
+                    "ProxySet": {
+                      "DesiredValue": "Experimental",
+                      "AllowedValues": [ "Stable", "Experimental" ]
+                    }
+                  }
+                }
+                """);
+
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile(
+                "proxy-settings",
+                Path.Combine("ProxySet", "Stable", "ProxySettings.json"));
+            _ = builder.AddConfigurationSet("ProxySet", "Stable", "Experimental");
+            builder.BindSwitchableJsonDirectoryToConfigurationSet(
+                "ProxySet",
+                "proxy-settings",
+                "ProxySet",
+                "ProxySettings.json");
+
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                watchForChanges: false);
+
+            ConfigurationSetStateStatus status = store.GetStatus().SetStates.Single();
+            Assert.AreEqual("Experimental", status.ActiveValue);
+            Assert.AreEqual("Experimental", status.DesiredValue);
+            Assert.AreEqual("Experimental", builder.Configuration["ProxyMarker"]);
+        }
+
+        [TestMethod]
+        public void StateEditBetweenRegistrationAndHostStartIsCaughtUpBeforeStartCompletes()
+        {
+            using var directory = new TemporaryDirectory();
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator proxy = builder.AddConfigurationSetCoordinator(
+                "ProxySet",
+                "Stable",
+                ["Stable", "Experimental"]);
+            _ = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                watchForChanges: true,
+                reloadDelayMilliseconds: 25);
+            using IHost host = builder.Build();
+
+            directory.Write(
+                "ConfigurationSets.json",
+                """
+                {
+                  "ConfigurationSets": {
+                    "ProxySet": {
+                      "DesiredValue": "Experimental",
+                      "AllowedValues": [ "Stable", "Experimental" ]
+                    }
+                  }
+                }
+                """);
+
+            host.StartAsync().GetAwaiter().GetResult();
+
+            Assert.AreEqual("Experimental", proxy.ActiveValue);
+            host.StopAsync().GetAwaiter().GetResult();
+        }
+
+        [TestMethod]
+        public void StateFileChangesAfterHostStopAreNotObserved()
+        {
+            using var directory = new TemporaryDirectory();
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator proxy = builder.AddConfigurationSetCoordinator(
+                "ProxySet",
+                "Stable",
+                ["Stable", "Experimental"]);
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                watchForChanges: true,
+                reloadDelayMilliseconds: 25);
+            using IHost host = builder.Build();
+            host.StartAsync().GetAwaiter().GetResult();
+            host.StopAsync().GetAwaiter().GetResult();
+
+            using var observed = new ManualResetEventSlim();
+            store.LifecycleChanged += (_, args) =>
+            {
+                if (args.Kind == ConfigurationSetStateStoreEventKind.StateApplied &&
+                    proxy.ActiveValue == "Experimental")
+                {
+                    observed.Set();
+                }
+            };
+
+            directory.Write(
+                "ConfigurationSets.json",
+                """
+                {
+                  "ConfigurationSets": {
+                    "ProxySet": {
+                      "DesiredValue": "Experimental",
+                      "AllowedValues": [ "Stable", "Experimental" ]
+                    }
+                  }
+                }
+                """);
+
+            Assert.IsFalse(
+                observed.Wait(TimeSpan.FromMilliseconds(750)),
+                "A stopped host must not keep applying state-file watcher changes.");
+            Assert.AreEqual("Stable", proxy.ActiveValue);
+        }
+
+        [TestMethod]
         public void ProgramMainConvenienceFlowWatchesStateFileAndSwitchesBoundJsonAcrossTwoSets()
         {
             using var directory = new TemporaryDirectory();
@@ -285,12 +411,11 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             HostApplicationBuilder builder = CreateBuilder(directory.Path);
             builder.AddSwitchableJsonFile("proxy-settings", Path.Combine("ProxySet", "Stable", "ProxySettings.json"));
             builder.AddSwitchableJsonFile("feature-settings", Path.Combine("FeatureSet", "Default", "FeatureSettings.json"));
-            IConfigurationSetStateStore store = builder.AddConfigurationSetsWithStateFile(
-                "ConfigurationSets.json",
-                ConfigurationSetDefinition.Create("ProxySet", "Stable", "Experimental"),
-                ConfigurationSetDefinition.Create("FeatureSet", "Default", "Next"));
+            _ = builder.AddConfigurationSet("ProxySet", "Stable", "Experimental");
+            _ = builder.AddConfigurationSet("FeatureSet", "Default", "Next");
             builder.BindSwitchableJsonDirectoryToConfigurationSet("ProxySet", "proxy-settings", "ProxySet", "ProxySettings.json");
             builder.BindSwitchableJsonDirectoryToConfigurationSet("FeatureSet", "feature-settings", "FeatureSet", "FeatureSettings.json");
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 
             using IHost host = builder.Build();
             host.StartAsync().GetAwaiter().GetResult();
@@ -348,12 +473,11 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             HostApplicationBuilder builder = CreateBuilder(directory.Path);
             builder.AddSwitchableJsonFile("environment-settings", Path.Combine("EnvironmentSet", "Development", "Environment.json"));
             builder.AddSwitchableJsonFile("proxy-settings", Path.Combine("ProxySet", "Stable", "Proxy.json"));
-            IConfigurationSetStateStore store = builder.AddConfigurationSetsWithStateFile(
-                "ConfigurationSets.json",
-                ConfigurationSetDefinition.Create("EnvironmentSet", "Development", "Production"),
-                ConfigurationSetDefinition.Create("ProxySet", "Stable", "Experimental"));
+            _ = builder.AddConfigurationSet("EnvironmentSet", "Development", "Production");
+            _ = builder.AddConfigurationSet("ProxySet", "Stable", "Experimental");
             builder.BindSwitchableJsonDirectoryToConfigurationSet("EnvironmentSet", "environment-settings", "EnvironmentSet", "Environment.json");
             builder.BindSwitchableJsonDirectoryToConfigurationSet("ProxySet", "proxy-settings", "ProxySet", "Proxy.json");
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 
             directory.Write(
                 "ConfigurationSets.json",

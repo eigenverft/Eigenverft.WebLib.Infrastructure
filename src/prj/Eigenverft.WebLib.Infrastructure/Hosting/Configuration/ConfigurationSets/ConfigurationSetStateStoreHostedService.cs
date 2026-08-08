@@ -26,6 +26,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
+            _store.StopWatching();
             return Task.CompletedTask;
         }
 

@@ -472,7 +472,7 @@ ContentRoot/
         └── ...
 ```
 
-With state-file watching enabled, editing `DesiredValue` can trigger a coordinated runtime switch. With `watchForChanges: false`, the control file is applied at startup and not watched during the running host.
+With state-file watching enabled, editing `DesiredValue` can trigger a coordinated runtime switch. When the host starts, the watcher is installed first and the store performs a catch-up reload so edits made after registration-time initialization are not missed. Host stop detaches the watcher again. With `watchForChanges: false`, the control file is applied at startup and not watched during the running host.
 
 Each set can additionally declare a code-owned desired-state apply mode:
 
@@ -652,7 +652,7 @@ A Configuration Set changes `IConfiguration`; it does not imply that every servi
 
 Heavy event work belongs to the consumer. EventHub subscribers are notifications, not transaction participants or a background-job framework; a subscriber can enqueue work if rebuilding is expensive.
 
-When the built-in state file is used, register all Configuration Sets before `AddConfigurationSetStateFile(...)`. The store captures the registered set collection and treats its JSON document as a complete authoritative desired-state document.
+When the built-in state file is used, fully compose all Configuration Sets — including their switchable JSON bindings and desired-state apply modes — before `AddConfigurationSetStateFile(...)`. The store initializes persistent desired state immediately from that finished runtime composition, captures the registered set collection, and treats its JSON document as a complete authoritative desired-state document.
 
 The design deliberately keeps several boundaries:
 

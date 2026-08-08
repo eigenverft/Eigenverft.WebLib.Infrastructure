@@ -143,6 +143,28 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     _reloadDelayMilliseconds,
                     ReloadFromWatcher);
             }
+
+            // Close the gap between registration-time initialization and host start.
+            // The watcher is already installed, so changes racing this catch-up are still observed.
+            _ = Reload();
+        }
+
+        internal void StopWatching()
+        {
+            ConfigurationSetStateFileWatcher? watcher;
+
+            lock (_gate)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                watcher = _watcher;
+                _watcher = null;
+            }
+
+            watcher?.Dispose();
         }
 
         public ConfigurationSetStateStoreStatus GetStatus()
@@ -620,7 +642,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
             lock (_gate)
             {
-                if (_disposed)
+                if (_disposed || _watcher is null)
                 {
                     return;
                 }

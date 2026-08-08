@@ -12,25 +12,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     {
         private static readonly object StateApplyModesKey = new();
 
-        /// <summary>
-        /// Registers multiple configuration sets and their shared self-describing state file in one startup declaration.
-        /// </summary>
-        /// <param name="builder">The host application builder receiving the coordinators and state store.</param>
-        /// <param name="path">Absolute state-file path, or a path relative to the host content root.</param>
-        /// <param name="definitions">Configuration-set definitions to register before the state file is initialized.</param>
-        /// <returns>The runtime state-store instance.</returns>
-        public static IConfigurationSetStateStore AddConfigurationSetsWithStateFile(
-            this IHostApplicationBuilder builder,
-            string path,
-            params ConfigurationSetDefinition[] definitions)
-        {
-            ArgumentNullException.ThrowIfNull(builder);
-            ArgumentException.ThrowIfNullOrWhiteSpace(path);
-            ArgumentNullException.ThrowIfNull(definitions);
-
-            _ = builder.AddConfigurationSets(definitions);
-            return builder.AddConfigurationSetStateFile(path);
-        }
 
         /// <summary>Sets the code-owned desired-state apply mode for one already registered configuration set.</summary>
         /// <param name="builder">The host application builder containing the configuration set.</param>
