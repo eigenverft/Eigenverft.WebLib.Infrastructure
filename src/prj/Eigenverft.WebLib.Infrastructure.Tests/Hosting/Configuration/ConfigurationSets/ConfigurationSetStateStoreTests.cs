@@ -444,7 +444,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .Coordinator;
             IConfigurationSetCoordinator release = builder
                 .AddConfigurationSet("ReleaseChannel", "Stable", "Beta")
-                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
                 .Coordinator;
 
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
@@ -480,15 +480,15 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual("ReleaseChannel", result.PendingRestartChanges[0].Name);
             Assert.AreEqual("Stable", result.PendingRestartChanges[0].ActiveValue);
             Assert.AreEqual("Beta", result.PendingRestartChanges[0].DesiredValue);
-            Assert.AreEqual(ConfigurationSetStateApplyMode.StartupOnly, result.PendingRestartChanges[0].ApplyMode);
+            Assert.AreEqual(ConfigurationSetApplyMode.StartupOnly, result.PendingRestartChanges[0].ApplyMode);
 
             ConfigurationSetStateStoreStatus status = store.GetStatus();
             ConfigurationSetStateStatus routingStatus = status.SetStates.Single(set => set.Name == "RoutingProfile");
             ConfigurationSetStateStatus releaseStatus = status.SetStates.Single(set => set.Name == "ReleaseChannel");
-            Assert.AreEqual(ConfigurationSetStateApplyMode.Runtime, routingStatus.ApplyMode);
+            Assert.AreEqual(ConfigurationSetApplyMode.Runtime, routingStatus.ApplyMode);
             Assert.AreEqual("Failover", routingStatus.DesiredValue);
             Assert.IsFalse(routingStatus.HasPendingRestart);
-            Assert.AreEqual(ConfigurationSetStateApplyMode.StartupOnly, releaseStatus.ApplyMode);
+            Assert.AreEqual(ConfigurationSetApplyMode.StartupOnly, releaseStatus.ApplyMode);
             Assert.AreEqual("Beta", releaseStatus.DesiredValue);
             Assert.IsTrue(releaseStatus.HasPendingRestart);
             Assert.IsTrue(status.HasPendingRestart);
@@ -508,7 +508,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             HostApplicationBuilder firstBuilder = CreateBuilder(directory.Path);
             IConfigurationSetCoordinator first = firstBuilder
                 .AddConfigurationSet("ReleaseChannel", "Stable", "Beta")
-                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
                 .Coordinator;
             IConfigurationSetStateStore firstStore = firstBuilder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
@@ -535,7 +535,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             HostApplicationBuilder secondBuilder = CreateBuilder(directory.Path);
             IConfigurationSetCoordinator second = secondBuilder
                 .AddConfigurationSet("ReleaseChannel", "Stable", "Beta")
-                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
                 .Coordinator;
             IConfigurationSetStateStore secondStore = secondBuilder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
@@ -556,7 +556,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                 .Coordinator;
             IConfigurationSetCoordinator release = builder
                 .AddConfigurationSet("ReleaseChannel", "Stable", "Beta")
-                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
                 .Coordinator;
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",
@@ -653,7 +653,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             HostApplicationBuilder builder = CreateBuilder(directory.Path);
             IConfigurationSetCoordinator release = builder
                 .AddConfigurationSet("ReleaseChannel", "Stable", "Beta")
-                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
                 .Coordinator;
             IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
                 "ConfigurationSets.json",

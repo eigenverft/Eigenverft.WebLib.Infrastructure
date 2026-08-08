@@ -3,8 +3,8 @@ using System.Collections.Generic;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSets
 {
-    /// <summary>Controls when a state-file value is applied to its configuration-set coordinator.</summary>
-    public enum ConfigurationSetStateApplyMode
+    /// <summary>Controls when a desired configuration-set value is applied to its runtime coordinator.</summary>
+    public enum ConfigurationSetApplyMode
     {
         /// <summary>State-file changes may be applied while the host is running.</summary>
         Runtime = 0,
@@ -75,14 +75,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         DesiredValueUpdateRejected = 6,
     }
 
-    /// <summary>Describes a desired state-file value that is intentionally waiting for the next host startup.</summary>
+    /// <summary>Describes a desired value that is intentionally waiting for the next host startup.</summary>
     public sealed class ConfigurationSetPendingRestartChange
     {
         internal ConfigurationSetPendingRestartChange(
             string name,
             string activeValue,
             string desiredValue,
-            ConfigurationSetStateApplyMode applyMode)
+            ConfigurationSetApplyMode applyMode)
         {
             Name = name;
             ActiveValue = activeValue;
@@ -96,14 +96,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the value active in the running process.</summary>
         public string ActiveValue { get; }
 
-        /// <summary>Gets the desired value stored in the state file.</summary>
+        /// <summary>Gets the desired value owned by the configured desired-state store.</summary>
         public string DesiredValue { get; }
 
-        /// <summary>Gets the code-owned state-file apply mode.</summary>
-        public ConfigurationSetStateApplyMode ApplyMode { get; }
+        /// <summary>Gets the code-owned desired-state apply mode.</summary>
+        public ConfigurationSetApplyMode ApplyMode { get; }
     }
 
-    /// <summary>Contains the completed result of one state-file apply operation.</summary>
+    /// <summary>Contains the completed result of one desired-state apply operation.</summary>
     public sealed class ConfigurationSetStateApplyResult
     {
         internal ConfigurationSetStateApplyResult(
@@ -185,8 +185,24 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         public DateTimeOffset Timestamp { get; }
     }
 
-    /// <summary>Runtime control and observation contract for a self-describing configuration-set state file.</summary>
-    public interface IConfigurationSetStateStore
+    /// <summary>
+    /// Persistence-neutral control contract for optional desired configuration-set state.
+    /// </summary>
+    /// <remarks>
+    /// A control plane can depend on this interface without knowing whether desired state is backed by a local JSON file or another
+    /// implementation. Runtime-only control remains available independently through <see cref="IConfigurationSetManager"/>.
+    /// </remarks>
+    public interface IConfigurationSetDesiredStateStore
+    {
+        /// <summary>Captures desired/active/apply-mode snapshots for all sets managed by this desired-state store.</summary>
+        IReadOnlyList<ConfigurationSetStateStatus> GetDesiredStateStatus();
+
+        /// <summary>Persists one allowed desired value and honors the set's registered apply mode.</summary>
+        ConfigurationSetStateApplyResult TrySetDesiredValue(string setName, string value);
+    }
+
+    /// <summary>Runtime control and observation contract for the built-in self-describing JSON desired-state store.</summary>
+    public interface IConfigurationSetStateStore : IConfigurationSetDesiredStateStore
     {
         /// <summary>Gets the normalized path of the managed JSON state file.</summary>
         string FilePath { get; }
@@ -201,17 +217,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         /// <summary>Loads the current state file and applies values permitted to change in the running host.</summary>
         ConfigurationSetStateApplyResult Reload();
-
-        /// <summary>
-        /// Persists one allowed desired value to the managed state file and then honors that set's registered apply mode.
-        /// </summary>
-        /// <remarks>
-        /// For <see cref="ConfigurationSetStateApplyMode.Runtime"/>, runtime switching is attempted only after the desired state file
-        /// was persisted successfully. If that runtime switch rejects, the persisted desired value remains and status reports
-        /// desired-state drift from the last-known-good active value. For <see cref="ConfigurationSetStateApplyMode.StartupOnly"/>,
-        /// the desired value is persisted and reported as pending restart without switching the running coordinator.
-        /// </remarks>
-        ConfigurationSetStateApplyResult TrySetDesiredValue(string setName, string value);
 
         /// <summary>Writes current desired values and authoritative state metadata to the state file.</summary>
         void Materialize();

@@ -36,9 +36,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Configures how this set's value from <c>ConfigurationSets.json</c> may be applied.</summary>
         /// <param name="applyMode">Whether state-file changes may apply at runtime or only during host startup.</param>
         /// <returns>This registration handle for chaining.</returns>
-        public ConfigurationSetRegistration StateFileApplyMode(ConfigurationSetStateApplyMode applyMode)
+        public ConfigurationSetRegistration ApplyMode(ConfigurationSetApplyMode applyMode)
         {
-            _builder.SetConfigurationSetStateApplyMode(Name, applyMode);
+            _builder.SetConfigurationSetApplyMode(Name, applyMode);
             return this;
         }
 

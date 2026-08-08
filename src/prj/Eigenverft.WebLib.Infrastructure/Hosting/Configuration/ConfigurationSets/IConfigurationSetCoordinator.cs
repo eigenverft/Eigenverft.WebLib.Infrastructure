@@ -16,6 +16,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the caller-defined set identity.</summary>
         string Name { get; }
 
+        /// <summary>Gets the code-defined value used to initialize this set before any optional desired-state source is applied.</summary>
+        string InitialValue { get; }
+
         /// <summary>
         /// Gets the last set value that was successfully coordinated across every bound participant.
         /// </summary>

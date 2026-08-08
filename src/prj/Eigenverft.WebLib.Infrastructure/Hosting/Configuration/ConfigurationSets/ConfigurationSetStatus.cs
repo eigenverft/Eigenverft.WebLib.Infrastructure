@@ -7,12 +7,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     {
         internal ConfigurationSetStatus(
             string name,
+            string initialValue,
             string activeValue,
             bool isConsistent,
             IReadOnlyList<string> allowedValues,
             IReadOnlyList<string> boundParticipantNames)
         {
             Name = name;
+            InitialValue = initialValue;
             ActiveValue = activeValue;
             IsConsistent = isConsistent;
             AllowedValues = allowedValues;
@@ -21,6 +23,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         /// <summary>Gets the caller-defined set identity.</summary>
         public string Name { get; }
+
+        /// <summary>Gets the code-defined value used to initialize this set before any optional desired-state source is applied.</summary>
+        public string InitialValue { get; }
 
         /// <summary>Gets the last fully coordinated active value.</summary>
         public string ActiveValue { get; }
@@ -41,7 +46,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         internal ConfigurationSetStateStatus(
             ConfigurationSetStatus runtime,
             string desiredValue,
-            ConfigurationSetStateApplyMode applyMode)
+            ConfigurationSetApplyMode applyMode)
         {
             Runtime = runtime;
             DesiredValue = desiredValue;
@@ -54,14 +59,17 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the configuration-set identity.</summary>
         public string Name => Runtime.Name;
 
+        /// <summary>Gets the code-defined value used to initialize this set before optional desired state is applied.</summary>
+        public string InitialValue => Runtime.InitialValue;
+
         /// <summary>Gets the value active in the running process.</summary>
         public string ActiveValue => Runtime.ActiveValue;
 
         /// <summary>Gets the desired value owned by the state store.</summary>
         public string DesiredValue { get; }
 
-        /// <summary>Gets the code-owned state-file apply policy.</summary>
-        public ConfigurationSetStateApplyMode ApplyMode { get; }
+        /// <summary>Gets the code-owned desired-state apply policy.</summary>
+        public ConfigurationSetApplyMode ApplyMode { get; }
 
         /// <summary>Gets whether the desired state differs from the value active in the running process.</summary>
         public bool HasDesiredStateDrift =>
@@ -69,7 +77,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         /// <summary>Gets whether the desired startup-only value differs from the active runtime value.</summary>
         public bool HasPendingRestart =>
-            ApplyMode == ConfigurationSetStateApplyMode.StartupOnly &&
+            ApplyMode == ConfigurationSetApplyMode.StartupOnly &&
             HasDesiredStateDrift;
 
         /// <summary>Gets whether all bound participants are known to represent <see cref="ActiveValue"/>.</summary>

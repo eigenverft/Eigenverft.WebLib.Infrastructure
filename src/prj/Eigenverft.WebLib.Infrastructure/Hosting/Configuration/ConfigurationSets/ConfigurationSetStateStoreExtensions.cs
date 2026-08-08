@@ -32,19 +32,19 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             return builder.AddConfigurationSetStateFile(path);
         }
 
-        /// <summary>Sets the code-owned state-file apply mode for one already registered configuration set.</summary>
+        /// <summary>Sets the code-owned desired-state apply mode for one already registered configuration set.</summary>
         /// <param name="builder">The host application builder containing the configuration set.</param>
         /// <param name="setName">The registered configuration-set name.</param>
         /// <param name="applyMode">Whether state-file changes may apply at runtime or only during startup.</param>
         /// <returns>The same builder for chaining.</returns>
         /// <remarks>
-        /// This policy belongs to the state-file control plane, not to <see cref="IConfigurationSetCoordinator"/>. Direct coordinator
+        /// This policy belongs to desired-state control, not to <see cref="IConfigurationSetCoordinator"/>. Direct coordinator
         /// switches remain technically possible regardless of this setting. The policy is frozen when the state store is registered.
         /// </remarks>
-        public static IHostApplicationBuilder SetConfigurationSetStateApplyMode(
+        public static IHostApplicationBuilder SetConfigurationSetApplyMode(
             this IHostApplicationBuilder builder,
             string setName,
-            ConfigurationSetStateApplyMode applyMode)
+            ConfigurationSetApplyMode applyMode)
         {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentException.ThrowIfNullOrWhiteSpace(setName);
@@ -125,6 +125,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             try
             {
                 store.Initialize();
+                builder.Services.AddSingleton<IConfigurationSetDesiredStateStore>(_ => store);
                 builder.Services.AddSingleton<IConfigurationSetStateStore>(_ => store);
                 builder.Services.AddSingleton<IHostedService>(_ => new ConfigurationSetStateStoreHostedService(store));
                 return store;
@@ -136,37 +137,37 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             }
         }
 
-        internal static IReadOnlyDictionary<string, ConfigurationSetStateApplyMode> GetStateApplyModeSnapshot(
+        internal static IReadOnlyDictionary<string, ConfigurationSetApplyMode> GetStateApplyModeSnapshot(
             IHostApplicationBuilder builder,
             IReadOnlyList<IConfigurationSetCoordinator> coordinators)
         {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentNullException.ThrowIfNull(coordinators);
 
-            Dictionary<string, ConfigurationSetStateApplyMode> configured = GetStateApplyModes(builder);
-            var snapshot = new Dictionary<string, ConfigurationSetStateApplyMode>(StringComparer.Ordinal);
+            Dictionary<string, ConfigurationSetApplyMode> configured = GetStateApplyModes(builder);
+            var snapshot = new Dictionary<string, ConfigurationSetApplyMode>(StringComparer.Ordinal);
 
             foreach (IConfigurationSetCoordinator coordinator in coordinators)
             {
                 snapshot.Add(
                     coordinator.Name,
-                    configured.TryGetValue(coordinator.Name, out ConfigurationSetStateApplyMode applyMode)
+                    configured.TryGetValue(coordinator.Name, out ConfigurationSetApplyMode applyMode)
                         ? applyMode
-                        : ConfigurationSetStateApplyMode.Runtime);
+                        : ConfigurationSetApplyMode.Runtime);
             }
 
             return snapshot;
         }
 
-        private static Dictionary<string, ConfigurationSetStateApplyMode> GetStateApplyModes(IHostApplicationBuilder builder)
+        private static Dictionary<string, ConfigurationSetApplyMode> GetStateApplyModes(IHostApplicationBuilder builder)
         {
             if (builder.Properties.TryGetValue(StateApplyModesKey, out object? value) &&
-                value is Dictionary<string, ConfigurationSetStateApplyMode> existing)
+                value is Dictionary<string, ConfigurationSetApplyMode> existing)
             {
                 return existing;
             }
 
-            var created = new Dictionary<string, ConfigurationSetStateApplyMode>(StringComparer.Ordinal);
+            var created = new Dictionary<string, ConfigurationSetApplyMode>(StringComparer.Ordinal);
             builder.Properties[StateApplyModesKey] = created;
             return created;
         }

@@ -25,6 +25,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         public string Name => _definition.Name;
 
+        public string InitialValue => _definition.InitialValue;
+
         public string ActiveValue
         {
             get
@@ -80,6 +82,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
                 return new ConfigurationSetStatus(
                     Name,
+                    _definition.InitialValue,
                     _activeValue,
                     _isConsistent,
                     _definition.AllowedValues,

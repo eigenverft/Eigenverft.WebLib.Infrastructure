@@ -12,6 +12,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     {
         private static readonly object RegisteredCoordinatorsKey = new();
         private static readonly object EventHubKey = new();
+        private static readonly object ManagerKey = new();
 
         /// <summary>
         /// Adds one configuration set and returns a fluent startup handle for binding switchable configuration sources.
@@ -83,6 +84,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
             GetRegisteredCoordinators(builder).Add(definition.Name, coordinator);
             GetOrCreateEventHub(builder).Attach(coordinator);
+            GetOrCreateManager(builder).Attach(coordinator);
             return coordinator;
         }
 
@@ -164,6 +166,20 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             var created = new ConfigurationSetEventHub();
             builder.Properties[EventHubKey] = created;
             builder.Services.AddSingleton<IConfigurationSetEventHub>(created);
+            return created;
+        }
+
+        private static ConfigurationSetManager GetOrCreateManager(IHostApplicationBuilder builder)
+        {
+            if (builder.Properties.TryGetValue(ManagerKey, out object? value) &&
+                value is ConfigurationSetManager existing)
+            {
+                return existing;
+            }
+
+            var created = new ConfigurationSetManager();
+            builder.Properties[ManagerKey] = created;
+            builder.Services.AddSingleton<IConfigurationSetManager>(created);
             return created;
         }
 

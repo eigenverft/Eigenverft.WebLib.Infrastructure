@@ -375,7 +375,7 @@ Current implementation can credibly claim:
 - one or many JSON sources per profile;
 - arbitrary per-value source paths;
 - runtime switching;
-- per-profile `Runtime` / `StartupOnly` state-file apply modes;
+- per-profile `Runtime` / `StartupOnly` desired-state apply modes;
 - visible read-only `ApplyMode` metadata and pending-restart status;
 - global watcher disable when no runtime state-file edits should be observed;
 - self-describing allowed values;
@@ -387,7 +387,7 @@ Current implementation can credibly claim:
 
 Mixed per-profile `Runtime` / `StartupOnly` behavior is now part of the implementation. A startup-only edit remains visible as desired state with pending-restart status until the next host startup.
 
-Programmatic persistent control is available through `IConfigurationSetStateStore.TrySetDesiredValue(...)`. Keep the distinction explicit in product material: direct coordinator `TrySwitch(...)` is intentionally ephemeral runtime control, while the state-store API persists the desired baseline and honors `Runtime` / `StartupOnly`.
+Programmatic runtime control is available through the persistence-neutral `IConfigurationSetManager`; `TrySwitch(...)` is intentionally ephemeral. Optional persistent desired-state control is available through `IConfigurationSetDesiredStateStore.TrySetDesiredValue(...)`, which honors `Runtime` / `StartupOnly` without requiring a controller to know about the built-in JSON file implementation.
 
 ## Short positioning candidates
 

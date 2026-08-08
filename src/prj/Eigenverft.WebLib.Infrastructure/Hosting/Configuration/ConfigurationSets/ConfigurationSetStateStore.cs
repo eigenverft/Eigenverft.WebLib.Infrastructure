@@ -22,7 +22,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         private readonly object _gate = new();
         private readonly IReadOnlyList<IConfigurationSetCoordinator> _coordinators;
         private readonly IReadOnlyDictionary<string, IConfigurationSetCoordinator> _coordinatorLookup;
-        private readonly IReadOnlyDictionary<string, ConfigurationSetStateApplyMode> _applyModes;
+        private readonly IReadOnlyDictionary<string, ConfigurationSetApplyMode> _applyModes;
         private readonly Dictionary<string, string> _desiredValues;
         private readonly bool _reloadOnChange;
         private readonly int _reloadDelayMilliseconds;
@@ -35,7 +35,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         public ConfigurationSetStateStore(
             string filePath,
             IReadOnlyList<IConfigurationSetCoordinator> coordinators,
-            IReadOnlyDictionary<string, ConfigurationSetStateApplyMode> applyModes,
+            IReadOnlyDictionary<string, ConfigurationSetApplyMode> applyModes,
             bool reloadOnChange,
             int reloadDelayMilliseconds)
         {
@@ -59,7 +59,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             _reloadDelayMilliseconds = reloadDelayMilliseconds;
 
             var lookup = new Dictionary<string, IConfigurationSetCoordinator>(StringComparer.Ordinal);
-            var modes = new Dictionary<string, ConfigurationSetStateApplyMode>(StringComparer.Ordinal);
+            var modes = new Dictionary<string, ConfigurationSetApplyMode>(StringComparer.Ordinal);
             _desiredValues = new Dictionary<string, string>(StringComparer.Ordinal);
 
             foreach (IConfigurationSetCoordinator coordinator in coordinators)
@@ -71,7 +71,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         nameof(coordinators));
                 }
 
-                if (!applyModes.TryGetValue(coordinator.Name, out ConfigurationSetStateApplyMode applyMode) ||
+                if (!applyModes.TryGetValue(coordinator.Name, out ConfigurationSetApplyMode applyMode) ||
                     !Enum.IsDefined(applyMode))
                 {
                     throw new ArgumentException(
@@ -84,7 +84,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             }
 
             _coordinatorLookup = new ReadOnlyDictionary<string, IConfigurationSetCoordinator>(lookup);
-            _applyModes = new ReadOnlyDictionary<string, ConfigurationSetStateApplyMode>(modes);
+            _applyModes = new ReadOnlyDictionary<string, ConfigurationSetApplyMode>(modes);
         }
 
         public string FilePath { get; }
@@ -163,6 +163,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             }
         }
 
+        public IReadOnlyList<ConfigurationSetStateStatus> GetDesiredStateStatus()
+        {
+            return GetStatus().SetStates;
+        }
+
         public ConfigurationSetStateApplyResult Reload()
         {
             ConfigurationSetStateApplyResult result;
@@ -237,7 +242,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                             sequence,
                             timestamp);
                     }
-                    else if (_applyModes[setName] == ConfigurationSetStateApplyMode.StartupOnly)
+                    else if (_applyModes[setName] == ConfigurationSetApplyMode.StartupOnly)
                     {
                         IReadOnlyList<ConfigurationSetPendingRestartChange> pending =
                             string.Equals(coordinator.ActiveValue, value, StringComparison.Ordinal)
@@ -249,7 +254,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                                             setName,
                                             coordinator.ActiveValue,
                                             value,
-                                            ConfigurationSetStateApplyMode.StartupOnly),
+                                            ConfigurationSetApplyMode.StartupOnly),
                                     });
 
                         result = new ConfigurationSetStateApplyResult(
@@ -439,9 +444,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 }
 
                 string desiredValue = entry.Value!;
-                ConfigurationSetStateApplyMode applyMode = _applyModes[coordinator.Name];
+                ConfigurationSetApplyMode applyMode = _applyModes[coordinator.Name];
 
-                if (!isStartup && applyMode == ConfigurationSetStateApplyMode.StartupOnly)
+                if (!isStartup && applyMode == ConfigurationSetApplyMode.StartupOnly)
                 {
                     if (!string.Equals(coordinator.ActiveValue, desiredValue, StringComparison.Ordinal))
                     {

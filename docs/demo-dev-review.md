@@ -685,7 +685,7 @@ var releaseChannel = builder
         "ReleaseChannel",
         "Stable",
         "Beta")
-    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly);
+    .ApplyMode(ConfigurationSetApplyMode.StartupOnly);
 
 builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 ```
@@ -755,7 +755,7 @@ Admin endpoint / application service
   = may be another trigger entirely
 ```
 
-That means `StartupOnly` does not make `IConfigurationSetCoordinator.TrySwitch(...)` disappear. It controls the state-file control plane.
+That means `StartupOnly` does not make `IConfigurationSetCoordinator.TrySwitch(...)` disappear. It controls desired-state application, independent of the persistence mechanism.
 
 ---
 
@@ -771,7 +771,7 @@ builder
         "ReleaseChannel",
         "Stable",
         "Beta")
-    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly);
+    .ApplyMode(ConfigurationSetApplyMode.StartupOnly);
 ```
 
 The state file materializes the policy:
@@ -826,7 +826,7 @@ builder
         "ReleaseChannel",
         "Stable",
         "Beta")
-    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+    .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
     .AddSwitchableJson(
         "AppSettings/Features",
         "Features.json");
@@ -837,9 +837,9 @@ builder.AddConfigurationSetStateFile("ConfigurationSets.json");
 For code that does not keep the fluent registration handle, the builder-level equivalent is available:
 
 ```csharp
-builder.SetConfigurationSetStateApplyMode(
+builder.SetConfigurationSetApplyMode(
     "ReleaseChannel",
-    ConfigurationSetStateApplyMode.StartupOnly);
+    ConfigurationSetApplyMode.StartupOnly);
 ```
 
 The policy must be set before the state store is registered because the store freezes its coordinator/policy snapshot during startup.
@@ -867,7 +867,7 @@ So the shortest declaration is runtime-switchable from the central file.
 A set that must wait for restart opts in explicitly:
 
 ```csharp
-.StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+.ApplyMode(ConfigurationSetApplyMode.StartupOnly)
 ```
 
 This keeps existing runtime-switch ergonomics while making restart-only behavior explicit and visible in `ConfigurationSets.json`.
@@ -1337,7 +1337,7 @@ builder
         "BuildSet",
         "Stable",
         "Candidate")
-    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+    .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
     .AddSwitchableJson(
         "AppSettings/Build",
         "BuildSettings.json");
@@ -1347,7 +1347,7 @@ builder
         "EnvironmentSet",
         "Development",
         "Production")
-    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+    .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
     .AddSwitchableJson(
         "AppSettings/Environment",
         "EnvironmentSettings.json");
@@ -1744,7 +1744,7 @@ builder
         "ReleaseChannel",
         "Stable",
         "Beta")
-    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+    .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
     .AddSwitchableJson(
         "AppSettings/Features",
         "Features.json");
@@ -1754,7 +1754,7 @@ builder
         "ServiceTopology",
         "Primary",
         "Alternate")
-    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+    .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
     .AddSwitchableJson(
         value => $"AppSettings/Topology/Services.{value}.json");
 
@@ -1846,7 +1846,7 @@ builder
         "ReleaseChannel",
         "Stable",
         "Beta")
-    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+    .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
     .AddSwitchableJson(
         "AppSettings/Features",
         "Features.json");

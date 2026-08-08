@@ -190,7 +190,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
                     "ReleaseChannel",
                     "Stable",
                     "Beta")
-                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .ApplyMode(ConfigurationSetApplyMode.StartupOnly)
                 .AddSwitchableJson(
                     "AppSettings/Features",
                     "Features.json");

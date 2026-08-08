@@ -174,7 +174,7 @@ ContentRoot/
 
 With state-file watching enabled, editing `Value` can trigger a coordinated runtime switch. With `reloadOnChange: false`, the file is applied at startup and not watched during the running host.
 
-Each set can additionally declare a code-owned state-file apply mode:
+Each set can additionally declare a code-owned desired-state apply mode:
 
 ```csharp
 builder
@@ -182,7 +182,7 @@ builder
         "ReleaseChannel",
         "Stable",
         "Beta")
-    .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly);
+    .ApplyMode(ConfigurationSetApplyMode.StartupOnly);
 
 builder
     .AddConfigurationSet(
@@ -212,35 +212,65 @@ The canonical state file materializes that policy as read-only descriptive metad
 
 Editing `ApplyMode` in JSON does not change policy; the code-owned value wins and is rematerialized. During a running host, a changed `StartupOnly` value becomes `DesiredValue` and is reported through `PendingRestartChanges` / `HasPendingRestart` without changing `ActiveValue`. The next host startup applies the desired value.
 
-## Programmatic switching
+## Programmatic control without a state file
 
-There are deliberately two programmatic control paths.
-
-A direct keyed coordinator switch is **ephemeral runtime control**:
+`ConfigurationSets.json` is optional. The code declaration always defines the complete allowed set plus its `InitialValue`:
 
 ```csharp
-var coordinator = services.GetRequiredKeyedService<IConfigurationSetCoordinator>(
-    "RoutingProfile");
-
-ConfigurationSetSwitchResult result = coordinator.TrySwitch("Failover");
+builder
+    .AddConfigurationSet(
+        "RoutingProfile",
+        initialValue: "Primary",
+        "Canary",
+        "Failover")
+    .AddSwitchableJson(value => $"AppSettings/Routing/Routes.{value}.json");
 ```
 
-It changes the running coordinator but does not rewrite the state store's desired value or `ConfigurationSets.json`.
-
-For persistent control, use the state store:
+With no desired-state store, the process starts on `Primary`. A restart returns to that code-defined initial value. Runtime control is available through the automatically registered, persistence-neutral manager:
 
 ```csharp
-var stateStore = services.GetRequiredService<IConfigurationSetStateStore>();
+var sets = services.GetRequiredService<IConfigurationSetManager>();
+
+IReadOnlyList<ConfigurationSetStatus> status = sets.GetStatus();
+// status[0]: Name, InitialValue, ActiveValue, AllowedValues, IsConsistent, participants
+
+if (!sets.TrySwitch(
+        "RoutingProfile",
+        "Failover",
+        out ConfigurationSetSwitchResult? result))
+{
+    // unknown set name
+}
+else
+{
+    // result is the completed coordinated switch outcome.
+    // When this call returns, successful configuration changes are already published.
+}
+```
+
+This is deliberately **ephemeral runtime control**. No persistence is implied by `TrySwitch(...)`.
+
+A controller or other control plane therefore does not need keyed DI lookup and does not need a JSON state file merely to inspect or switch configuration sets.
+
+## Optional persistent desired state
+
+Persistence is a separate capability. The built-in `ConfigurationSets.json` adapter additionally registers the narrow, file-neutral interface:
+
+```csharp
+var desiredState = services.GetRequiredService<IConfigurationSetDesiredStateStore>();
+
+IReadOnlyList<ConfigurationSetStateStatus> status =
+    desiredState.GetDesiredStateStatus();
 
 ConfigurationSetStateApplyResult result =
-    stateStore.TrySetDesiredValue("RoutingProfile", "Failover");
+    desiredState.TrySetDesiredValue("RoutingProfile", "Failover");
 ```
 
-`TrySetDesiredValue(...)` persists the canonical desired state before any live switch is attempted. For a `Runtime` set, the coordinator is then switched immediately. If candidate preparation rejects, the persisted desired value remains while the active runtime stays on last-known-good; `HasDesiredStateDrift` exposes that difference and a later `Reload()` can retry convergence.
+A control plane depending on `IConfigurationSetDesiredStateStore` does not need to know about `FilePath`, `Reload()` or `Materialize()`. The current JSON implementation persists the canonical desired state before any live switch is attempted. For a `Runtime` set, the coordinator is then switched immediately. If candidate preparation rejects, desired state remains persisted while active runtime stays on last-known-good and `HasDesiredStateDrift` exposes the difference.
 
-For a `StartupOnly` set, `TrySetDesiredValue(...)` persists the new value without changing the running coordinator and returns a pending-restart change.
+For a `StartupOnly` set, `TrySetDesiredValue(...)` persists the new value without changing the running coordinator and reports pending restart.
 
-The state store uses separate lifecycle event kinds for programmatic desired-state updates, and its own canonical write is suppressed from echoing back through the file watcher as a second artificial apply event.
+The file-specific `IConfigurationSetStateStore` remains available when an application intentionally wants local file operations such as `Reload()` or `Materialize()`. The persistence-neutral interface is the preferred dependency for a controller or external control-plane adapter.
 
 ## Observability
 
