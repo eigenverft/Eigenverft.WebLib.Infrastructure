@@ -34,6 +34,33 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         public string Name => Coordinator.Name;
 
         /// <summary>
+        /// Registers one switchable JSON source using an arbitrary complete path mapping for the allowed set values.
+        /// </summary>
+        /// <param name="sourcePathResolver">Resolves the complete JSON source path for each allowed set value.</param>
+        /// <param name="optional">Whether a missing active source is treated as empty by framework-driven loads.</param>
+        /// <param name="reloadOnChange">Whether the active JSON source is watched independently for physical changes.</param>
+        /// <param name="reloadDelayMilliseconds">Debounce delay for active-source file notifications.</param>
+        /// <param name="runtimeFailurePolicy">Runtime failure policy used by the switchable JSON source.</param>
+        /// <returns>This registration handle for chaining.</returns>
+        public ConfigurationSetRegistration AddSwitchableJson(
+            Func<string, string> sourcePathResolver,
+            bool optional = false,
+            bool reloadOnChange = false,
+            int reloadDelayMilliseconds = 250,
+            SwitchableJsonRuntimeFailurePolicy runtimeFailurePolicy = SwitchableJsonRuntimeFailurePolicy.KeepLastKnownGood)
+        {
+            _builder.AddSwitchableJsonToConfigurationSet(
+                Name,
+                sourcePathResolver,
+                optional,
+                reloadOnChange,
+                reloadDelayMilliseconds,
+                runtimeFailurePolicy);
+
+            return this;
+        }
+
+        /// <summary>
         /// Registers one switchable JSON source whose path follows <c>{rootPath}/{setValue}/{fileName}</c>.
         /// The technical participant identity is derived automatically for DI and diagnostics.
         /// </summary>

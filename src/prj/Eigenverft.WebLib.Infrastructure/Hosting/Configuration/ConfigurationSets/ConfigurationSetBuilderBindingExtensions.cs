@@ -12,6 +12,68 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     public static class ConfigurationSetBuilderBindingExtensions
     {
         /// <summary>
+        /// Registers one switchable JSON source using an arbitrary source path mapping for the set values.
+        /// </summary>
+        /// <param name="builder">The host application builder receiving the switchable source and binding.</param>
+        /// <param name="setName">The already registered configuration-set coordinator name.</param>
+        /// <param name="sourcePathResolver">Resolves the complete JSON source path represented by each allowed set value.</param>
+        /// <param name="optional">Whether a missing active source is treated as empty by framework-driven loads.</param>
+        /// <param name="reloadOnChange">Whether the active JSON source is watched independently for physical changes.</param>
+        /// <param name="reloadDelayMilliseconds">Debounce delay for active-source file notifications.</param>
+        /// <param name="runtimeFailurePolicy">Runtime failure policy used by the switchable JSON source.</param>
+        /// <returns>The same builder for chaining.</returns>
+        /// <remarks>
+        /// The resolver is evaluated once for every allowed set value during registration and the resulting mapping is frozen.
+        /// Values may map to directories, differently named files, absolute paths, or even the same source path.
+        /// </remarks>
+        public static IHostApplicationBuilder AddSwitchableJsonToConfigurationSet(
+            this IHostApplicationBuilder builder,
+            string setName,
+            Func<string, string> sourcePathResolver,
+            bool optional = false,
+            bool reloadOnChange = false,
+            int reloadDelayMilliseconds = 250,
+            SwitchableJsonRuntimeFailurePolicy runtimeFailurePolicy = SwitchableJsonRuntimeFailurePolicy.KeepLastKnownGood)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentException.ThrowIfNullOrWhiteSpace(setName);
+            ArgumentNullException.ThrowIfNull(sourcePathResolver);
+
+            IConfigurationSetCoordinator coordinator = GetRequiredCoordinator(builder, setName);
+            var paths = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (string allowedValue in coordinator.AllowedValues)
+            {
+                string sourcePath = sourcePathResolver(allowedValue);
+                ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath, nameof(sourcePathResolver));
+                paths.Add(allowedValue, sourcePath);
+            }
+
+            string initialPath = paths[coordinator.ActiveValue];
+            string switchableName = CreateUniqueGeneratedSwitchableName(builder, setName, initialPath);
+
+            builder.AddSwitchableJsonFile(
+                switchableName,
+                initialPath,
+                optional,
+                reloadOnChange,
+                reloadDelayMilliseconds,
+                runtimeFailurePolicy);
+
+            try
+            {
+                return builder.BindSwitchableJsonToConfigurationSet(
+                    setName,
+                    switchableName,
+                    value => paths[value]);
+            }
+            catch
+            {
+                _ = SwitchableJsonConfigurationExtensions.RemoveRegisteredSwitchableJsonFile(builder, switchableName);
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Registers one switchable JSON source and binds it to a configuration set using an internally derived runtime identity.
         /// </summary>
         public static IHostApplicationBuilder AddSwitchableJsonToConfigurationSet(
@@ -283,6 +345,27 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
             coordinator.BindSwitchableJson(configuration, sourcePathResolver);
             return builder;
+        }
+
+        private static string CreateUniqueGeneratedSwitchableName(
+            IHostApplicationBuilder builder,
+            string setName,
+            string initialPath)
+        {
+            string normalizedPath = initialPath
+                .Replace('\\', '/')
+                .Trim('/');
+            string baseName = $"{setName}:{normalizedPath}";
+            string candidate = baseName;
+            int suffix = 2;
+
+            while (SwitchableJsonConfigurationExtensions.TryGetRegisteredRuntimeHandle(builder, candidate, out _))
+            {
+                candidate = $"{baseName}#{suffix}";
+                suffix++;
+            }
+
+            return candidate;
         }
 
         internal static string CreateGeneratedSwitchableName(

@@ -511,6 +511,128 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreSame(result, observed.Result);
         }
 
+        [TestMethod]
+        public void FluentResolverCanSwitchFileNamePatternWithoutValueDirectories()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("EnvironmentSettings.Development.json", "{ \"EnvironmentMarker\": \"Development\" }");
+            directory.Write("EnvironmentSettings.Production.json", "{ \"EnvironmentMarker\": \"Production\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            ConfigurationSetRegistration registration = builder.AddConfigurationSet(
+                "EnvironmentSet",
+                "Development",
+                "Production");
+            registration.AddSwitchableJson(value => $"EnvironmentSettings.{value}.json");
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("EnvironmentSet");
+
+            Assert.AreEqual("Development", builder.Configuration["EnvironmentMarker"]);
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Production");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("Production", builder.Configuration["EnvironmentMarker"]);
+            Assert.IsTrue(result.ValueChanged);
+            Assert.IsTrue(result.SourceChanged);
+            Assert.IsTrue(result.ConfigurationChanged);
+        }
+
+        [TestMethod]
+        public void FluentResolverCanMapProxyRoutingSetToArbitraryFileNames()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write(
+                "proxy-routing-safe.json",
+                "{ \"ReverseProxy\": { \"Routes\": { \"main\": { \"ClusterId\": \"stable-cluster\" } } } }");
+            directory.Write(
+                "candidate-routing-v2.json",
+                "{ \"ReverseProxy\": { \"Routes\": { \"main\": { \"ClusterId\": \"candidate-cluster\" } } } }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            ConfigurationSetRegistration registration = builder.AddConfigurationSet(
+                "ProxySet",
+                "Stable",
+                "Candidate");
+            registration.AddSwitchableJson(value => value switch
+            {
+                "Stable" => "proxy-routing-safe.json",
+                "Candidate" => "candidate-routing-v2.json",
+                _ => throw new ArgumentOutOfRangeException(nameof(value)),
+            });
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("ProxySet");
+
+            Assert.AreEqual("stable-cluster", builder.Configuration["ReverseProxy:Routes:main:ClusterId"]);
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Candidate");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("candidate-cluster", builder.Configuration["ReverseProxy:Routes:main:ClusterId"]);
+        }
+
+        [TestMethod]
+        public void FluentResolverAllowsDifferentSetValuesToShareTheSameSource()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("Shared.json", "{ \"SharedMarker\": \"Same\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            ConfigurationSetRegistration registration = builder.AddConfigurationSet(
+                "BehaviorSet",
+                "A",
+                "B");
+            registration.AddSwitchableJson(_ => "Shared.json");
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("BehaviorSet");
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("B");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("B", coordinator.ActiveValue);
+            Assert.IsTrue(result.ValueChanged);
+            Assert.IsFalse(result.SourceChanged);
+            Assert.IsFalse(result.ConfigurationChanged);
+            Assert.IsTrue(result.HasChanges);
+            Assert.AreEqual("Same", builder.Configuration["SharedMarker"]);
+        }
+
+        [TestMethod]
+        public void FluentResolverMappingIsEvaluatedOnceAndFrozenAtRegistration()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("Stable.json", "{ \"Mode\": \"Stable\" }");
+            directory.Write("Next.json", "{ \"Mode\": \"Next\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            int resolverCalls = 0;
+
+            ConfigurationSetRegistration registration = builder.AddConfigurationSet(
+                "RoutingSet",
+                "Stable",
+                "Next");
+            registration.AddSwitchableJson(value =>
+            {
+                resolverCalls++;
+                return $"{value}.json";
+            });
+
+            Assert.AreEqual(2, resolverCalls);
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("RoutingSet");
+            _ = coordinator.TrySwitch("Next");
+
+            Assert.AreEqual(2, resolverCalls);
+            Assert.AreEqual("Next", builder.Configuration["Mode"]);
+        }
+
         private static HostApplicationBuilder CreateBuilder(string contentRootPath)
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings

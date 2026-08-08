@@ -72,7 +72,7 @@ var proxySet = builder.AddConfigurationSet(
 
 proxySet.AddSwitchableJson(
         "AppSettings/Proxy",
-    "ProxySettings.json");
+    "Routes.json");
 ```
 
 Directory layout:
@@ -81,7 +81,7 @@ Directory layout:
 AppSettings/
 └── Proxy/
     └── Stable/
-        └── ProxySettings.json
+        └── Routes.json
 ```
 
 There is no possible value switch yet because only `Stable` is allowed.
@@ -150,9 +150,9 @@ and add:
 AppSettings/
 └── Proxy/
     ├── Stable/
-    │   └── ProxySettings.json
+    │   └── Routes.json
     └── Experimental/
-        └── ProxySettings.json
+        └── Routes.json
 ```
 
 That makes the one-value form useful as an **extension-first development pattern**, not a degenerate special case.
@@ -180,7 +180,7 @@ builder
         "Stable")
     .AddSwitchableJson(
                 "AppSettings/Proxy",
-        "ProxySettings.json");
+        "Routes.json");
 
 var host = builder.Build();
 await host.RunAsync();
@@ -192,7 +192,7 @@ This loads the initial directory shape:
 AppSettings/
 └── Proxy/
     └── Stable/
-        └── ProxySettings.json
+        └── Routes.json
 ```
 
 Later adding `Next` does not require changing the abstraction, only extending the allowed values and adding another sibling directory:
@@ -201,9 +201,9 @@ Later adding `Next` does not require changing the abstraction, only extending th
 AppSettings/
 └── Proxy/
     ├── Stable/
-    │   └── ProxySettings.json
+    │   └── Routes.json
     └── Next/
-        └── ProxySettings.json
+        └── Routes.json
 ```
 
 There is no external control file. The active value is defined by code.
@@ -228,7 +228,7 @@ builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            "ProxySettings.json",
+            "Routes.json",
             "EdgeFilters.json",
             "Behaviors.json",
         ]);
@@ -242,15 +242,15 @@ Layout:
 ```text
 AppSettings/Proxy/
 ├── Stable/
-│   ├── ProxySettings.json
+│   ├── Routes.json
 │   ├── EdgeFilters.json
 │   └── Behaviors.json
 ├── Next/
-│   ├── ProxySettings.json
+│   ├── Routes.json
 │   ├── EdgeFilters.json
 │   └── Behaviors.json
 └── Experimental/
-    ├── ProxySettings.json
+    ├── Routes.json
     ├── EdgeFilters.json
     └── Behaviors.json
 ```
@@ -263,7 +263,111 @@ The caller does not name those technical runtimes. The configuration-set conveni
 
 This is useful when a feature has several configuration files but all of them belong to the same deployment lane.
 
+### The directory layout is convenience, not the contract
+
+**Current and tested.**
+
+The generic form is a full source-path resolver. A configuration set is therefore not restricted to `{root}/{value}/{file}`.
+
+A value can select a directory:
+
+```csharp
+builder
+    .AddConfigurationSet("EnvironmentSet", "Development", "Production")
+    .AddSwitchableJson(
+        value => $"AppSettings/Environment/{value}/EnvironmentSettings.json");
+```
+
+Or only the file name can vary:
+
+```csharp
+builder
+    .AddConfigurationSet("EnvironmentSet", "Development", "Production")
+    .AddSwitchableJson(
+        value => $"AppSettings/Environment/EnvironmentSettings.{value}.json");
+```
+
+```text
+ContentRoot/
+├── ConfigurationSets.json
+└── AppSettings/
+    └── Environment/
+        ├── EnvironmentSettings.Development.json
+        └── EnvironmentSettings.Production.json
+```
+
+And the values can map to completely unrelated names. This is useful for a reverse proxy where a tested stable routing table and a candidate routing table already have their own deployment names:
+
+```csharp
+builder
+    .AddConfigurationSet("ProxySet", "Stable", "Candidate")
+    .AddSwitchableJson(value => value switch
+    {
+        "Stable" => "AppSettings/Proxy/proxy-routing-safe.json",
+        "Candidate" => "AppSettings/Proxy/candidate-routing-v2.json",
+        _ => throw new ArgumentOutOfRangeException(nameof(value)),
+    });
+
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
+```
+
+The central control file still only selects the logical lane:
+
+```json
+{
+  "ConfigurationSets": {
+    "ProxySet": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable", "Candidate" ]
+    }
+  }
+}
+```
+
+The source files do not need to mirror the set names:
+
+```text
+ContentRoot/
+├── ConfigurationSets.json
+└── AppSettings/
+    └── Proxy/
+        ├── proxy-routing-safe.json
+        └── candidate-routing-v2.json
+```
+
+For example, the stable routing source can contain ordinary `IConfiguration`-backed reverse-proxy routing data:
+
+```json
+{
+  "ReverseProxy": {
+    "Routes": {
+      "main": {
+        "ClusterId": "stable-cluster"
+      }
+    }
+  }
+}
+```
+
+Switching `ProxySet` to `Candidate` activates `candidate-routing-v2.json`; the coordinator does not care whether the path convention uses directories, suffixes, versioned filenames, or an explicit switch expression.
+
+Multiple independently switchable JSON participants can use arbitrary mappings as well:
+
+```csharp
+var proxySet = builder.AddConfigurationSet("ProxySet", "Stable", "Candidate");
+
+proxySet
+    .AddSwitchableJson(value => $"AppSettings/Proxy/Routes.{value}.json")
+    .AddSwitchableJson(value => $"AppSettings/Proxy/Clusters.{value}.json");
+```
+
+The resolver is evaluated once for every allowed value during registration and that mapping is frozen. Runtime switching does not call arbitrary application code again.
+
+It is also valid for two different set values to resolve to the same physical file. In that case the logical `Value` can change while `SourceChanged` and `ConfigurationChanged` remain false.
+
 ---
+
+## 5. Several independent sets in one application---
 
 ## 5. Several independent sets in one application
 
@@ -290,7 +394,7 @@ builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            "ProxySettings.json",
+            "Routes.json",
             "EdgeFilters.json",
         ]);
 
@@ -318,13 +422,13 @@ AppSettings/
 │       └── EnvironmentSettings.json
 ├── Proxy/
 │   ├── Stable/
-│   │   ├── ProxySettings.json
+│   │   ├── Routes.json
 │   │   └── EdgeFilters.json
 │   ├── Next/
-│   │   ├── ProxySettings.json
+│   │   ├── Routes.json
 │   │   └── EdgeFilters.json
 │   └── Experimental/
-│       ├── ProxySettings.json
+│       ├── Routes.json
 │       └── EdgeFilters.json
 └── Build/
     ├── Stable/
@@ -705,7 +809,7 @@ var proxySet = builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            "ProxySettings.json",
+            "Routes.json",
             "EdgeFilters.json",
         ]);
 
@@ -1322,7 +1426,7 @@ var proxySet = builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            "ProxySettings.json",
+            "Routes.json",
             "EdgeFilters.json",
             "Behaviors.json",
         ]);
@@ -1358,15 +1462,15 @@ ContentRoot/
 └── AppSettings/
     └── Proxy/
         ├── Stable/
-        │   ├── ProxySettings.json
+        │   ├── Routes.json
         │   ├── EdgeFilters.json
         │   └── Behaviors.json
         ├── Next/
-        │   ├── ProxySettings.json
+        │   ├── Routes.json
         │   ├── EdgeFilters.json
         │   └── Behaviors.json
         └── Experimental/
-            ├── ProxySettings.json
+            ├── Routes.json
             ├── EdgeFilters.json
             └── Behaviors.json
 ```
@@ -1572,7 +1676,7 @@ builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            "ProxySettings.json",
+            "Routes.json",
             "EdgeFilters.json",
         ]);
 
@@ -1623,13 +1727,13 @@ ContentRoot/
 └── AppSettings/
     ├── Proxy/
     │   ├── Stable/
-    │   │   ├── ProxySettings.json
+    │   │   ├── Routes.json
     │   │   └── EdgeFilters.json
     │   ├── Next/
-    │   │   ├── ProxySettings.json
+    │   │   ├── Routes.json
     │   │   └── EdgeFilters.json
     │   └── Experimental/
-    │       ├── ProxySettings.json
+    │       ├── Routes.json
     │       └── EdgeFilters.json
     └── Theme/
         ├── Light/
@@ -1734,7 +1838,7 @@ var proxySet = builder
     .AddSwitchableJson(
         "AppSettings/Proxy",
         [
-            "ProxySettings.json",
+            "Routes.json",
             "EdgeFilters.json",
         ]);
 
@@ -1787,13 +1891,13 @@ Directory layout for the mixed-policy target:
 AppSettings/
 ├── Proxy/
 │   ├── Stable/
-│   │   ├── ProxySettings.json
+│   │   ├── Routes.json
 │   │   └── EdgeFilters.json
 │   ├── Next/
-│   │   ├── ProxySettings.json
+│   │   ├── Routes.json
 │   │   └── EdgeFilters.json
 │   └── Experimental/
-│       ├── ProxySettings.json
+│       ├── Routes.json
 │       └── EdgeFilters.json
 ├── Theme/
 │   ├── Light/
