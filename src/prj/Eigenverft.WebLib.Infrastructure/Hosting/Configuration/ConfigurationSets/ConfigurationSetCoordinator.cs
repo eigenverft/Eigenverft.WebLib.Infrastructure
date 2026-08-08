@@ -218,22 +218,31 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     }
                 }
 
-                using SwitchableJsonSwitchPreparation alignment = binding.Prepare(_activeValue);
-                if (alignment.Status == SwitchableJsonPreparationStatus.Rejected)
+                binding.ClaimOwnership();
+                try
                 {
-                    throw new InvalidOperationException(
-                        $"Participant '{binding.Name}' cannot represent active configuration set value '{_activeValue}'.",
-                        alignment.Exception);
-                }
+                    using SwitchableJsonSwitchPreparation alignment = binding.Prepare(_activeValue);
+                    if (alignment.Status == SwitchableJsonPreparationStatus.Rejected)
+                    {
+                        throw new InvalidOperationException(
+                            $"Participant '{binding.Name}' cannot represent active configuration set value '{_activeValue}'.",
+                            alignment.Exception);
+                    }
 
-                if (alignment.Status != SwitchableJsonPreparationStatus.AlreadyCurrent)
+                    if (alignment.Status != SwitchableJsonPreparationStatus.AlreadyCurrent)
+                    {
+                        throw new InvalidOperationException(
+                            $"Participant '{binding.Name}' is not currently on the source mapped to configuration set " +
+                            $"'{Name}' value '{_activeValue}'.");
+                    }
+
+                    _bindings.Add(binding);
+                }
+                catch
                 {
-                    throw new InvalidOperationException(
-                        $"Participant '{binding.Name}' is not currently on the source mapped to configuration set " +
-                        $"'{Name}' value '{_activeValue}'.");
+                    binding.ReleaseOwnership();
+                    throw;
                 }
-
-                _bindings.Add(binding);
             }
         }
 
@@ -253,6 +262,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 {
                     if (string.Equals(_bindings[index].Name, participantName, StringComparison.Ordinal))
                     {
+                        _bindings[index].ReleaseOwnership();
                         _bindings.RemoveAt(index);
                         return true;
                     }

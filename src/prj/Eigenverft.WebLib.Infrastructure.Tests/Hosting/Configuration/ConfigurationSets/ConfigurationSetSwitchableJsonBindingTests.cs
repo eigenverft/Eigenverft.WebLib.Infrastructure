@@ -512,6 +512,23 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
         }
 
         [TestMethod]
+        public void FluentMultiFileOptionsRejectUndefinedRuntimeFailurePolicy()
+        {
+            HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+            ConfigurationSetRegistration registration = builder.AddConfigurationSet("ProxySet", "Stable", "Experimental");
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                registration.AddSwitchableJson(
+                    "AppSettings",
+                    new SwitchableJsonRegistrationOptions
+                    {
+                        RuntimeFailurePolicy = (SwitchableJsonRuntimeFailurePolicy)999,
+                    },
+                    "First.json",
+                    "Second.json"));
+        }
+
+        [TestMethod]
         public void SingleValueSetCanOwnSwitchableJsonWithoutAnyAlternativeValue()
         {
             using var directory = new TemporaryDirectory();
@@ -671,6 +688,107 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             Assert.AreEqual(2, resolverCalls);
             Assert.AreEqual("Next", builder.Configuration["Mode"]);
+        }
+
+        [TestMethod]
+        public void BoundParticipantRejectsDirectSourceSelectionAndCoordinatorRemainsAuthoritative()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("Stable.json", "{ \"Mode\": \"Stable\" }");
+            directory.Write("Candidate.json", "{ \"Mode\": \"Candidate\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            builder
+                .AddConfigurationSet("RoutingSet", "Stable", "Candidate")
+                .AddSwitchableJson(value => $"{value}.json");
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("RoutingSet");
+            string participantName = coordinator.BoundParticipantNames.Single();
+            ISwitchableJsonConfiguration participant =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>(participantName);
+
+            using SwitchableJsonSwitchPreparation directPreparation = participant.PrepareSwitch("Candidate.json");
+            Assert.AreEqual(SwitchableJsonPreparationStatus.Rejected, directPreparation.Status);
+            Assert.AreEqual(SwitchableJsonFailureKind.SourceSelectionOwned, directPreparation.FailureKind);
+
+            SwitchableJsonSwitchResult direct = participant.TrySwitch("Candidate.json");
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Rejected, direct.Status);
+            Assert.AreEqual(SwitchableJsonFailureKind.SourceSelectionOwned, direct.FailureKind);
+            Assert.AreEqual("Stable", coordinator.ActiveValue);
+            Assert.IsTrue(coordinator.IsConsistent);
+            Assert.AreEqual("Stable", builder.Configuration["Mode"]);
+
+            ConfigurationSetSwitchResult alreadyActive = coordinator.TrySwitch("Stable");
+            Assert.AreEqual(ConfigurationSetSwitchStatus.AlreadyActive, alreadyActive.Status);
+
+            ConfigurationSetSwitchResult coordinated = coordinator.TrySwitch("Candidate");
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, coordinated.Status);
+            Assert.AreEqual("Candidate", coordinator.ActiveValue);
+            Assert.IsTrue(coordinator.IsConsistent);
+            Assert.AreEqual("Candidate", builder.Configuration["Mode"]);
+        }
+
+        [TestMethod]
+        public void SwitchableRuntimeCannotBelongToTwoConfigurationSets()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Mode\": \"A\" }");
+            directory.Write("B.json", "{ \"Mode\": \"B\" }");
+            directory.Write("C.json", "{ \"Mode\": \"C\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            _ = builder.AddConfigurationSet("SetOne", "Stable", "Candidate");
+            _ = builder.AddConfigurationSet("SetTwo", "Primary", "Failover");
+            builder.AddSwitchableJsonFile("shared", "A.json");
+
+            builder.BindSwitchableJsonToConfigurationSet(
+                "SetOne",
+                "shared",
+                value => value == "Stable" ? "A.json" : "B.json");
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() =>
+                builder.BindSwitchableJsonToConfigurationSet(
+                    "SetTwo",
+                    "shared",
+                    value => value == "Primary" ? "A.json" : "C.json"));
+
+            StringAssert.Contains(exception.Message, "already owned by 'SetOne'");
+        }
+
+        [TestMethod]
+        public void BindingInvalidatesPreparationCreatedBeforeOwnershipWasClaimed()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", "{ \"Mode\": \"A\" }");
+            directory.Write("B.json", "{ \"Mode\": \"B\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            _ = builder.AddConfigurationSet("RoutingSet", "Stable", "Candidate");
+            builder.AddSwitchableJsonFile("shared", "A.json");
+
+            using ServiceProvider services = builder.Services.BuildServiceProvider();
+            ISwitchableJsonConfiguration participant =
+                services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("shared");
+            IConfigurationSetCoordinator coordinator =
+                services.GetRequiredKeyedService<IConfigurationSetCoordinator>("RoutingSet");
+            using SwitchableJsonSwitchPreparation preparation = participant.PrepareSwitch("B.json");
+            Assert.AreEqual(SwitchableJsonPreparationStatus.Prepared, preparation.Status);
+
+            builder.BindSwitchableJsonToConfigurationSet(
+                "RoutingSet",
+                "shared",
+                value => value == "Stable" ? "A.json" : "B.json");
+
+            SwitchableJsonSwitchResult stale = preparation.Commit();
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Rejected, stale.Status);
+            Assert.AreEqual(SwitchableJsonFailureKind.StalePreparation, stale.FailureKind);
+            Assert.AreEqual("Stable", coordinator.ActiveValue);
+            Assert.IsTrue(coordinator.IsConsistent);
+            Assert.AreEqual("A", builder.Configuration["Mode"]);
         }
 
         private static HostApplicationBuilder CreateBuilder(string contentRootPath)

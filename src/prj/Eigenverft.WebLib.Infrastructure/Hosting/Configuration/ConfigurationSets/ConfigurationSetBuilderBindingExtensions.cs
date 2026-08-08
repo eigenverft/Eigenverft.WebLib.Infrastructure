@@ -220,8 +220,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <param name="files">Pairs of keyed switchable runtime name and JSON file path within each set-value directory.</param>
         /// <returns>The same builder for chaining.</returns>
         /// <remarks>
-        /// Every pair remains a normal independent <see cref="ISwitchableJsonConfiguration"/> runtime. This method only removes
-        /// repetitive startup wiring; it does not create a grouped provider or change lifecycle, LKG, DI, or reload semantics.
+        /// Every pair remains an independent switchable provider/runtime for loading, active-file watching, LKG and lifecycle
+        /// observation. Binding does not create a grouped provider, but it does grant this configuration set exclusive ownership of
+        /// manual source selection for each runtime; direct participant source switches are rejected while the binding exists.
         /// All entries are validated before registration begins. If a later registration still fails, already-created entries from
         /// this batch are rolled back in reverse order.
         /// </remarks>

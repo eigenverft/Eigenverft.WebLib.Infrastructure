@@ -53,7 +53,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// Prepare itself emits no provider lifecycle event and never applies the one-step
         /// <see cref="SwitchableJsonRuntimeFailurePolicy.Throw"/> policy. This keeps multi-provider orchestration result-driven:
         /// a coordinator can prepare every participant, inspect all outcomes, then commit or abort explicitly. Dispose is
-        /// equivalent to Abort for an uncommitted successful preparation.
+        /// equivalent to Abort for an uncommitted successful preparation. If a higher-level coordinator has claimed source-selection
+        /// ownership for this runtime, direct public preparations are rejected; the owning coordinator retains its internal path.
         /// </remarks>
         SwitchableJsonSwitchPreparation PrepareSwitch(string sourcePath);
 
@@ -71,6 +72,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// An explicit <see cref="Microsoft.Extensions.Configuration.IConfigurationRoot.Reload"/> remains a framework-level command:
         /// it invokes provider Load semantics and the root emits its normal reload notification even when effective data is equal.
         /// The switchable Source/Lifecycle channel does not reinterpret that global framework operation as a manual source switch.
+        /// If a higher-level coordinator has claimed source-selection ownership, direct calls to this method are rejected while
+        /// active-file reloads and framework reloads of the already selected source remain available.
         /// </para>
         /// </remarks>
         SwitchableJsonSwitchResult TrySwitch(string sourcePath);

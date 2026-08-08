@@ -26,6 +26,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             {
                 throw new ArgumentOutOfRangeException(nameof(ReloadDelayMilliseconds));
             }
+
+            if (!Enum.IsDefined(RuntimeFailurePolicy))
+            {
+                throw new ArgumentOutOfRangeException(nameof(RuntimeFailurePolicy));
+            }
         }
     }
 }

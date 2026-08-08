@@ -179,7 +179,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             ConfigurationSetStateApplyResult result = store.Reload();
 
-            Assert.AreEqual(ConfigurationSetStateApplyStatus.CompletedWithFailures, result.Status);
+            Assert.AreEqual(ConfigurationSetStateApplyStatus.CompletedWithErrors, result.Status);
             Assert.AreEqual(ConfigurationSetStateFailureKind.SetSwitchRejected, result.FailureKind);
             Assert.AreEqual(2, result.SetResults.Count);
             Assert.AreEqual("Production", environment.ActiveValue);
@@ -368,7 +368,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             ConfigurationSetStateApplyResult result = store.Reload();
 
-            Assert.AreEqual(ConfigurationSetStateApplyStatus.CompletedWithFailures, result.Status);
+            Assert.AreEqual(ConfigurationSetStateApplyStatus.CompletedWithErrors, result.Status);
             Assert.AreEqual(ConfigurationSetStateFailureKind.SetSwitchRejected, result.FailureKind);
             Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.SetResults.Single(item => item.Name == "EnvironmentSet").Status);
             Assert.AreEqual(ConfigurationSetSwitchStatus.Rejected, result.SetResults.Single(item => item.Name == "ProxySet").Status);
@@ -742,7 +742,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             ConfigurationSetStateApplyResult rejected = store.TrySetDesiredValue("RoutingProfile", "Failover");
 
-            Assert.AreEqual(ConfigurationSetStateApplyStatus.CompletedWithFailures, rejected.Status);
+            Assert.AreEqual(ConfigurationSetStateApplyStatus.CompletedWithErrors, rejected.Status);
             Assert.AreEqual(ConfigurationSetStateFailureKind.SetSwitchRejected, rejected.FailureKind);
             Assert.AreEqual(ConfigurationSetSwitchStatus.Rejected, rejected.SetResults.Single().Status);
             Assert.AreEqual("Primary", routing.ActiveValue);

@@ -19,8 +19,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Every requested runtime transition completed without rejection; startup-only changes may still be pending.</summary>
         Succeeded = 0,
 
-        /// <summary>The document was valid, but one or more requested independent set transitions were rejected.</summary>
-        CompletedWithFailures = 1,
+        /// <summary>
+        /// The operation reached its apply phase but completed with a runtime-transition or post-apply persistence/finalization error.
+        /// </summary>
+        CompletedWithErrors = 1,
 
         /// <summary>The state document could not be applied, and no set transition was attempted.</summary>
         Rejected = 2,
@@ -60,8 +62,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>The state file was loaded and every requested runtime transition completed successfully.</summary>
         StateApplied = 1,
 
-        /// <summary>The state file was valid, but one or more requested independent set transitions were rejected.</summary>
-        StateAppliedWithFailures = 2,
+        /// <summary>
+        /// The state file reached its apply phase but a runtime transition or post-apply persistence/finalization step reported an error.
+        /// </summary>
+        StateAppliedWithErrors = 2,
 
         /// <summary>The state file was rejected before any requested set transition was attempted.</summary>
         StateRejected = 3,
@@ -139,7 +143,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets whether at least one startup-only set has a desired value different from its active runtime value.</summary>
         public bool HasPendingRestart => PendingRestartChanges.Count > 0;
 
-        /// <summary>Gets the underlying load or validation exception when available.</summary>
+        /// <summary>Gets the underlying load, validation, persistence, or finalization exception when available.</summary>
         public Exception? Exception { get; }
 
         /// <summary>Gets the monotonically increasing lifecycle sequence scoped to this state store.</summary>

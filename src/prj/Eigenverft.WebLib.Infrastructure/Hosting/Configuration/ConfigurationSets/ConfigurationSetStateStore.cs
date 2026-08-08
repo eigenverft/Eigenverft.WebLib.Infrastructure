@@ -205,7 +205,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 ThrowIfDisposed();
 
                 long sequence = ++_sequence;
-                DateTimeOffset timestamp = DateTimeOffset.UtcNow;
 
                 if (!_coordinatorLookup.TryGetValue(setName, out IConfigurationSetCoordinator? coordinator))
                 {
@@ -213,7 +212,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         ConfigurationSetStateFailureKind.SetNotFound,
                         new InvalidOperationException($"Configuration set '{setName}' is not managed by this state store."),
                         sequence,
-                        timestamp);
+                        DateTimeOffset.UtcNow);
                 }
                 else if (!coordinator.IsAllowed(value))
                 {
@@ -222,7 +221,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         new InvalidOperationException(
                             $"Value '{value}' is not allowed by registered configuration set '{setName}'."),
                         sequence,
-                        timestamp);
+                        DateTimeOffset.UtcNow);
                 }
                 else
                 {
@@ -250,7 +249,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                             ConfigurationSetStateFailureKind.IoError,
                             persistenceException,
                             sequence,
-                            timestamp);
+                            DateTimeOffset.UtcNow);
                     }
                     else if (_applyModes[setName] == ConfigurationSetApplyMode.StartupOnly)
                     {
@@ -274,7 +273,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                             pending,
                             exception: null,
                             sequence,
-                            timestamp);
+                            DateTimeOffset.UtcNow);
                     }
                     else
                     {
@@ -287,7 +286,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         result = new ConfigurationSetStateApplyResult(
                             switchResult.Succeeded
                                 ? ConfigurationSetStateApplyStatus.Succeeded
-                                : ConfigurationSetStateApplyStatus.CompletedWithFailures,
+                                : ConfigurationSetStateApplyStatus.CompletedWithErrors,
                             switchResult.Succeeded
                                 ? ConfigurationSetStateFailureKind.None
                                 : ConfigurationSetStateFailureKind.SetSwitchRejected,
@@ -295,7 +294,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                             Array.Empty<ConfigurationSetPendingRestartChange>(),
                             exception: null,
                             sequence,
-                            timestamp);
+                            DateTimeOffset.UtcNow);
                     }
                 }
 
@@ -354,7 +353,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             List<ConfigurationSetDeferredSwitch> deferredSwitches)
         {
             long sequence = ++_sequence;
-            DateTimeOffset timestamp = DateTimeOffset.UtcNow;
 
             if (!File.Exists(FilePath))
             {
@@ -363,7 +361,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     ConfigurationSetStateFailureKind.IoError,
                     exception,
                     sequence,
-                    timestamp);
+                    DateTimeOffset.UtcNow);
             }
 
             ConfigurationSetStateDocument? document;
@@ -378,7 +376,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     ConfigurationSetStateFailureKind.InvalidJson,
                     ex,
                     sequence,
-                    timestamp);
+                    DateTimeOffset.UtcNow);
             }
             catch (IOException ex)
             {
@@ -386,7 +384,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     ConfigurationSetStateFailureKind.IoError,
                     ex,
                     sequence,
-                    timestamp);
+                    DateTimeOffset.UtcNow);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -394,7 +392,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     ConfigurationSetStateFailureKind.IoError,
                     ex,
                     sequence,
-                    timestamp);
+                    DateTimeOffset.UtcNow);
             }
 
             if (document?.ConfigurationSets is null)
@@ -403,7 +401,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     ConfigurationSetStateFailureKind.InvalidDocument,
                     new InvalidDataException("Configuration set state document must contain a 'ConfigurationSets' object."),
                     sequence,
-                    timestamp);
+                    DateTimeOffset.UtcNow);
             }
 
             foreach ((string name, ConfigurationSetStateEntry? entry) in document.ConfigurationSets)
@@ -414,7 +412,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         ConfigurationSetStateFailureKind.InvalidDocument,
                         new InvalidDataException($"Configuration set state document references unknown set '{name}'."),
                         sequence,
-                        timestamp);
+                        DateTimeOffset.UtcNow);
                 }
 
                 if (entry is null || string.IsNullOrWhiteSpace(entry.DesiredValue))
@@ -423,7 +421,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         ConfigurationSetStateFailureKind.InvalidDocument,
                         new InvalidDataException($"Configuration set '{name}' must contain a non-empty 'DesiredValue'."),
                         sequence,
-                        timestamp);
+                        DateTimeOffset.UtcNow);
                 }
 
                 // AllowedValues and ApplyMode in the file are descriptive metadata only.
@@ -435,7 +433,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         new InvalidDataException(
                             $"Value '{entry.DesiredValue}' is not allowed by registered configuration set '{name}'."),
                         sequence,
-                        timestamp);
+                        DateTimeOffset.UtcNow);
                 }
             }
 
@@ -449,7 +447,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         new InvalidDataException(
                             $"Configuration set state document is missing registered set '{coordinator.Name}'."),
                         sequence,
-                        timestamp);
+                        DateTimeOffset.UtcNow);
                 }
             }
 
@@ -503,13 +501,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             if (anyFailure)
             {
                 return new ConfigurationSetStateApplyResult(
-                    ConfigurationSetStateApplyStatus.CompletedWithFailures,
+                    ConfigurationSetStateApplyStatus.CompletedWithErrors,
                     ConfigurationSetStateFailureKind.SetSwitchRejected,
                     readOnlyResults,
                     readOnlyPendingRestartChanges,
                     exception: null,
                     sequence,
-                    timestamp);
+                    DateTimeOffset.UtcNow);
             }
 
             if (canonicalizeOnSuccess)
@@ -521,24 +519,24 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 catch (IOException ex)
                 {
                     return new ConfigurationSetStateApplyResult(
-                        ConfigurationSetStateApplyStatus.CompletedWithFailures,
+                        ConfigurationSetStateApplyStatus.CompletedWithErrors,
                         ConfigurationSetStateFailureKind.IoError,
                         readOnlyResults,
                         readOnlyPendingRestartChanges,
                         ex,
                         sequence,
-                        timestamp);
+                        DateTimeOffset.UtcNow);
                 }
                 catch (UnauthorizedAccessException ex)
                 {
                     return new ConfigurationSetStateApplyResult(
-                        ConfigurationSetStateApplyStatus.CompletedWithFailures,
+                        ConfigurationSetStateApplyStatus.CompletedWithErrors,
                         ConfigurationSetStateFailureKind.IoError,
                         readOnlyResults,
                         readOnlyPendingRestartChanges,
                         ex,
                         sequence,
-                        timestamp);
+                        DateTimeOffset.UtcNow);
                 }
             }
 
@@ -549,7 +547,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 readOnlyPendingRestartChanges,
                 exception: null,
                 sequence,
-                timestamp);
+                DateTimeOffset.UtcNow);
         }
 
         private void WriteCanonicalLocked()
@@ -686,7 +684,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             ConfigurationSetStateStoreEventKind kind = result.Status switch
             {
                 ConfigurationSetStateApplyStatus.Succeeded => ConfigurationSetStateStoreEventKind.DesiredValueUpdated,
-                ConfigurationSetStateApplyStatus.CompletedWithFailures => ConfigurationSetStateStoreEventKind.DesiredValueUpdatedWithFailures,
+                ConfigurationSetStateApplyStatus.CompletedWithErrors => ConfigurationSetStateStoreEventKind.DesiredValueUpdatedWithFailures,
                 ConfigurationSetStateApplyStatus.Rejected => ConfigurationSetStateStoreEventKind.DesiredValueUpdateRejected,
                 _ => throw new InvalidOperationException($"Unsupported state apply status '{result.Status}'."),
             };
@@ -705,7 +703,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             ConfigurationSetStateStoreEventKind kind = result.Status switch
             {
                 ConfigurationSetStateApplyStatus.Succeeded => ConfigurationSetStateStoreEventKind.StateApplied,
-                ConfigurationSetStateApplyStatus.CompletedWithFailures => ConfigurationSetStateStoreEventKind.StateAppliedWithFailures,
+                ConfigurationSetStateApplyStatus.CompletedWithErrors => ConfigurationSetStateStoreEventKind.StateAppliedWithErrors,
                 ConfigurationSetStateApplyStatus.Rejected => ConfigurationSetStateStoreEventKind.StateRejected,
                 _ => throw new InvalidOperationException($"Unsupported state apply status '{result.Status}'."),
             };

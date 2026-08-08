@@ -8,7 +8,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     /// </summary>
     /// <remarks>
     /// Multiple coordinators may exist in the same process. A coordinator can remain a pure logical set, or switchable
-    /// configuration sources can be bound to it so one set transition prepares all mapped sources before publishing commits.
+    /// configuration sources can be bound to it. A coordinated transition prepares every mapped source, commits participant state
+    /// with observer publication deferred, finalizes coordinator state, and only then releases IConfiguration/lifecycle notifications.
+    /// A bound participant grants this coordinator exclusive ownership of manual source selection for that runtime.
     /// The coordinator assigns no application meaning to set names or values.
     /// </remarks>
     public interface IConfigurationSetCoordinator

@@ -19,7 +19,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <returns>The same coordinator for chaining.</returns>
         /// <remarks>
         /// Binding validates that the switchable runtime is already on the source mapped to the coordinator's current active value.
-        /// This prevents a coordinator from claiming an initial set state that its participant does not actually represent.
+        /// Once bound, the coordinator exclusively owns source selection for that runtime. Direct public source switches are rejected,
+        /// while active-file reload and lifecycle observation remain normal switchable-runtime behavior. A runtime can belong to only
+        /// one configuration set at a time.
         /// </remarks>
         public static IConfigurationSetCoordinator BindSwitchableJson(
             this IConfigurationSetCoordinator coordinator,
@@ -45,7 +47,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             }
 
             implementation.AddSwitchableJsonBinding(
-                new SwitchableJsonConfigurationSetBinding(configuration, paths));
+                new SwitchableJsonConfigurationSetBinding(coordinator.Name, configuration, paths));
 
             return coordinator;
         }

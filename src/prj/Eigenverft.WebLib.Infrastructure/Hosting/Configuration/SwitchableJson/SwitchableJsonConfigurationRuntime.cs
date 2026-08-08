@@ -43,6 +43,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         private long _lifecycleSequence;
         private ActiveSourceWatcher? _activeWatcher;
         private SwitchableJsonConfigurationProvider? _activeProvider;
+        private string? _sourceSelectionOwner;
         private bool _disposed;
 
         public SwitchableJsonConfigurationRuntime(
@@ -101,7 +102,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             lock (_operationGate)
             {
                 ThrowIfDisposed();
-                return PrepareSwitchLocked(requestedSourcePath);
+                return _sourceSelectionOwner is null
+                    ? PrepareSwitchLocked(requestedSourcePath)
+                    : CreateSourceSelectionOwnedPreparationLocked(requestedSourcePath);
             }
         }
 
@@ -110,7 +113,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
             string requestedSourcePath = NormalizeSourcePath(sourcePath);
             CommitOutcome outcome;
-            SwitchableJsonSwitchPreparation preparation;
 
             // The one-step API deliberately keeps Prepare+Commit under one operation lock. Public preparations release this lock
             // between phases so an orchestrator can coordinate multiple providers, but direct TrySwitch should retain its original
@@ -118,21 +120,29 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             lock (_operationGate)
             {
                 ThrowIfDisposed();
-                preparation = PrepareSwitchLocked(requestedSourcePath);
 
-                if (!preparation.TryClaimForDirectSwitch())
+                if (_sourceSelectionOwner is not null)
                 {
-                    throw new InvalidOperationException("Internal switch preparation was unexpectedly already consumed.");
+                    outcome = CreateSourceSelectionOwnedOutcomeLocked(requestedSourcePath);
                 }
+                else
+                {
+                    SwitchableJsonSwitchPreparation preparation = PrepareSwitchLocked(requestedSourcePath);
 
-                try
-                {
-                    outcome = CommitPreparationLocked(preparation, allowRejectedPreparation: true);
-                }
-                catch
-                {
-                    AbortPreparationResources(preparation);
-                    throw;
+                    if (!preparation.TryClaimForDirectSwitch())
+                    {
+                        throw new InvalidOperationException("Internal switch preparation was unexpectedly already consumed.");
+                    }
+
+                    try
+                    {
+                        outcome = CommitPreparationLocked(preparation, allowRejectedPreparation: true);
+                    }
+                    catch
+                    {
+                        AbortPreparationResources(preparation);
+                        throw;
+                    }
                 }
             }
 
@@ -140,7 +150,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
             if (outcome.Result.Status == SwitchableJsonSwitchStatus.Rejected &&
                 _runtimeFailurePolicy == SwitchableJsonRuntimeFailurePolicy.Throw &&
-                outcome.Result.Exception is not null)
+                outcome.Result.Exception is not null &&
+                IsCandidateLoadFailure(outcome.Result.Exception))
             {
                 ExceptionDispatchInfo.Capture(outcome.Result.Exception).Throw();
             }
@@ -168,6 +179,64 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             }
 
             watcher?.Dispose();
+        }
+
+        internal void ClaimSourceSelectionOwnership(string ownerName)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(ownerName);
+
+            lock (_operationGate)
+            {
+                ThrowIfDisposed();
+
+                if (_sourceSelectionOwner is not null)
+                {
+                    throw new InvalidOperationException(
+                        $"Switchable JSON configuration '{Name}' source selection is already owned by '{_sourceSelectionOwner}'.");
+                }
+
+                _sourceSelectionOwner = ownerName;
+                _stateVersion++;
+            }
+        }
+
+        internal void ReleaseSourceSelectionOwnership(string ownerName)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(ownerName);
+
+            lock (_operationGate)
+            {
+                ThrowIfDisposed();
+
+                if (!string.Equals(_sourceSelectionOwner, ownerName, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"Switchable JSON configuration '{Name}' source selection is not owned by '{ownerName}'.");
+                }
+
+                _sourceSelectionOwner = null;
+                _stateVersion++;
+            }
+        }
+
+        internal SwitchableJsonSwitchPreparation PrepareSwitchForOwner(string ownerName, string sourcePath)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(ownerName);
+            ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
+            string requestedSourcePath = NormalizeSourcePath(sourcePath);
+
+            lock (_operationGate)
+            {
+                ThrowIfDisposed();
+
+                if (!string.Equals(_sourceSelectionOwner, ownerName, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"Switchable JSON configuration '{Name}' source selection is not owned by '{ownerName}'.");
+                }
+
+                return PrepareSwitchLocked(requestedSourcePath);
+            }
         }
 
         internal SwitchableJsonSwitchResult CommitPreparation(SwitchableJsonSwitchPreparation preparation)
@@ -323,6 +392,47 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             }
 
             return true;
+        }
+
+        private SwitchableJsonSwitchPreparation CreateSourceSelectionOwnedPreparationLocked(string requestedSourcePath)
+        {
+            SwitchableJsonConfigurationProvider provider = GetActiveProvider();
+            var exception = new InvalidOperationException(
+                $"Switchable JSON configuration '{Name}' source selection is owned by '{_sourceSelectionOwner}'. " +
+                "Switch through the owning coordinator instead.");
+
+            return CreatePreparation(
+                SwitchableJsonPreparationStatus.Rejected,
+                _currentSourcePath,
+                requestedSourcePath,
+                configurationChanged: false,
+                SwitchableJsonFailureKind.SourceSelectionOwned,
+                exception,
+                _stateVersion,
+                _watcherGeneration,
+                provider,
+                candidateData: null,
+                preparedWatcher: null,
+                watcherRelay: null);
+        }
+
+        private CommitOutcome CreateSourceSelectionOwnedOutcomeLocked(string requestedSourcePath)
+        {
+            var exception = new InvalidOperationException(
+                $"Switchable JSON configuration '{Name}' source selection is owned by '{_sourceSelectionOwner}'. " +
+                "Switch through the owning coordinator instead.");
+
+            SwitchableJsonSwitchResult rejected = CreateSwitchResult(
+                SwitchableJsonSwitchStatus.Rejected,
+                _currentSourcePath,
+                requestedSourcePath,
+                _currentSourcePath,
+                sourceChanged: false,
+                configurationChanged: false,
+                SwitchableJsonFailureKind.SourceSelectionOwned,
+                exception);
+
+            return new CommitOutcome(rejected, ProviderToReload: null);
         }
 
         private SwitchableJsonSwitchPreparation PrepareSwitchLocked(string requestedSourcePath)

@@ -46,7 +46,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// </summary>
         PartialCommit = 5,
 
-        /// <summary>A recursive switch request was rejected while this coordinator was already committing another switch.</summary>
+        /// <summary>Another switch operation for this coordinator is still completing, including deferred notification publication.</summary>
         SwitchInProgress = 6,
     }
 

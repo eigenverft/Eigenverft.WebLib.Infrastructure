@@ -255,11 +255,11 @@ AppSettings/Proxy/
     └── Behaviors.json
 ```
 
-The three files remain three independent `ISwitchableJsonConfiguration` runtimes.
+The three files remain three independent switchable provider/runtimes for loading, active-file watching, last-known-good handling and lifecycle observation.
 
 The caller does not name those technical runtimes. The configuration-set convenience derives stable participant identities from the set name plus logical file path, for example `ProxySet:AppSettings/Proxy/EdgeFilters.json`. Those identities exist for keyed DI, status, failure diagnostics and logging; they are not another configuration concept the normal caller has to manage.
 
-`ConfigurationSetCoordinator` only coordinates their set transition.
+Once a runtime is bound, `ConfigurationSetCoordinator` owns its manual source selection. A direct participant `PrepareSwitch`/`TrySwitch` is rejected, and the same runtime cannot simultaneously belong to another configuration set. Physical reload of the currently selected file remains normal SwitchableJson behavior.
 
 This is useful when a feature has several configuration files but all of them belong to the same deployment lane.
 

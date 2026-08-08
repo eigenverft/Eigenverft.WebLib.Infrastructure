@@ -70,6 +70,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// A previously successful preparation no longer matches the provider state against which it was prepared.
         /// </summary>
         StalePreparation = 5,
+
+        /// <summary>
+        /// Manual source selection is disabled because a higher-level coordinator owns source selection for this runtime.
+        /// </summary>
+        SourceSelectionOwned = 6,
     }
 
     /// <summary>Identifies an observable provider/source lifecycle outcome.</summary>
