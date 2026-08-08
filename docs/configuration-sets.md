@@ -300,6 +300,37 @@ public sealed class ConfigurationSetLogger : IHostedService, IDisposable
 
 Subscriber failures are isolated from the already completed switch and from other subscribers.
 
+## Regression coverage
+
+The automated suite includes a realistic Program.Main-style system regression that combines:
+
+```text
+RoutingProfile
+  -> arbitrary value => sourcePath mappings
+  -> two coordinated JSON participants
+
+OperationalProfile
+  -> conventional per-value directories
+  -> three coordinated JSON participants
+
+ReleaseChannel
+  -> StartupOnly desired state
+
+ConfigurationSets.json
+  -> real filesystem watcher
+
+IConfigurationSetEventHub
+  -> real IHostedService consumer
+
+persistent TrySetDesiredValue(...)
+  -> runtime persistence and switch
+
+host restart
+  -> pending StartupOnly value becomes active
+```
+
+The test asserts the resulting `IConfiguration` values, participant-level lifecycle information, pending-restart state, persistent desired state, and clean restart convergence.
+
 ## What Configuration Sets are not
 
 Configuration Sets are not feature flags, environment detection, a deployment system, or a replacement for `IConfiguration`.
