@@ -140,10 +140,24 @@ var host = builder.Build();
 await host.RunAsync();
 ```
 
-This loads:
+This loads the initial directory shape:
 
 ```text
-AppSettings/Proxy/Stable/ProxySettings.json
+AppSettings/
+└── Proxy/
+    └── Stable/
+        └── ProxySettings.json
+```
+
+Later adding `Next` does not require changing the abstraction, only extending the allowed values and adding another sibling directory:
+
+```text
+AppSettings/
+└── Proxy/
+    ├── Stable/
+    │   └── ProxySettings.json
+    └── Next/
+        └── ProxySettings.json
 ```
 
 There is no external control file. The active value is defined by code.
@@ -247,6 +261,32 @@ var host = builder.Build();
 await host.RunAsync();
 ```
 
+The corresponding directory layout makes the independent axes visible:
+
+```text
+AppSettings/
+├── Environment/
+│   ├── Development/
+│   │   └── EnvironmentSettings.json
+│   └── Production/
+│       └── EnvironmentSettings.json
+├── Proxy/
+│   ├── Stable/
+│   │   ├── ProxySettings.json
+│   │   └── EdgeFilters.json
+│   ├── Next/
+│   │   ├── ProxySettings.json
+│   │   └── EdgeFilters.json
+│   └── Experimental/
+│       ├── ProxySettings.json
+│       └── EdgeFilters.json
+└── Build/
+    ├── Stable/
+    │   └── BuildSettings.json
+    └── Candidate/
+        └── BuildSettings.json
+```
+
 The runtime may therefore be in this state:
 
 ```text
@@ -313,6 +353,45 @@ AllowedValues
 ```
 
 Changing `AllowedValues` in JSON cannot authorize a value that the registered coordinator rejects.
+
+### Target metadata once per-set apply policy exists
+
+`AllowedValues` already serves as operator-facing, code-owned metadata. The same principle should apply to a future per-set apply policy: an editor should not have to know from memory whether changing a value is live or restart-only.
+
+The target state file should therefore materialize `ApplyMode` next to `AllowedValues`:
+
+```json
+{
+  "Sets": {
+    "ProxySet": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable", "Next", "Experimental" ],
+      "ApplyMode": "Runtime"
+    },
+    "BuildSet": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable", "Candidate" ],
+      "ApplyMode": "StartupOnly"
+    }
+  }
+}
+```
+
+The ownership should be obvious to the editor:
+
+```text
+Value
+  = editable desired value
+
+AllowedValues
+  = read-only/descriptive metadata materialized from code
+
+ApplyMode
+  = read-only/descriptive metadata materialized from code
+  = tells the editor whether changing Value applies live or on next startup
+```
+
+"Read-only" here means **not authoritative through file editing**. The file is still physically editable, but successful canonicalization should restore the code-owned metadata just as it already does for `AllowedValues`.
 
 ---
 
@@ -931,11 +1010,17 @@ environment/profile framework
 
 ---
 
-## 19. FeatureSet example
+## 19. Microsoft.FeatureManagement FeatureSet example
+
+This is a particularly strong integration example because `Microsoft.FeatureManagement` uses the normal .NET `IConfiguration` system as its feature-definition source. The configuration-set layer does not implement feature evaluation itself; it only switches the JSON source that Microsoft.FeatureManagement reads.
 
 ### Program.Main
 
 ```csharp
+using Microsoft.FeatureManagement;
+
+var builder = Host.CreateApplicationBuilder(args);
+
 builder
     .AddConfigurationSet(
         "FeatureSet",
@@ -943,29 +1028,131 @@ builder
         "Beta",
         "Lab")
     .AddSwitchableJson(
+        "feature-management",
         "AppSettings/Features",
-        [
-            ("feature-flags", "Features.json"),
-            ("feature-limits", "Limits.json"),
-        ]);
+        "Features.json");
+
+builder.Services.AddFeatureManagement();
+
+builder.AddConfigurationSetStateFile(
+    "ConfigurationSets.json");
 ```
 
-Layout:
+Directory layout:
 
 ```text
-AppSettings/Features/
-├── Stable/
-│   ├── Features.json
-│   └── Limits.json
-├── Beta/
-│   ├── Features.json
-│   └── Limits.json
-└── Lab/
-    ├── Features.json
-    └── Limits.json
+AppSettings/
+└── Features/
+    ├── Stable/
+    │   └── Features.json
+    ├── Beta/
+    │   └── Features.json
+    └── Lab/
+        └── Features.json
 ```
 
-This is a good runtime-switch candidate when consumers are designed for dynamic configuration.
+A `Stable/Features.json` can contain Microsoft's current `feature_management` schema:
+
+```json
+{
+  "feature_management": {
+    "feature_flags": [
+      {
+        "id": "NewCheckout",
+        "enabled": false
+      },
+      {
+        "id": "NewProxyPipeline",
+        "enabled": false
+      }
+    ]
+  }
+}
+```
+
+`Beta/Features.json` can expose a broader lane:
+
+```json
+{
+  "feature_management": {
+    "feature_flags": [
+      {
+        "id": "NewCheckout",
+        "enabled": true
+      },
+      {
+        "id": "NewProxyPipeline",
+        "enabled": false
+      }
+    ]
+  }
+}
+```
+
+and `Lab/Features.json` may enable both or use Microsoft feature filters / variants:
+
+```json
+{
+  "feature_management": {
+    "feature_flags": [
+      {
+        "id": "NewCheckout",
+        "enabled": true
+      },
+      {
+        "id": "NewProxyPipeline",
+        "enabled": true
+      }
+    ]
+  }
+}
+```
+
+Application code remains ordinary Microsoft.FeatureManagement code:
+
+```csharp
+public sealed class CheckoutService
+{
+    private readonly IVariantFeatureManager _features;
+
+    public CheckoutService(IVariantFeatureManager features)
+    {
+        _features = features;
+    }
+
+    public async Task ExecuteAsync()
+    {
+        if (await _features.IsEnabledAsync("NewCheckout"))
+        {
+            // new implementation
+            return;
+        }
+
+        // stable implementation
+    }
+}
+```
+
+The important separation is:
+
+```text
+ConfigurationSetCoordinator
+    switches FeatureSet Stable -> Beta -> Lab
+            ↓
+SwitchableJsonConfiguration
+    publishes another Features.json through IConfiguration
+            ↓
+Microsoft.FeatureManagement
+    evaluates flags, filters and variants
+            ↓
+application uses IVariantFeatureManager / IFeatureManager
+```
+
+That makes a `FeatureSet` more than an abstract example: it can act as a **coarse-grained lane selector around Microsoft's fine-grained feature-management library**.
+
+For example, the application can switch the whole approved feature baseline from `Stable` to `Beta`, while Microsoft.FeatureManagement still decides individual feature enablement, targeting, time windows, or variants inside that baseline.
+
+This is a good runtime-switch candidate because Microsoft.FeatureManagement is configuration-backed and designed for dynamic feature flag values. A future `ApplyMode` in `ConfigurationSets.json` should still tell the operator explicitly whether this application's `FeatureSet` is allowed to follow file edits live or only at startup.
 
 ---
 
@@ -995,6 +1182,22 @@ builder
         "environment-settings",
         "AppSettings/Environment",
         "EnvironmentSettings.json");
+```
+
+Directory layout:
+
+```text
+AppSettings/
+├── Build/
+│   ├── Stable/
+│   │   └── BuildSettings.json
+│   └── Candidate/
+│       └── BuildSettings.json
+└── Environment/
+    ├── Development/
+    │   └── EnvironmentSettings.json
+    └── Production/
+        └── EnvironmentSettings.json
 ```
 
 If those values affect startup-only DI registrations, connection topology, or other non-reloadable objects, automatic runtime switching may be misleading.
@@ -1027,6 +1230,25 @@ var proxySet = builder
             ("edge-filters", "EdgeFilters.json"),
             ("behaviors", "Behaviors.json"),
         ]);
+```
+
+Directory layout:
+
+```text
+AppSettings/
+└── Proxy/
+    ├── Stable/
+    │   ├── ProxySettings.json
+    │   ├── EdgeFilters.json
+    │   └── Behaviors.json
+    ├── Next/
+    │   ├── ProxySettings.json
+    │   ├── EdgeFilters.json
+    │   └── Behaviors.json
+    └── Experimental/
+        ├── ProxySettings.json
+        ├── EdgeFilters.json
+        └── Behaviors.json
 ```
 
 Possible operational meaning:
@@ -1065,6 +1287,19 @@ builder
         "AppSettings/Application",
         "AppSettings.json");
 ```
+
+Directory layout:
+
+```text
+AppSettings/
+└── Application/
+    ├── Stable/
+    │   └── AppSettings.json
+    └── Candidate/
+        └── AppSettings.json
+```
+
+This is the case where one file carries many sections while the set still switches one source.
 
 where `AppSettings.json` contains many sections:
 
@@ -1242,6 +1477,27 @@ var host = builder.Build();
 await host.RunAsync();
 ```
 
+Directory layout for this `Program.Main`:
+
+```text
+AppSettings/
+├── Proxy/
+│   ├── Stable/
+│   │   ├── ProxySettings.json
+│   │   └── EdgeFilters.json
+│   ├── Next/
+│   │   ├── ProxySettings.json
+│   │   └── EdgeFilters.json
+│   └── Experimental/
+│       ├── ProxySettings.json
+│       └── EdgeFilters.json
+└── Theme/
+    ├── Light/
+    │   └── Theme.json
+    └── Dark/
+        └── Theme.json
+```
+
 This is fully representable with the current API.
 
 ---
@@ -1278,6 +1534,20 @@ builder.AddConfigurationSetStateFile(
 
 var host = builder.Build();
 await host.RunAsync();
+```
+
+Directory layout for this conservative startup-only example:
+
+```text
+AppSettings/
+├── Environment/
+│   └── Production/
+│       └── EnvironmentSettings.json
+└── Build/
+    ├── Stable/
+    │   └── BuildSettings.json
+    └── Candidate/
+        └── BuildSettings.json
 ```
 
 This also works with the current API.
@@ -1352,6 +1622,48 @@ builder.Services.AddHostedService<ConfigurationSetLogger>();
 
 var host = builder.Build();
 await host.RunAsync();
+```
+
+Directory layout for the mixed-policy target:
+
+```text
+AppSettings/
+├── Proxy/
+│   ├── Stable/
+│   │   ├── ProxySettings.json
+│   │   └── EdgeFilters.json
+│   ├── Next/
+│   │   ├── ProxySettings.json
+│   │   └── EdgeFilters.json
+│   └── Experimental/
+│       ├── ProxySettings.json
+│       └── EdgeFilters.json
+├── Theme/
+│   ├── Light/
+│   │   └── Theme.json
+│   └── Dark/
+│       └── Theme.json
+├── Environment/
+│   └── Production/
+│       └── EnvironmentSettings.json
+└── Build/
+    ├── Stable/
+    │   └── BuildSettings.json
+    └── Candidate/
+        └── BuildSettings.json
+```
+
+The corresponding future state file should make the policy visible beside the editable value:
+
+```json
+{
+  "Sets": {
+    "ProxySet":       { "Value": "Stable",     "AllowedValues": [ "Stable", "Next", "Experimental" ], "ApplyMode": "Runtime" },
+    "ThemeSet":       { "Value": "Light",      "AllowedValues": [ "Light", "Dark" ],                  "ApplyMode": "Runtime" },
+    "EnvironmentSet": { "Value": "Production", "AllowedValues": [ "Production" ],                     "ApplyMode": "StartupOnly" },
+    "BuildSet":       { "Value": "Stable",     "AllowedValues": [ "Stable", "Candidate" ],            "ApplyMode": "StartupOnly" }
+  }
+}
 ```
 
 Desired behavior:
