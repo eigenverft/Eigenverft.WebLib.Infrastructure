@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson;
+using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -101,6 +102,151 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
             builder.AddSwitchableJsonFile("settings", "A.json");
 
             Assert.AreEqual("enc:q7m2n4:aGVsbG8=", builder.Configuration["Value"]);
+        }
+
+        [TestMethod]
+        public void SourcePreparationTransformsInitialSnapshotWithoutMutatingSourceFile()
+        {
+            using var directory = new TemporaryDirectory();
+            var xor = new XorBase64JsonConfigurationSourcePreparation(0x5A, "*Secret*");
+            string encoded = xor.EncodeValue("alpha-secret");
+            directory.Write("A.json", $$"""
+                {
+                  "SecretValue": "{{encoded}}",
+                  "Ordinary": "plain"
+                }
+                """);
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            builder.AddSwitchableJsonFile(
+                "settings",
+                "A.json",
+                new SwitchableJsonRegistrationOptions
+                {
+                    SourcePreparations = new IJsonConfigurationSourcePreparation[] { xor },
+                });
+
+            Assert.AreEqual("alpha-secret", builder.Configuration["SecretValue"]);
+            Assert.AreEqual("plain", builder.Configuration["Ordinary"]);
+            StringAssert.Contains(File.ReadAllText(Path.Combine(directory.Path, "A.json")), encoded);
+        }
+
+        [TestMethod]
+        public void SourcePreparationTransformsSwitchedCandidateBeforePublication()
+        {
+            using var directory = new TemporaryDirectory();
+            var xor = new XorBase64JsonConfigurationSourcePreparation(0x33, "Secret");
+            string encodedA = xor.EncodeValue("stable-secret");
+            string encodedB = xor.EncodeValue("candidate-secret");
+            directory.Write("A.json", $$"""{ "Mode": "Stable", "Secret": "{{encodedA}}" }""");
+            directory.Write("B.json", $$"""{ "Mode": "Candidate", "Secret": "{{encodedB}}" }""");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            builder.AddSwitchableJsonFile(
+                "settings",
+                "A.json",
+                new SwitchableJsonRegistrationOptions
+                {
+                    SourcePreparations = new IJsonConfigurationSourcePreparation[] { xor },
+                });
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+
+            SwitchableJsonSwitchResult result = runtime.TrySwitch("B.json");
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("Candidate", builder.Configuration["Mode"]);
+            Assert.AreEqual("candidate-secret", builder.Configuration["Secret"]);
+            StringAssert.Contains(File.ReadAllText(Path.Combine(directory.Path, "B.json")), encodedB);
+        }
+
+        [TestMethod]
+        public void SourcePreparationCanWaitForConcurrentRuntimeStatusReadWithoutDeadlock()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", """{ "Mode": "Stable" }""");
+            directory.Write("B.json", """{ "Mode": "Candidate" }""");
+            var preparation = new ConcurrentRuntimeReadPreparation("B.json");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            builder.AddSwitchableJsonFile(
+                "settings",
+                "A.json",
+                new SwitchableJsonRegistrationOptions
+                {
+                    SourcePreparations = new IJsonConfigurationSourcePreparation[] { preparation },
+                });
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            preparation.Runtime = runtime;
+
+            SwitchableJsonSwitchResult result = runtime.TrySwitch("B.json");
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual(Path.Combine(directory.Path, "A.json"), preparation.ObservedSourcePath);
+            Assert.AreEqual("Candidate", builder.Configuration["Mode"]);
+        }
+
+        [TestMethod]
+        public void RetainedPreparationValuesCannotMutatePublishedSwitchableSnapshot()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", """{ "Mode": "Stable" }""");
+            directory.Write("B.json", """{ "Mode": "Candidate" }""");
+            var preparation = new RetainingPreparation("B.json");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            builder.AddSwitchableJsonFile(
+                "settings",
+                "A.json",
+                new SwitchableJsonRegistrationOptions
+                {
+                    SourcePreparations = new IJsonConfigurationSourcePreparation[] { preparation },
+                });
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+
+            SwitchableJsonSwitchResult result = runtime.TrySwitch("B.json");
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("Candidate", builder.Configuration["Mode"]);
+
+            Assert.IsNotNull(preparation.RetainedValues);
+            preparation.RetainedValues["Mode"] = "Tampered";
+
+            Assert.AreEqual("Candidate", builder.Configuration["Mode"]);
+        }
+
+        [TestMethod]
+        public void SourcePreparationFailureRejectsCandidateAndKeepsLastKnownGoodSnapshot()
+        {
+            using var directory = new TemporaryDirectory();
+            var xor = new XorBase64JsonConfigurationSourcePreparation(0x17, "Secret");
+            directory.Write("A.json", $$"""{ "Mode": "Stable", "Secret": "{{xor.EncodeValue("stable-secret")}}" }""");
+            directory.Write("B.json", """{ "Mode": "Candidate", "Secret": "xor1:not-valid-base64!" }""");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            builder.AddSwitchableJsonFile(
+                "settings",
+                "A.json",
+                new SwitchableJsonRegistrationOptions
+                {
+                    SourcePreparations = new IJsonConfigurationSourcePreparation[] { xor },
+                });
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+
+            SwitchableJsonSwitchResult result = runtime.TrySwitch("B.json");
+
+            Assert.AreEqual(SwitchableJsonSwitchStatus.Rejected, result.Status);
+            Assert.AreEqual(SwitchableJsonFailureKind.SourcePreparationFailed, result.FailureKind);
+            Assert.IsInstanceOfType<JsonConfigurationSourcePreparationException>(result.Exception);
+            Assert.AreEqual("Stable", builder.Configuration["Mode"]);
+            Assert.AreEqual("stable-secret", builder.Configuration["Secret"]);
+            StringAssert.EndsWith(runtime.CurrentSourcePath, "A.json");
         }
 
         [TestMethod]
@@ -1429,6 +1575,60 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
                 ContentRootPath = contentRootPath,
                 DisableDefaults = true,
             });
+        }
+
+        private sealed class RetainingPreparation : IJsonConfigurationSourcePreparation
+        {
+            private readonly string _triggerFileName;
+
+            public RetainingPreparation(string triggerFileName)
+            {
+                _triggerFileName = triggerFileName;
+            }
+
+            public IDictionary<string, string?>? RetainedValues { get; private set; }
+
+            public void Prepare(JsonConfigurationSourcePreparationContext context)
+            {
+                if (string.Equals(
+                        Path.GetFileName(context.SourcePath),
+                        _triggerFileName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    RetainedValues = context.Values;
+                }
+            }
+        }
+
+        private sealed class ConcurrentRuntimeReadPreparation : IJsonConfigurationSourcePreparation
+        {
+            private readonly string _triggerFileName;
+
+            public ConcurrentRuntimeReadPreparation(string triggerFileName)
+            {
+                _triggerFileName = triggerFileName;
+            }
+
+            public ISwitchableJsonConfiguration? Runtime { get; set; }
+
+            public string? ObservedSourcePath { get; private set; }
+
+            public void Prepare(JsonConfigurationSourcePreparationContext context)
+            {
+                if (Runtime is null ||
+                    !string.Equals(Path.GetFileName(context.SourcePath), _triggerFileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                Task<string> read = Task.Run(() => Runtime.CurrentSourcePath);
+                if (!read.Wait(TimeSpan.FromSeconds(2)))
+                {
+                    throw new TimeoutException("Concurrent runtime status read was blocked by source preparation.");
+                }
+
+                ObservedSourcePath = read.Result;
+            }
         }
 
         private sealed class TestSettings

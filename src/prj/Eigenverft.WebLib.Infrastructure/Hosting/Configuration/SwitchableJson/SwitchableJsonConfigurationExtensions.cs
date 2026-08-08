@@ -54,14 +54,32 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             int reloadDelayMilliseconds = 250,
             SwitchableJsonRuntimeFailurePolicy runtimeFailurePolicy = SwitchableJsonRuntimeFailurePolicy.KeepLastKnownGood)
         {
+            return builder.AddSwitchableJsonFile(
+                name,
+                initialPath,
+                new SwitchableJsonRegistrationOptions
+                {
+                    Optional = optional,
+                    ReloadOnChange = reloadOnChange,
+                    ReloadDelayMilliseconds = reloadDelayMilliseconds,
+                    RuntimeFailurePolicy = runtimeFailurePolicy,
+                });
+        }
+
+        /// <summary>
+        /// Adds one switchable JSON source with the complete registration options, including ordered candidate source preparations.
+        /// </summary>
+        public static IHostApplicationBuilder AddSwitchableJsonFile(
+            this IHostApplicationBuilder builder,
+            string name,
+            string initialPath,
+            SwitchableJsonRegistrationOptions options)
+        {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
             ArgumentException.ThrowIfNullOrWhiteSpace(initialPath);
-
-            if (reloadDelayMilliseconds < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(reloadDelayMilliseconds));
-            }
+            ArgumentNullException.ThrowIfNull(options);
+            options.Validate();
 
             if (builder.Services.Any(descriptor =>
                     descriptor.ServiceType == typeof(ISwitchableJsonConfiguration) &&
@@ -76,25 +94,19 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 name,
                 builder.Environment.ContentRootPath,
                 initialPath,
-                optional,
-                reloadOnChange,
-                reloadDelayMilliseconds,
-                runtimeFailurePolicy);
+                options.Optional,
+                options.ReloadOnChange,
+                options.ReloadDelayMilliseconds,
+                options.RuntimeFailurePolicy,
+                options.SourcePreparations);
 
             IConfigurationBuilder configurationBuilder = builder.Configuration;
             var source = new SwitchableJsonConfigurationSource(runtime);
 
-            // ConfigurationManager inserts a source before Build/Load. If initial loading fails, remove the inserted source so the
-            // registration remains all-or-nothing. Remove() can rebuild the remaining provider stack; that is safe because every
-            // switchable source now follows IConfigurationSource ownership and returns a fresh provider instance from Build().
             try
             {
                 configurationBuilder.Add(source);
 
-                // Keyed DI is used instead of a custom registry so multiple independent sources remain addressable through the
-                // standard Microsoft container. The runtime handle survives framework-driven concrete-provider rebuilds.
-                // Register through a factory so the DI container owns and disposes the stable runtime handle. Concrete
-                // IConfigurationProvider instances are framework-owned and may be replaced/removed independently.
                 builder.Services.AddKeyedSingleton<ISwitchableJsonConfiguration>(
                     name,
                     (_, _) => runtime);

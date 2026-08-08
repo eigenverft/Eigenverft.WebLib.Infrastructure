@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.ExceptionServices;
+using System.Linq;
+
+using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings;
 
 using Microsoft.Extensions.Configuration.Json;
 
@@ -29,6 +32,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         private readonly bool _reloadOnChange;
         private readonly int _reloadDelayMilliseconds;
         private readonly SwitchableJsonRuntimeFailurePolicy _runtimeFailurePolicy;
+        private readonly IReadOnlyList<IJsonConfigurationSourcePreparation> _sourcePreparations;
         private string _currentSourcePath;
 
         // Watcher generation protects active callbacks after watcher replacement. State version is broader: it changes whenever
@@ -53,11 +57,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             bool optionalInitialSource,
             bool reloadOnChange,
             int reloadDelayMilliseconds,
-            SwitchableJsonRuntimeFailurePolicy runtimeFailurePolicy)
+            SwitchableJsonRuntimeFailurePolicy runtimeFailurePolicy,
+            IReadOnlyList<IJsonConfigurationSourcePreparation> sourcePreparations)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
             ArgumentException.ThrowIfNullOrWhiteSpace(contentRootPath);
             ArgumentException.ThrowIfNullOrWhiteSpace(initialSourcePath);
+            ArgumentNullException.ThrowIfNull(sourcePreparations);
 
             if (reloadDelayMilliseconds < 0)
             {
@@ -76,6 +82,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             _reloadOnChange = reloadOnChange;
             _reloadDelayMilliseconds = reloadDelayMilliseconds;
             _runtimeFailurePolicy = runtimeFailurePolicy;
+            _sourcePreparations = sourcePreparations.ToArray();
         }
 
         public string Name { get; }
@@ -99,6 +106,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
             string requestedSourcePath = NormalizeSourcePath(sourcePath);
 
+            if (_sourcePreparations.Count != 0)
+            {
+                return PrepareSwitchWithSourcePreparations(requestedSourcePath, ownerName: null);
+            }
+
             lock (_operationGate)
             {
                 ThrowIfDisposed();
@@ -114,35 +126,36 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             string requestedSourcePath = NormalizeSourcePath(sourcePath);
             CommitOutcome outcome;
 
-            // The one-step API deliberately keeps Prepare+Commit under one operation lock. Public preparations release this lock
-            // between phases so an orchestrator can coordinate multiple providers, but direct TrySwitch should retain its original
-            // serialized semantics and must not become stale merely because another direct switch interleaved between the phases.
-            lock (_operationGate)
+            if (_sourcePreparations.Count == 0)
             {
-                ThrowIfDisposed();
-
-                if (_sourceSelectionOwner is not null)
+                // The original no-preparation path deliberately keeps Prepare+Commit under one operation lock so direct manual
+                // switches retain their serialized semantics.
+                lock (_operationGate)
                 {
-                    outcome = CreateSourceSelectionOwnedOutcomeLocked(requestedSourcePath);
+                    ThrowIfDisposed();
+
+                    if (_sourceSelectionOwner is not null)
+                    {
+                        outcome = CreateSourceSelectionOwnedOutcomeLocked(requestedSourcePath);
+                    }
+                    else
+                    {
+                        SwitchableJsonSwitchPreparation preparation = PrepareSwitchLocked(requestedSourcePath);
+                        outcome = CommitDirectPreparationLocked(preparation);
+                    }
                 }
-                else
+            }
+            else
+            {
+                // User-provided preparation code must never execute under the runtime state lock. The captured preparation can
+                // therefore become stale if another runtime operation commits while the external preparation code is running.
+                SwitchableJsonSwitchPreparation preparation =
+                    PrepareSwitchWithSourcePreparations(requestedSourcePath, ownerName: null);
+
+                lock (_operationGate)
                 {
-                    SwitchableJsonSwitchPreparation preparation = PrepareSwitchLocked(requestedSourcePath);
-
-                    if (!preparation.TryClaimForDirectSwitch())
-                    {
-                        throw new InvalidOperationException("Internal switch preparation was unexpectedly already consumed.");
-                    }
-
-                    try
-                    {
-                        outcome = CommitPreparationLocked(preparation, allowRejectedPreparation: true);
-                    }
-                    catch
-                    {
-                        AbortPreparationResources(preparation);
-                        throw;
-                    }
+                    ThrowIfDisposed();
+                    outcome = CommitDirectPreparationLocked(preparation);
                 }
             }
 
@@ -225,6 +238,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             ArgumentException.ThrowIfNullOrWhiteSpace(sourcePath);
             string requestedSourcePath = NormalizeSourcePath(sourcePath);
 
+            if (_sourcePreparations.Count != 0)
+            {
+                return PrepareSwitchWithSourcePreparations(requestedSourcePath, ownerName);
+            }
+
             lock (_operationGate)
             {
                 ThrowIfDisposed();
@@ -288,6 +306,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         {
             ArgumentNullException.ThrowIfNull(provider);
 
+            if (_sourcePreparations.Count != 0)
+            {
+                LoadProviderWithSourcePreparations(provider);
+                return;
+            }
+
             lock (_operationGate)
             {
                 ThrowIfDisposed();
@@ -326,6 +350,68 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 {
                     _watcherGeneration = preparedGeneration;
                     _activeWatcher = preparedWatcher;
+                }
+            }
+        }
+
+        private void LoadProviderWithSourcePreparations(SwitchableJsonConfigurationProvider provider)
+        {
+            while (true)
+            {
+                string sourcePath;
+                long preparedStateVersion;
+                bool needsWatcher;
+                long preparedGeneration;
+
+                lock (_operationGate)
+                {
+                    ThrowIfDisposed();
+                    sourcePath = _currentSourcePath;
+                    preparedStateVersion = _stateVersion;
+                    needsWatcher = _reloadOnChange && _activeWatcher is null;
+                    preparedGeneration = needsWatcher ? _watcherGeneration + 1 : _watcherGeneration;
+                }
+
+                ActiveSourceWatcher? preparedWatcher = null;
+                try
+                {
+                    if (needsWatcher)
+                    {
+                        preparedWatcher = CreateActiveWatcher(sourcePath, preparedGeneration);
+                    }
+
+                    IDictionary<string, string?> data = LoadFrameworkPreparedData(sourcePath);
+                    bool retry;
+
+                    lock (_operationGate)
+                    {
+                        ThrowIfDisposed();
+                        retry = preparedStateVersion != _stateVersion ||
+                            !SourcePathsEqual(sourcePath, _currentSourcePath);
+
+                        if (!retry)
+                        {
+                            provider.ReplaceData(data);
+                            _activeProvider = provider;
+                            _stateVersion++;
+
+                            if (preparedWatcher is not null)
+                            {
+                                _watcherGeneration = preparedGeneration;
+                                _activeWatcher = preparedWatcher;
+                                preparedWatcher = null;
+                            }
+                        }
+                    }
+
+                    if (!retry)
+                    {
+                        return;
+                    }
+                }
+                finally
+                {
+                    preparedWatcher?.Dispose();
                 }
             }
         }
@@ -433,6 +519,162 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 exception);
 
             return new CommitOutcome(rejected, ProviderToReload: null);
+        }
+
+        private SwitchableJsonSwitchPreparation PrepareSwitchWithSourcePreparations(
+            string requestedSourcePath,
+            string? ownerName)
+        {
+            SwitchableJsonConfigurationProvider provider;
+            string previousSourcePath;
+            long preparedStateVersion;
+            long preparedWatcherGeneration;
+
+            lock (_operationGate)
+            {
+                ThrowIfDisposed();
+
+                if (ownerName is null)
+                {
+                    if (_sourceSelectionOwner is not null)
+                    {
+                        return CreateSourceSelectionOwnedPreparationLocked(requestedSourcePath);
+                    }
+                }
+                else if (!string.Equals(_sourceSelectionOwner, ownerName, StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"Switchable JSON configuration '{Name}' source selection is not owned by '{ownerName}'.");
+                }
+
+                provider = GetActiveProvider();
+                previousSourcePath = _currentSourcePath;
+                preparedStateVersion = _stateVersion;
+                preparedWatcherGeneration = _watcherGeneration + 1;
+
+                if (SourcePathsEqual(previousSourcePath, requestedSourcePath))
+                {
+                    return CreatePreparation(
+                        SwitchableJsonPreparationStatus.AlreadyCurrent,
+                        previousSourcePath,
+                        requestedSourcePath,
+                        configurationChanged: false,
+                        SwitchableJsonFailureKind.None,
+                        exception: null,
+                        preparedStateVersion,
+                        preparedWatcherGeneration,
+                        provider,
+                        candidateData: null,
+                        preparedWatcher: null,
+                        watcherRelay: null);
+                }
+            }
+
+            ActiveSourceWatcher? preparedWatcher = null;
+            PreparedSourceWatcherRelay? watcherRelay = null;
+
+            try
+            {
+                if (_reloadOnChange)
+                {
+                    watcherRelay = new PreparedSourceWatcherRelay(HandleActiveSourceChanged);
+                    preparedWatcher = ActiveSourceWatcher.Create(
+                        requestedSourcePath,
+                        preparedWatcherGeneration,
+                        _reloadDelayMilliseconds,
+                        watcherRelay.OnReload,
+                        watcherRelay.ObserveSourceChanged);
+                }
+
+                IDictionary<string, string?> candidateData = LoadPreparedSnapshot(requestedSourcePath);
+                bool stale;
+                bool configurationChanged = false;
+
+                lock (_operationGate)
+                {
+                    ThrowIfDisposed();
+                    stale = preparedStateVersion != _stateVersion ||
+                        !ReferenceEquals(provider, _activeProvider) ||
+                        !SourcePathsEqual(previousSourcePath, _currentSourcePath);
+
+                    if (!stale)
+                    {
+                        configurationChanged = !provider.IsDataEqual(candidateData);
+                    }
+                }
+
+                if (stale)
+                {
+                    watcherRelay?.Close();
+                    preparedWatcher?.Dispose();
+                    var exception = new InvalidOperationException(
+                        "The active provider state changed while external source preparation was running.");
+                    return CreatePreparation(
+                        SwitchableJsonPreparationStatus.Rejected,
+                        previousSourcePath,
+                        requestedSourcePath,
+                        configurationChanged: false,
+                        SwitchableJsonFailureKind.StalePreparation,
+                        exception,
+                        preparedStateVersion,
+                        preparedWatcherGeneration,
+                        provider,
+                        candidateData: null,
+                        preparedWatcher: null,
+                        watcherRelay: null);
+                }
+
+                return CreatePreparation(
+                    SwitchableJsonPreparationStatus.Prepared,
+                    previousSourcePath,
+                    requestedSourcePath,
+                    configurationChanged,
+                    SwitchableJsonFailureKind.None,
+                    exception: null,
+                    preparedStateVersion,
+                    preparedWatcherGeneration,
+                    provider,
+                    candidateData,
+                    preparedWatcher,
+                    watcherRelay);
+            }
+            catch (Exception exception) when (IsCandidateLoadFailure(exception))
+            {
+                watcherRelay?.Close();
+                preparedWatcher?.Dispose();
+
+                return CreatePreparation(
+                    SwitchableJsonPreparationStatus.Rejected,
+                    previousSourcePath,
+                    requestedSourcePath,
+                    configurationChanged: false,
+                    ClassifyFailure(exception),
+                    exception,
+                    preparedStateVersion,
+                    preparedWatcherGeneration,
+                    provider,
+                    candidateData: null,
+                    preparedWatcher: null,
+                    watcherRelay: null);
+            }
+        }
+
+        private CommitOutcome CommitDirectPreparationLocked(SwitchableJsonSwitchPreparation preparation)
+        {
+            if (!preparation.TryClaimForDirectSwitch())
+            {
+                throw new InvalidOperationException("Internal switch preparation was unexpectedly already consumed.");
+            }
+
+            try
+            {
+                return CommitPreparationLocked(preparation, allowRejectedPreparation: true);
+            }
+            catch
+            {
+                AbortPreparationResources(preparation);
+                throw;
+            }
         }
 
         private SwitchableJsonSwitchPreparation PrepareSwitchLocked(string requestedSourcePath)
@@ -633,6 +875,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
 
         private void HandleActiveSourceChanged(long watcherGeneration, string watcherSourcePath)
         {
+            if (_sourcePreparations.Count != 0)
+            {
+                HandleActiveSourceChangedWithSourcePreparations(watcherGeneration, watcherSourcePath);
+                return;
+            }
+
             SwitchableJsonConfigurationEventArgs? lifecycleEvent = null;
             SwitchableJsonConfigurationProvider? providerToReload = null;
 
@@ -696,6 +944,97 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             }
         }
 
+        private void HandleActiveSourceChangedWithSourcePreparations(long watcherGeneration, string watcherSourcePath)
+        {
+            string currentSourcePath;
+            SwitchableJsonConfigurationProvider provider;
+            long preparedStateVersion;
+
+            lock (_operationGate)
+            {
+                if (_disposed ||
+                    watcherGeneration != _watcherGeneration ||
+                    !SourcePathsEqual(watcherSourcePath, _currentSourcePath) ||
+                    _activeProvider is null)
+                {
+                    return;
+                }
+
+                currentSourcePath = _currentSourcePath;
+                provider = _activeProvider;
+                preparedStateVersion = _stateVersion;
+            }
+
+            IDictionary<string, string?>? candidateData = null;
+            Exception? failure = null;
+
+            try
+            {
+                candidateData = LoadPreparedSnapshot(currentSourcePath);
+            }
+            catch (Exception exception) when (IsCandidateLoadFailure(exception))
+            {
+                failure = exception;
+            }
+
+            SwitchableJsonConfigurationEventArgs? lifecycleEvent = null;
+            SwitchableJsonConfigurationProvider? providerToReload = null;
+
+            lock (_operationGate)
+            {
+                if (_disposed ||
+                    watcherGeneration != _watcherGeneration ||
+                    preparedStateVersion != _stateVersion ||
+                    !SourcePathsEqual(currentSourcePath, _currentSourcePath) ||
+                    !ReferenceEquals(provider, _activeProvider))
+                {
+                    return;
+                }
+
+                if (failure is null)
+                {
+                    bool configurationChanged = provider.CommitCandidate(candidateData!);
+                    if (configurationChanged)
+                    {
+                        _stateVersion++;
+                        providerToReload = provider;
+                    }
+
+                    lifecycleEvent = CreateLifecycleEvent(
+                        SwitchableJsonConfigurationEventKind.ActiveSourceReloaded,
+                        currentSourcePath,
+                        currentSourcePath,
+                        currentSourcePath,
+                        sourceChanged: false,
+                        configurationChanged,
+                        SwitchableJsonFailureKind.None,
+                        exception: null);
+                }
+                else
+                {
+                    lifecycleEvent = CreateLifecycleEvent(
+                        SwitchableJsonConfigurationEventKind.ActiveSourceReloadRejected,
+                        currentSourcePath,
+                        currentSourcePath,
+                        currentSourcePath,
+                        sourceChanged: false,
+                        configurationChanged: false,
+                        ClassifyFailure(failure),
+                        failure);
+                }
+            }
+
+            if (providerToReload is not null)
+            {
+                PublishConfigurationReload(providerToReload);
+            }
+
+            if (lifecycleEvent is not null)
+            {
+                PublishLifecycle(lifecycleEvent);
+            }
+        }
+
         private IDictionary<string, string?> LoadFrameworkData(string sourcePath)
         {
             try
@@ -708,6 +1047,27 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 // Runtime watcher failures use LKG instead and therefore do not route through this method.
                 return new Dictionary<string, string?>(ConfigurationKeyComparer);
             }
+        }
+
+        private IDictionary<string, string?> LoadFrameworkPreparedData(string sourcePath)
+        {
+            try
+            {
+                return LoadPreparedSnapshot(sourcePath);
+            }
+            catch (Exception exception) when (_optionalInitialSource && IsSourceNotFound(exception))
+            {
+                var data = new Dictionary<string, string?>(ConfigurationKeyComparer);
+                JsonConfigurationSourcePreparationPipeline.Apply(sourcePath, data, _sourcePreparations);
+                return data;
+            }
+        }
+
+        private IDictionary<string, string?> LoadPreparedSnapshot(string sourcePath)
+        {
+            IDictionary<string, string?> data = JsonConfigurationSnapshotLoader.Load(sourcePath);
+            JsonConfigurationSourcePreparationPipeline.Apply(sourcePath, data, _sourcePreparations);
+            return new Dictionary<string, string?>(data, ConfigurationKeyComparer);
         }
 
         private ActiveSourceWatcher? CreateActiveWatcher(string sourcePath, long generation)
@@ -915,7 +1275,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 DirectoryNotFoundException or
                 FormatException or
                 UnauthorizedAccessException or
-                IOException;
+                IOException or
+                JsonConfigurationSourcePreparationException;
         }
 
         private static bool IsSourceNotFound(Exception exception)
@@ -932,6 +1293,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 FormatException => SwitchableJsonFailureKind.InvalidJson,
                 UnauthorizedAccessException => SwitchableJsonFailureKind.AccessDenied,
                 IOException => SwitchableJsonFailureKind.IoError,
+                JsonConfigurationSourcePreparationException => SwitchableJsonFailureKind.SourcePreparationFailed,
                 _ => throw new ArgumentOutOfRangeException(nameof(exception)),
             };
         }

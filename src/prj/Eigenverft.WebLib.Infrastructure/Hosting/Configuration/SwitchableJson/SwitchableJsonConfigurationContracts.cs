@@ -75,6 +75,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
         /// Manual source selection is disabled because a higher-level coordinator owns source selection for this runtime.
         /// </summary>
         SourceSelectionOwned = 6,
+
+        /// <summary>A registered JSON source preparation step rejected or failed while preparing the isolated candidate snapshot.</summary>
+        SourcePreparationFailed = 7,
     }
 
     /// <summary>Identifies an observable provider/source lifecycle outcome.</summary>

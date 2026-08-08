@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 
 using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSets;
+using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings;
 using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson;
 
 using Microsoft.Extensions.Configuration;
@@ -688,6 +689,44 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
 
             Assert.AreEqual(2, resolverCalls);
             Assert.AreEqual("Next", builder.Configuration["Mode"]);
+        }
+
+        [TestMethod]
+        public void ConfigurationSetSwitchAppliesParticipantSourcePreparationsBeforePublishingCandidate()
+        {
+            using var directory = new TemporaryDirectory();
+            var xor = new XorBase64JsonConfigurationSourcePreparation(0x41, "Secret");
+            directory.Write(
+                Path.Combine("Routing", "Stable", "Settings.json"),
+                $$"""{ "Mode": "Stable", "Secret": "{{xor.EncodeValue("stable-secret")}}" }""");
+            directory.Write(
+                Path.Combine("Routing", "Candidate", "Settings.json"),
+                $$"""{ "Mode": "Candidate", "Secret": "{{xor.EncodeValue("candidate-secret")}}" }""");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            builder
+                .AddConfigurationSet("RoutingSet", "Stable", "Candidate")
+                .AddSwitchableJson(
+                    "Routing",
+                    new SwitchableJsonRegistrationOptions
+                    {
+                        SourcePreparations = new IJsonConfigurationSourcePreparation[] { xor },
+                    },
+                    "Settings.json");
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("RoutingSet");
+
+            Assert.AreEqual("stable-secret", builder.Configuration["Secret"]);
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Candidate");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.Status);
+            Assert.IsTrue(result.IsConsistent);
+            Assert.AreEqual("Candidate", coordinator.ActiveValue);
+            Assert.AreEqual("Candidate", builder.Configuration["Mode"]);
+            Assert.AreEqual("candidate-secret", builder.Configuration["Secret"]);
         }
 
         [TestMethod]

@@ -178,22 +178,41 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             int reloadDelayMilliseconds = 250,
             SwitchableJsonRuntimeFailurePolicy runtimeFailurePolicy = SwitchableJsonRuntimeFailurePolicy.KeepLastKnownGood)
         {
+            return builder.AddSwitchableJsonToConfigurationSet(
+                setName,
+                switchableName,
+                rootPath,
+                fileName,
+                new SwitchableJsonRegistrationOptions
+                {
+                    Optional = optional,
+                    ReloadOnChange = reloadOnChange,
+                    ReloadDelayMilliseconds = reloadDelayMilliseconds,
+                    RuntimeFailurePolicy = runtimeFailurePolicy,
+                });
+        }
+
+        /// <summary>Registers and binds one switchable JSON source using the complete source options.</summary>
+        public static IHostApplicationBuilder AddSwitchableJsonToConfigurationSet(
+            this IHostApplicationBuilder builder,
+            string setName,
+            string switchableName,
+            string rootPath,
+            string fileName,
+            SwitchableJsonRegistrationOptions options)
+        {
             ArgumentNullException.ThrowIfNull(builder);
             ArgumentException.ThrowIfNullOrWhiteSpace(setName);
             ArgumentException.ThrowIfNullOrWhiteSpace(switchableName);
             ArgumentException.ThrowIfNullOrWhiteSpace(rootPath);
             ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
+            ArgumentNullException.ThrowIfNull(options);
+            options.Validate();
 
             IConfigurationSetCoordinator coordinator = GetRequiredCoordinator(builder, setName);
             string initialPath = Path.Combine(rootPath, coordinator.ActiveValue, fileName);
 
-            builder.AddSwitchableJsonFile(
-                switchableName,
-                initialPath,
-                optional,
-                reloadOnChange,
-                reloadDelayMilliseconds,
-                runtimeFailurePolicy);
+            builder.AddSwitchableJsonFile(switchableName, initialPath, options);
 
             try
             {
@@ -308,10 +327,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                         switchableName,
                         rootPath,
                         fileName,
-                        options.Optional,
-                        options.ReloadOnChange,
-                        options.ReloadDelayMilliseconds,
-                        options.RuntimeFailurePolicy);
+                        options);
                     registeredNames.Add(switchableName);
                 }
 

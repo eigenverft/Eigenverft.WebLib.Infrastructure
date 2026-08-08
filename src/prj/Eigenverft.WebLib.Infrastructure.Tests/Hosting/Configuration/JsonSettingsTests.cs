@@ -45,6 +45,88 @@ public sealed class JsonSettingsTests
     }
 
     [TestMethod]
+    public void PreparedEnvironmentJsonSettingsApplyPreparationAndEnvironmentPrecedenceWithoutMutatingFiles()
+    {
+        using var directory = new TemporaryDirectory();
+        var xor = new XorBase64JsonConfigurationSourcePreparation(0x2D, "*Secret*");
+        string commonEncoded = xor.EncodeValue("common-secret");
+        string productionEncoded = xor.EncodeValue("production-secret");
+        string commonPath = directory.Write("prepared.json", $$"""
+            {
+              "Shared": "common",
+              "SecretValue": "{{commonEncoded}}"
+            }
+            """);
+        string productionPath = directory.Write("prepared.Production.json", $$"""
+            {
+              "Shared": "production",
+              "SecretValue": "{{productionEncoded}}"
+            }
+            """);
+        WebApplicationBuilder builder = CreateBuilder(directory.Path, "Production");
+        builder.Configuration.Sources.Clear();
+
+        builder.AddPreparedEnvironmentJsonSettings(
+            Path.GetFileName(commonPath),
+            xor,
+            reloadOnChange: false);
+
+        Assert.AreEqual("production", builder.Configuration["Shared"]);
+        Assert.AreEqual("production-secret", builder.Configuration["SecretValue"]);
+        StringAssert.Contains(File.ReadAllText(commonPath), commonEncoded);
+        StringAssert.Contains(File.ReadAllText(productionPath), productionEncoded);
+    }
+
+    [TestMethod]
+    public void PreparedJsonReloadFailureKeepsPreviouslyPublishedSnapshot()
+    {
+        using var directory = new TemporaryDirectory();
+        var xor = new XorBase64JsonConfigurationSourcePreparation(0x6C, "Secret");
+        string settingsPath = directory.Write(
+            "prepared-reload.json",
+            $$"""{ "Mode": "Stable", "Secret": "{{xor.EncodeValue("stable-secret")}}" }""");
+        IConfigurationRoot configuration = new ConfigurationBuilder()
+            .AddPreparedJsonFile(
+                settingsPath,
+                new IJsonConfigurationSourcePreparation[] { xor },
+                reloadOnChange: false)
+            .Build();
+
+        Assert.AreEqual("Stable", configuration["Mode"]);
+        Assert.AreEqual("stable-secret", configuration["Secret"]);
+
+        File.WriteAllText(
+            settingsPath,
+            """{ "Mode": "Broken", "Secret": "xor1:not-valid-base64!" }""");
+
+        InvalidDataException reloadException = Assert.ThrowsExactly<InvalidDataException>(() => configuration.Reload());
+        Assert.IsInstanceOfType<JsonConfigurationSourcePreparationException>(reloadException.InnerException);
+
+        Assert.AreEqual("Stable", configuration["Mode"]);
+        Assert.AreEqual("stable-secret", configuration["Secret"]);
+    }
+
+    [TestMethod]
+    public void RetainedPreparationValuesCannotMutatePublishedPreparedJsonSnapshot()
+    {
+        using var directory = new TemporaryDirectory();
+        string settingsPath = directory.Write("prepared-retained.json", """{ "Mode": "Stable" }""");
+        var preparation = new RetainingPreparation();
+        IConfigurationRoot configuration = new ConfigurationBuilder()
+            .AddPreparedJsonFile(
+                settingsPath,
+                new IJsonConfigurationSourcePreparation[] { preparation })
+            .Build();
+
+        Assert.AreEqual("Stable", configuration["Mode"]);
+        Assert.IsNotNull(preparation.RetainedValues);
+
+        preparation.RetainedValues["Mode"] = "Tampered";
+
+        Assert.AreEqual("Stable", configuration["Mode"]);
+    }
+
+    [TestMethod]
     public void MissingRequiredEnvironmentJsonSettingsAreRejected()
     {
         using var directory = new TemporaryDirectory();
@@ -788,6 +870,16 @@ public sealed class JsonSettingsTests
 
         Assert.AreEqual("secret", configuration["Password"]);
         StringAssert.StartsWith(encodedValue, "enc:k4v8s2:");
+    }
+
+    private sealed class RetainingPreparation : IJsonConfigurationSourcePreparation
+    {
+        public IDictionary<string, string?>? RetainedValues { get; private set; }
+
+        public void Prepare(JsonConfigurationSourcePreparationContext context)
+        {
+            RetainedValues = context.Values;
+        }
     }
 
     private static WebApplicationBuilder CreateBuilder(string contentRootPath, string environmentName)
