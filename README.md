@@ -267,9 +267,7 @@ SNI primitives. Configuration Sets provide named configuration profiles on top o
 normal .NET `IConfiguration`, including multi-file coordination, runtime events,
 self-describing `ConfigurationSets.json` state, and arbitrary `value => sourcePath`
 mapping when a directory convention is not appropriate. See
-[`docs/configuration-sets.md`](docs/configuration-sets.md) for the technical contract and
-[`docs/configuration-sets-use-cases.md`](docs/configuration-sets-use-cases.md) for
-product-oriented examples.
+[`docs/configuration-sets.md`](docs/configuration-sets.md) for the complete technical contract, control-plane guidance, and practical use cases.
 
 ## Related repositories
 
