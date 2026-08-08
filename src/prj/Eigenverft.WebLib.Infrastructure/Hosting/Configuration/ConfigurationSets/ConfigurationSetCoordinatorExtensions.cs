@@ -74,6 +74,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             return false;
         }
 
+        internal static IReadOnlyList<IConfigurationSetCoordinator> GetRegisteredCoordinatorSnapshot(
+            IHostApplicationBuilder builder)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            return new List<IConfigurationSetCoordinator>(GetRegisteredCoordinators(builder).Values).AsReadOnly();
+        }
+
         private static Dictionary<string, IConfigurationSetCoordinator> GetRegisteredCoordinators(
             IHostApplicationBuilder builder)
         {
