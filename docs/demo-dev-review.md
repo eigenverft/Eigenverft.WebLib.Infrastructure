@@ -28,6 +28,33 @@ A set value can be purely logical, or it can coordinate one or more switchable J
 
 The coordinator itself does not know what `Stable`, `Production`, `Dark`, or `Candidate` mean.
 
+### How the examples should be read
+
+Where a state store is used, three different artifacts are involved and should be shown together:
+
+```text
+Program.Main
+    = defines set names, allowed values and bound JSON participants
+
+ConfigurationSets.json
+    = central desired-set selection
+    = lives in the host content root when a relative path is used
+
+AppSettings/<Set>/<Value>/...
+    = the actual configuration data selected by the set
+```
+
+A useful visual pattern is therefore:
+
+```text
+ContentRoot/
+├── ConfigurationSets.json      <- central set selector, when StateStore is used
+└── AppSettings/
+    └── ...                     <- actual lane-specific configuration
+```
+
+If an example does **not** call `AddConfigurationSetStateFile(...)`, there is no central `ConfigurationSets.json` for that example. The coordinator can still be selected from code or by an explicit runtime consumer.
+
 ---
 
 ## 2. Important result of this review: a set with one value is valid
@@ -59,6 +86,27 @@ AppSettings/
 ```
 
 There is no possible value switch yet because only `Stable` is allowed.
+
+If this one-value set is also registered with a state store:
+
+```csharp
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
+```
+
+the central file is still valid and self-describing:
+
+```json
+{
+  "Sets": {
+    "ProxySet": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable" ]
+    }
+  }
+}
+```
+
+There is still nothing to switch to, but the set can later gain another allowed value without changing the overall control-file model.
 
 The set still provides:
 
@@ -310,7 +358,7 @@ builder.AddConfigurationSetStateFile(
     "ConfigurationSets.json");
 ```
 
-The store materializes a file similar to:
+For the relative path above, the store materializes `ContentRoot/ConfigurationSets.json` similar to:
 
 ```json
 {
@@ -965,19 +1013,37 @@ var host = builder.Build();
 await host.RunAsync();
 ```
 
+Central `ConfigurationSets.json` in the content root:
+
+```json
+{
+  "Sets": {
+    "ThemeSet": {
+      "Value": "Light",
+      "AllowedValues": [ "Light", "Dark", "HighContrast" ]
+    }
+  }
+}
+```
+
+`Value` is the operator-controlled selector. `AllowedValues` is materialized descriptive metadata. With the current API, runtime watching comes from `AddConfigurationSetStateFile(...)`; it is **not yet visible as a per-set field in this JSON**.
+
 Layout:
 
 ```text
-AppSettings/Theme/
-├── Light/
-│   └── Theme.json
-├── Dark/
-│   └── Theme.json
-└── HighContrast/
-    └── Theme.json
+ContentRoot/
+├── ConfigurationSets.json
+└── AppSettings/
+    └── Theme/
+        ├── Light/
+        │   └── Theme.json
+        ├── Dark/
+        │   └── Theme.json
+        └── HighContrast/
+            └── Theme.json
 ```
 
-Possible file:
+Example lane file `AppSettings/Theme/Light/Theme.json`:
 
 ```json
 {
@@ -1038,17 +1104,34 @@ builder.AddConfigurationSetStateFile(
     "ConfigurationSets.json");
 ```
 
+Central `ConfigurationSets.json`:
+
+```json
+{
+  "Sets": {
+    "FeatureSet": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable", "Beta", "Lab" ]
+    }
+  }
+}
+```
+
+Changing only `Value` to `Beta` selects the entire `Beta/Features.json` lane. The Microsoft feature flags inside that file are still evaluated by Microsoft.FeatureManagement.
+
 Directory layout:
 
 ```text
-AppSettings/
-└── Features/
-    ├── Stable/
-    │   └── Features.json
-    ├── Beta/
-    │   └── Features.json
-    └── Lab/
-        └── Features.json
+ContentRoot/
+├── ConfigurationSets.json
+└── AppSettings/
+    └── Features/
+        ├── Stable/
+        │   └── Features.json
+        ├── Beta/
+        │   └── Features.json
+        └── Lab/
+            └── Features.json
 ```
 
 A `Stable/Features.json` can contain Microsoft's current `feature_management` schema:
@@ -1210,6 +1293,26 @@ builder.AddConfigurationSetStateFile(
     reloadOnChange: false);
 ```
 
+Central `ConfigurationSets.json` with the **current API**:
+
+```json
+{
+  "Sets": {
+    "BuildSet": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable", "Candidate" ]
+    },
+    "EnvironmentSet": {
+      "Value": "Development",
+      "AllowedValues": [ "Development", "Production" ]
+    }
+  }
+}
+```
+
+Important: an operator reading only this current JSON cannot see that changes are startup-only. That policy currently lives only in `reloadOnChange: false` in `Program.Main`. A future per-set `ApplyMode` should close exactly this visibility gap.
+
+
 A future mixed mode should allow these two sets to be startup-only while `ProxySet` remains runtime-switchable.
 
 ---
@@ -1232,23 +1335,47 @@ var proxySet = builder
         ]);
 ```
 
+To make this operationally selectable from the central file:
+
+```csharp
+builder.AddConfigurationSetStateFile("ConfigurationSets.json");
+```
+
+Central `ConfigurationSets.json`:
+
+```json
+{
+  "Sets": {
+    "ProxySet": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable", "Next", "Experimental" ]
+    }
+  }
+}
+```
+
+Changing only `Value` to `Next` or `Experimental` selects the matching directory for **all three bound files as one coordinated set operation**.
+
+
 Directory layout:
 
 ```text
-AppSettings/
-└── Proxy/
-    ├── Stable/
-    │   ├── ProxySettings.json
-    │   ├── EdgeFilters.json
-    │   └── Behaviors.json
-    ├── Next/
-    │   ├── ProxySettings.json
-    │   ├── EdgeFilters.json
-    │   └── Behaviors.json
-    └── Experimental/
-        ├── ProxySettings.json
-        ├── EdgeFilters.json
-        └── Behaviors.json
+ContentRoot/
+├── ConfigurationSets.json
+└── AppSettings/
+    └── Proxy/
+        ├── Stable/
+        │   ├── ProxySettings.json
+        │   ├── EdgeFilters.json
+        │   └── Behaviors.json
+        ├── Next/
+        │   ├── ProxySettings.json
+        │   ├── EdgeFilters.json
+        │   └── Behaviors.json
+        └── Experimental/
+            ├── ProxySettings.json
+            ├── EdgeFilters.json
+            └── Behaviors.json
 ```
 
 Possible operational meaning:
@@ -1477,25 +1604,47 @@ var host = builder.Build();
 await host.RunAsync();
 ```
 
+Central `ConfigurationSets.json`:
+
+```json
+{
+  "Sets": {
+    "ProxySet": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable", "Next", "Experimental" ]
+    },
+    "ThemeSet": {
+      "Value": "Light",
+      "AllowedValues": [ "Light", "Dark" ]
+    }
+  }
+}
+```
+
+Because this current example uses `reloadOnChange: true`, edits to either `Value` are applied at runtime. That runtime policy is global code configuration today and is not encoded per set in the JSON.
+
+
 Directory layout for this `Program.Main`:
 
 ```text
-AppSettings/
-├── Proxy/
-│   ├── Stable/
-│   │   ├── ProxySettings.json
-│   │   └── EdgeFilters.json
-│   ├── Next/
-│   │   ├── ProxySettings.json
-│   │   └── EdgeFilters.json
-│   └── Experimental/
-│       ├── ProxySettings.json
-│       └── EdgeFilters.json
-└── Theme/
-    ├── Light/
-    │   └── Theme.json
-    └── Dark/
-        └── Theme.json
+ContentRoot/
+├── ConfigurationSets.json
+└── AppSettings/
+    ├── Proxy/
+    │   ├── Stable/
+    │   │   ├── ProxySettings.json
+    │   │   └── EdgeFilters.json
+    │   ├── Next/
+    │   │   ├── ProxySettings.json
+    │   │   └── EdgeFilters.json
+    │   └── Experimental/
+    │       ├── ProxySettings.json
+    │       └── EdgeFilters.json
+    └── Theme/
+        ├── Light/
+        │   └── Theme.json
+        └── Dark/
+            └── Theme.json
 ```
 
 This is fully representable with the current API.
@@ -1536,18 +1685,40 @@ var host = builder.Build();
 await host.RunAsync();
 ```
 
+Central `ConfigurationSets.json`:
+
+```json
+{
+  "Sets": {
+    "EnvironmentSet": {
+      "Value": "Production",
+      "AllowedValues": [ "Production" ]
+    },
+    "BuildSet": {
+      "Value": "Stable",
+      "AllowedValues": [ "Stable", "Candidate" ]
+    }
+  }
+}
+```
+
+This current JSON still does not show `StartupOnly`; that behavior comes from the global `reloadOnChange: false` in code. This is the strongest concrete argument for materializing a future read-only per-set `ApplyMode` beside `AllowedValues`.
+
+
 Directory layout for this conservative startup-only example:
 
 ```text
-AppSettings/
-├── Environment/
-│   └── Production/
-│       └── EnvironmentSettings.json
-└── Build/
-    ├── Stable/
-    │   └── BuildSettings.json
-    └── Candidate/
-        └── BuildSettings.json
+ContentRoot/
+├── ConfigurationSets.json
+└── AppSettings/
+    ├── Environment/
+    │   └── Production/
+    │       └── EnvironmentSettings.json
+    └── Build/
+        ├── Stable/
+        │   └── BuildSettings.json
+        └── Candidate/
+            └── BuildSettings.json
 ```
 
 This also works with the current API.
