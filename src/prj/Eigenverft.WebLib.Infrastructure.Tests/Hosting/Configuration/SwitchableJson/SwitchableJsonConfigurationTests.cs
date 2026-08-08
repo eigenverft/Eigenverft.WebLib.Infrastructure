@@ -132,6 +132,72 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
         }
 
         [TestMethod]
+        public void MissingOptionalInitialSourceDoesNotInvokePreparation()
+        {
+            using var directory = new TemporaryDirectory();
+            var preparation = new CountingPreparation();
+            JsonConfigurationCandidatePreparation candidatePreparation =
+                JsonConfigurationCandidatePreparations.From("Counting", preparation);
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            builder.AddSwitchableJsonFile(
+                "settings",
+                "missing.json",
+                new SwitchableJsonRegistrationOptions
+                {
+                    Optional = true,
+                    CandidatePreparation = candidatePreparation,
+                });
+
+            Assert.AreEqual(0, preparation.InvocationCount);
+            Assert.IsNull(builder.Configuration["Any"]);
+        }
+
+        [TestMethod]
+        public void ConcurrentDisposeDuringPreparationCompletesWithoutStrandingRuntimeOperation()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("A.json", """{ "Mode": "Stable" }""");
+            directory.Write("B.json", """{ "Mode": "Candidate" }""");
+            using var preparation = new BlockingPreparation("B.json");
+            JsonConfigurationCandidatePreparation candidatePreparation =
+                JsonConfigurationCandidatePreparations.From("Blocking", preparation);
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+
+            builder.AddSwitchableJsonFile(
+                "settings",
+                "A.json",
+                new SwitchableJsonRegistrationOptions
+                {
+                    ReloadOnChange = true,
+                    CandidatePreparation = candidatePreparation,
+                });
+            using IHost host = builder.Build();
+            ISwitchableJsonConfiguration runtime =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+            Exception? observedException = null;
+
+            Task switchTask = Task.Run(() =>
+            {
+                try
+                {
+                    runtime.TrySwitch("B.json");
+                }
+                catch (Exception exception)
+                {
+                    observedException = exception;
+                }
+            });
+
+            Assert.IsTrue(preparation.Entered.Wait(TimeSpan.FromSeconds(5)), "Candidate preparation did not start.");
+            ((IDisposable)runtime).Dispose();
+            preparation.Release.Set();
+
+            Assert.IsTrue(switchTask.Wait(TimeSpan.FromSeconds(5)), "Switch operation did not complete after runtime disposal.");
+            Assert.IsInstanceOfType<ObjectDisposedException>(observedException);
+        }
+
+        [TestMethod]
         public void SourcePreparationTransformsSwitchedCandidateBeforePublication()
         {
             using var directory = new TemporaryDirectory();
@@ -1583,6 +1649,53 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Switchabl
                 ContentRootPath = contentRootPath,
                 DisableDefaults = true,
             });
+        }
+
+        private sealed class CountingPreparation : IJsonConfigurationSourcePreparation
+        {
+            public int InvocationCount { get; private set; }
+
+            public void Prepare(JsonConfigurationSourcePreparationContext context)
+            {
+                InvocationCount++;
+            }
+        }
+
+        private sealed class BlockingPreparation : IJsonConfigurationSourcePreparation, IDisposable
+        {
+            private readonly string _triggerFileName;
+
+            public BlockingPreparation(string triggerFileName)
+            {
+                _triggerFileName = triggerFileName;
+            }
+
+            public ManualResetEventSlim Entered { get; } = new(false);
+
+            public ManualResetEventSlim Release { get; } = new(false);
+
+            public void Prepare(JsonConfigurationSourcePreparationContext context)
+            {
+                if (!string.Equals(
+                        Path.GetFileName(context.SourcePath),
+                        _triggerFileName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                Entered.Set();
+                if (!Release.Wait(TimeSpan.FromSeconds(5)))
+                {
+                    throw new TimeoutException("Blocking test preparation was not released.");
+                }
+            }
+
+            public void Dispose()
+            {
+                Entered.Dispose();
+                Release.Dispose();
+            }
         }
 
         private sealed class RetainingPreparation : IJsonConfigurationSourcePreparation

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 
 using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings;
 using Eigenverft.WebLib.Infrastructure.Security.MachineBinding;
@@ -12,6 +13,7 @@ using Eigenverft.WebLib.Infrastructure.Transformations;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Primitives;
 
 namespace Eigenverft.WebLib.Infrastructure.Tests;
 
@@ -342,6 +344,79 @@ public sealed class JsonSettingsTests
 
         Assert.AreEqual("Stable", configuration["Mode"]);
         Assert.AreEqual("stable-secret", configuration["Secret"]);
+    }
+
+    [TestMethod]
+    public void PreparedJsonPhysicalReloadPublishesOnlySuccessfullyPreparedSnapshot()
+    {
+        using var directory = new TemporaryDirectory();
+        var xor = new XorBase64JsonConfigurationSourcePreparation(0x52, "Secret");
+        string settingsPath = directory.Write(
+            "prepared-physical-reload.json",
+            $$"""{ "Mode": "Stable", "Secret": "{{xor.EncodeValue("stable-secret")}}" }""");
+        using var configuration = (ConfigurationRoot)new ConfigurationBuilder()
+            .AddPreparedJsonFile(settingsPath, xor, reloadOnChange: true)
+            .Build();
+
+        File.WriteAllText(
+            settingsPath,
+            $$"""{ "Mode": "Next", "Secret": "{{xor.EncodeValue("next-secret")}}" }""");
+
+        Assert.IsTrue(
+            SpinWait.SpinUntil(
+                () => string.Equals(configuration["Mode"], "Next", StringComparison.Ordinal),
+                TimeSpan.FromSeconds(5)),
+            "Prepared physical reload did not publish the valid candidate.");
+        Assert.AreEqual("next-secret", configuration["Secret"]);
+    }
+
+    [TestMethod]
+    public void PreparedJsonPhysicalPreparationFailureKeepsLastKnownGoodSnapshot()
+    {
+        using var directory = new TemporaryDirectory();
+        using var attempted = new ManualResetEventSlim(false);
+        var preparation = new RejectBrokenModePreparation(attempted);
+        string settingsPath = directory.Write(
+            "prepared-physical-failure.json",
+            """{ "Mode": "Stable", "Value": "stable" }""");
+        using var configuration = (ConfigurationRoot)new ConfigurationBuilder()
+            .AddPreparedJsonFile(settingsPath, preparation, reloadOnChange: true)
+            .Build();
+        int reloadNotifications = 0;
+        using IDisposable reloadRegistration = ChangeToken.OnChange(
+            configuration.GetReloadToken,
+            () => Interlocked.Increment(ref reloadNotifications));
+
+        File.WriteAllText(settingsPath, """{ "Mode": "Broken", "Value": "candidate" }""");
+
+        Assert.IsTrue(attempted.Wait(TimeSpan.FromSeconds(5)), "Physical reload did not reach candidate preparation.");
+        Thread.Sleep(100);
+        Assert.AreEqual("Stable", configuration["Mode"]);
+        Assert.AreEqual("stable", configuration["Value"]);
+        Assert.AreEqual(0, Volatile.Read(ref reloadNotifications));
+
+        File.WriteAllText(settingsPath, """{ "Mode": "Recovered", "Value": "recovered" }""");
+        Assert.IsTrue(
+            SpinWait.SpinUntil(
+                () => string.Equals(configuration["Mode"], "Recovered", StringComparison.Ordinal),
+                TimeSpan.FromSeconds(5)),
+            "Prepared provider did not recover after the rejected physical candidate.");
+        Assert.AreEqual("recovered", configuration["Value"]);
+        Assert.IsTrue(Volatile.Read(ref reloadNotifications) >= 1);
+    }
+
+    [TestMethod]
+    public void MissingOptionalPreparedJsonDoesNotInvokePreparation()
+    {
+        using var directory = new TemporaryDirectory();
+        var preparation = new CountingPreparation();
+        string missingPath = Path.Combine(directory.Path, "missing-optional.json");
+        using var configuration = (ConfigurationRoot)new ConfigurationBuilder()
+            .AddPreparedJsonFile(missingPath, preparation, optional: true)
+            .Build();
+
+        Assert.AreEqual(0, preparation.InvocationCount);
+        Assert.IsNull(configuration["Any"]);
     }
 
     [TestMethod]
@@ -1140,6 +1215,36 @@ public sealed class JsonSettingsTests
             .Build();
 
         Assert.AreEqual("candidate-secret", configuration["Value"]);
+    }
+
+    private sealed class RejectBrokenModePreparation : IJsonConfigurationSourcePreparation
+    {
+        private readonly ManualResetEventSlim _attempted;
+
+        public RejectBrokenModePreparation(ManualResetEventSlim attempted)
+        {
+            _attempted = attempted;
+        }
+
+        public void Prepare(JsonConfigurationSourcePreparationContext context)
+        {
+            if (context.Values.TryGetValue("Mode", out string? mode) &&
+                string.Equals(mode, "Broken", StringComparison.Ordinal))
+            {
+                _attempted.Set();
+                throw new InvalidOperationException("Rejected test candidate.");
+            }
+        }
+    }
+
+    private sealed class CountingPreparation : IJsonConfigurationSourcePreparation
+    {
+        public int InvocationCount { get; private set; }
+
+        public void Prepare(JsonConfigurationSourcePreparationContext context)
+        {
+            InvocationCount++;
+        }
     }
 
     private sealed class CopyPreparedValuePreparation : IJsonConfigurationSourcePreparation

@@ -241,6 +241,10 @@ configurationBuilder.AddPreparedJsonFile(
     preparation);
 ```
 
+With `reloadOnChange: true`, standalone prepared JSON keeps the last successfully published snapshot when parsing or preparation of a physical file change fails. No reload notification is published for the rejected candidate; a later valid change can recover normally.
+
+For `optional: true`, a missing file is the complete empty optional state. Because no source candidate was loaded, the preparation bundle is not invoked for that absence.
+
 Or with the parallel environment loader:
 
 ```text

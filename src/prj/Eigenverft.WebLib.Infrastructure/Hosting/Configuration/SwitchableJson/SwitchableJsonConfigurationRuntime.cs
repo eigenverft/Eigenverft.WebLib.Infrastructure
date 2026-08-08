@@ -657,6 +657,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                     preparedWatcher: null,
                     watcherRelay: null);
             }
+            catch
+            {
+                // Until a successful preparation object is returned, the temporary watcher resources belong to this method.
+                // External preparation intentionally runs outside _operationGate, so disposal or other lifecycle failures may
+                // interleave here. Never let an unexpected exit strand the prepared watcher before ownership transfer.
+                watcherRelay?.Close();
+                preparedWatcher?.Dispose();
+                throw;
+            }
         }
 
         private CommitOutcome CommitDirectPreparationLocked(SwitchableJsonSwitchPreparation preparation)
@@ -1057,9 +1066,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             }
             catch (Exception exception) when (_optionalInitialSource && IsSourceNotFound(exception))
             {
-                var data = new Dictionary<string, string?>(ConfigurationKeyComparer);
-                JsonConfigurationSourcePreparationPipeline.Apply(sourcePath, data, _sourcePreparations);
-                return data;
+                // Optional means absence is already a complete empty framework state. There is no loaded candidate to prepare;
+                // this also keeps reusable preparations consistent with ordinary prepared JSON/file-provider semantics.
+                return new Dictionary<string, string?>(ConfigurationKeyComparer);
             }
         }
 
