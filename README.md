@@ -261,9 +261,15 @@ The library targets `net8.0` and `net10.0`. A `net9.0` consumer uses the
 compatible `net8.0` asset; preview target frameworks are intentionally
 excluded.
 
-The current package surface is limited to these hosting-directory,
-configuration-source, JSON-settings, bootstrap-logging, certificate, and Kestrel
-SNI primitives.
+The current package surface covers hosting-directory, configuration-source,
+JSON-settings, named Configuration Sets, bootstrap-logging, certificate, and Kestrel
+SNI primitives. Configuration Sets provide named configuration profiles on top of
+normal .NET `IConfiguration`, including multi-file coordination, runtime events,
+self-describing `ConfigurationSets.json` state, and arbitrary `value => sourcePath`
+mapping when a directory convention is not appropriate. See
+[`docs/configuration-sets.md`](docs/configuration-sets.md) for the technical contract and
+[`docs/configuration-sets-use-cases.md`](docs/configuration-sets-use-cases.md) for
+product-oriented examples.
 
 ## Related repositories
 

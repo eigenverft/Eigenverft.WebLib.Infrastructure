@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 using Microsoft.Extensions.Configuration;
@@ -10,13 +11,19 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
     /// <summary>Registers switchable JSON configuration sources and their runtime control handles.</summary>
     public static class SwitchableJsonConfigurationExtensions
     {
+        private static readonly object RegisteredRuntimeHandlesKey = new();
+        private static readonly object RegisteredSourcesKey = new();
+
         /// <summary>
         /// Adds one JSON configuration source that can later switch to another JSON file through keyed dependency injection.
         /// </summary>
         /// <param name="builder">The host application builder receiving both the configuration source and runtime handle.</param>
         /// <param name="name">Caller-defined provider identity and keyed-service key.</param>
         /// <param name="initialPath">Initial JSON path, absolute or relative to the host content root.</param>
-        /// <param name="optional">Whether a missing initial source produces an empty initial provider instead of startup failure.</param>
+        /// <param name="optional">
+        /// Whether a missing source is treated as empty during framework-driven provider loads, including the initial load and
+        /// explicit <see cref="IConfigurationRoot.Reload"/> operations.
+        /// </param>
         /// <param name="reloadOnChange">
         /// Whether the currently active source is watched for physical file changes after initial load and after each successful switch.
         /// </param>
@@ -91,6 +98,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
                 builder.Services.AddKeyedSingleton<ISwitchableJsonConfiguration>(
                     name,
                     (_, _) => runtime);
+
+                GetRegisteredRuntimeHandles(builder).Add(name, runtime);
+                GetRegisteredSources(builder).Add(name, source);
             }
             catch
             {
@@ -100,6 +110,95 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson
             }
 
             return builder;
+        }
+
+        internal static bool TryGetRegisteredRuntimeHandle(
+            IHostApplicationBuilder builder,
+            string name,
+            out ISwitchableJsonConfiguration? runtime)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+            if (builder.Properties.TryGetValue(RegisteredRuntimeHandlesKey, out object? value) &&
+                value is Dictionary<string, ISwitchableJsonConfiguration> registrations &&
+                registrations.TryGetValue(name, out ISwitchableJsonConfiguration? registered))
+            {
+                runtime = registered;
+                return true;
+            }
+
+            runtime = null;
+            return false;
+        }
+
+        internal static bool RemoveRegisteredSwitchableJsonFile(
+            IHostApplicationBuilder builder,
+            string name)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+            Dictionary<string, ISwitchableJsonConfiguration> runtimes = GetRegisteredRuntimeHandles(builder);
+            if (!runtimes.TryGetValue(name, out ISwitchableJsonConfiguration? runtime))
+            {
+                return false;
+            }
+
+            Dictionary<string, SwitchableJsonConfigurationSource> sources = GetRegisteredSources(builder);
+            if (sources.TryGetValue(name, out SwitchableJsonConfigurationSource? source))
+            {
+                _ = builder.Configuration.Sources.Remove(source);
+                _ = sources.Remove(name);
+            }
+
+            _ = runtimes.Remove(name);
+
+            for (int index = builder.Services.Count - 1; index >= 0; index--)
+            {
+                ServiceDescriptor descriptor = builder.Services[index];
+                if (descriptor.ServiceType == typeof(ISwitchableJsonConfiguration) &&
+                    descriptor.IsKeyedService &&
+                    Equals(descriptor.ServiceKey, name))
+                {
+                    builder.Services.RemoveAt(index);
+                }
+            }
+
+            if (runtime is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            return true;
+        }
+
+        private static Dictionary<string, ISwitchableJsonConfiguration> GetRegisteredRuntimeHandles(
+            IHostApplicationBuilder builder)
+        {
+            if (builder.Properties.TryGetValue(RegisteredRuntimeHandlesKey, out object? value) &&
+                value is Dictionary<string, ISwitchableJsonConfiguration> registrations)
+            {
+                return registrations;
+            }
+
+            var created = new Dictionary<string, ISwitchableJsonConfiguration>(StringComparer.Ordinal);
+            builder.Properties[RegisteredRuntimeHandlesKey] = created;
+            return created;
+        }
+
+        private static Dictionary<string, SwitchableJsonConfigurationSource> GetRegisteredSources(
+            IHostApplicationBuilder builder)
+        {
+            if (builder.Properties.TryGetValue(RegisteredSourcesKey, out object? value) &&
+                value is Dictionary<string, SwitchableJsonConfigurationSource> registrations)
+            {
+                return registrations;
+            }
+
+            var created = new Dictionary<string, SwitchableJsonConfigurationSource>(StringComparer.Ordinal);
+            builder.Properties[RegisteredSourcesKey] = created;
+            return created;
         }
     }
 }
