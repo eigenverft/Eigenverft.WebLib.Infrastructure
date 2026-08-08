@@ -212,6 +212,114 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual("Stable", builder.Configuration["Second"]);
         }
 
+        [TestMethod]
+        public void BuilderBindingWiresSetBeforeBuildAndUsesKeyedRuntimeAfterBuild()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("Stable.json", "{ \"Value\": \"Stable\" }");
+            directory.Write("Experimental.json", "{ \"Value\": \"Experimental\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("settings", "Stable.json");
+            _ = builder.AddConfigurationSetCoordinator(
+                "ProxySet",
+                "Stable",
+                ["Stable", "Experimental"]);
+
+            builder.BindSwitchableJsonToConfigurationSet(
+                "ProxySet",
+                "settings",
+                value => $"{value}.json");
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("ProxySet");
+            ISwitchableJsonConfiguration settings =
+                host.Services.GetRequiredKeyedService<ISwitchableJsonConfiguration>("settings");
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Experimental");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("Experimental", coordinator.ActiveValue);
+            Assert.AreEqual("Experimental", builder.Configuration["Value"]);
+            Assert.AreEqual(Path.Combine(directory.Path, "Experimental.json"), settings.CurrentSourcePath);
+            CollectionAssert.AreEqual(new[] { "settings" }, coordinator.BoundParticipantNames.ToArray());
+        }
+
+        [TestMethod]
+        public void BuilderBindingAllowsCoordinatorAndSwitchableRegistrationInEitherOrder()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("Stable.json", "{ \"Value\": \"Stable\" }");
+            directory.Write("Next.json", "{ \"Value\": \"Next\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            _ = builder.AddConfigurationSetCoordinator(
+                "ProxySet",
+                "Stable",
+                ["Stable", "Next"]);
+            builder.AddSwitchableJsonFile("settings", "Stable.json");
+
+            builder.BindSwitchableJsonToConfigurationSet(
+                "ProxySet",
+                "settings",
+                value => $"{value}.json");
+
+            using IHost host = builder.Build();
+            IConfigurationSetCoordinator coordinator =
+                host.Services.GetRequiredKeyedService<IConfigurationSetCoordinator>("ProxySet");
+
+            ConfigurationSetSwitchResult result = coordinator.TrySwitch("Next");
+
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.Status);
+            Assert.AreEqual("Next", builder.Configuration["Value"]);
+        }
+
+        [TestMethod]
+        public void BuilderBindingFailsFastWhenReferencedRegistrationIsMissing()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("Stable.json", "{}");
+            HostApplicationBuilder missingSetBuilder = CreateBuilder(directory.Path);
+            missingSetBuilder.AddSwitchableJsonFile("settings", "Stable.json");
+
+            _ = Assert.ThrowsExactly<InvalidOperationException>(() =>
+                missingSetBuilder.BindSwitchableJsonToConfigurationSet(
+                    "ProxySet",
+                    "settings",
+                    _ => "Stable.json"));
+
+            HostApplicationBuilder missingSwitchableBuilder = CreateBuilder(directory.Path);
+            _ = missingSwitchableBuilder.AddConfigurationSetCoordinator(
+                "ProxySet",
+                "Stable",
+                ["Stable"]);
+
+            _ = Assert.ThrowsExactly<InvalidOperationException>(() =>
+                missingSwitchableBuilder.BindSwitchableJsonToConfigurationSet(
+                    "ProxySet",
+                    "settings",
+                    _ => "Stable.json"));
+        }
+
+        [TestMethod]
+        public void BuilderBindingRejectsParticipantThatDoesNotRepresentInitialSetValue()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("Stable.json", "{ \"Value\": \"Stable\" }");
+            directory.Write("Experimental.json", "{ \"Value\": \"Experimental\" }");
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            builder.AddSwitchableJsonFile("settings", "Experimental.json");
+            _ = builder.AddConfigurationSetCoordinator(
+                "ProxySet",
+                "Stable",
+                ["Stable", "Experimental"]);
+
+            _ = Assert.ThrowsExactly<InvalidOperationException>(() =>
+                builder.BindSwitchableJsonToConfigurationSet(
+                    "ProxySet",
+                    "settings",
+                    value => $"{value}.json"));
+        }
+
         private static HostApplicationBuilder CreateBuilder(string contentRootPath)
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings
