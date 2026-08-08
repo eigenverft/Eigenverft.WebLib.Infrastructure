@@ -291,6 +291,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 }
 
                 bool anyParticipantSourceChanged = false;
+                var participantResults = new List<ConfigurationSetParticipantSwitchResult>(preparations.Count);
 
                 for (int index = 0; index < preparations.Count; index++)
                 {
@@ -308,6 +309,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                             requestedValue,
                             consistencyBefore,
                             anyParticipantSourceChanged,
+                            participantResults,
                             prepared.Binding.Name,
                             ConfigurationSetSwitchFailureKind.ParticipantOperationFailed,
                             exception);
@@ -320,11 +322,19 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                             requestedValue,
                             consistencyBefore,
                             anyParticipantSourceChanged,
+                            participantResults,
                             prepared.Binding.Name,
                             ConfigurationSetSwitchFailureKind.ParticipantCommitRejected,
                             participantResult.Exception);
                     }
 
+                    participantResults.Add(
+                        new ConfigurationSetParticipantSwitchResult(
+                            participantResult.Name,
+                            participantResult.PreviousSourcePath,
+                            participantResult.CurrentSourcePath,
+                            participantResult.SourceChanged,
+                            participantResult.ConfigurationChanged));
                     anyParticipantSourceChanged |= participantResult.SourceChanged;
                 }
 
@@ -340,7 +350,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     isConsistent: true,
                     ConfigurationSetSwitchFailureKind.None,
                     failedParticipantName: null,
-                    exception: null);
+                    exception: null,
+                    participantResults: participantResults);
             }
             finally
             {
@@ -356,6 +367,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             string requestedValue,
             bool consistencyBefore,
             bool anyParticipantSourceChanged,
+            IReadOnlyList<ConfigurationSetParticipantSwitchResult> participantResults,
             string failedParticipantName,
             ConfigurationSetSwitchFailureKind failureKind,
             Exception? exception)
@@ -372,7 +384,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     isConsistent: false,
                     ConfigurationSetSwitchFailureKind.PartialCommit,
                     failedParticipantName,
-                    exception);
+                    exception,
+                    participantResults);
             }
 
             _isConsistent = consistencyBefore;
@@ -385,7 +398,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 consistencyBefore,
                 failureKind,
                 failedParticipantName,
-                exception);
+                exception,
+                participantResults);
         }
 
         private ConfigurationSetSwitchResult CreateResult(
@@ -397,7 +411,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             bool isConsistent,
             ConfigurationSetSwitchFailureKind failureKind,
             string? failedParticipantName,
-            Exception? exception)
+            Exception? exception,
+            IReadOnlyList<ConfigurationSetParticipantSwitchResult>? participantResults = null)
         {
             return new ConfigurationSetSwitchResult(
                 Name,
@@ -410,6 +425,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 failureKind,
                 failedParticipantName,
                 exception,
+                participantResults ?? Array.Empty<ConfigurationSetParticipantSwitchResult>(),
                 ++_sequence,
                 DateTimeOffset.UtcNow);
         }

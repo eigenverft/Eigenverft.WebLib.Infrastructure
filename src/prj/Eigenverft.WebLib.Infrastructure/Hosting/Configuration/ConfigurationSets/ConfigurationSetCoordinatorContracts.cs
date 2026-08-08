@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSets
 {
@@ -65,6 +66,41 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         SwitchPartiallyCommitted = 3,
     }
 
+    /// <summary>
+    /// Describes one participant commit that completed before the configuration-set operation finished.
+    /// </summary>
+    public sealed class ConfigurationSetParticipantSwitchResult
+    {
+        internal ConfigurationSetParticipantSwitchResult(
+            string name,
+            string previousSourcePath,
+            string currentSourcePath,
+            bool sourceChanged,
+            bool configurationChanged)
+        {
+            Name = name;
+            PreviousSourcePath = previousSourcePath;
+            CurrentSourcePath = currentSourcePath;
+            SourceChanged = sourceChanged;
+            ConfigurationChanged = configurationChanged;
+        }
+
+        /// <summary>Gets the bound participant identity.</summary>
+        public string Name { get; }
+
+        /// <summary>Gets the source path active before the participant commit.</summary>
+        public string PreviousSourcePath { get; }
+
+        /// <summary>Gets the source path active after the participant commit.</summary>
+        public string CurrentSourcePath { get; }
+
+        /// <summary>Gets whether this participant selected a different source.</summary>
+        public bool SourceChanged { get; }
+
+        /// <summary>Gets whether this participant changed its effective configuration key/value snapshot.</summary>
+        public bool ConfigurationChanged { get; }
+    }
+
     /// <summary>Contains the completed result of one configuration-set switch request.</summary>
     public sealed class ConfigurationSetSwitchResult
     {
@@ -79,6 +115,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             ConfigurationSetSwitchFailureKind failureKind,
             string? failedParticipantName,
             Exception? exception,
+            IReadOnlyList<ConfigurationSetParticipantSwitchResult> participantResults,
             long sequence,
             DateTimeOffset timestamp)
         {
@@ -92,8 +129,20 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             FailureKind = failureKind;
             FailedParticipantName = failedParticipantName;
             Exception = exception;
+            ParticipantResults = participantResults;
             Sequence = sequence;
             Timestamp = timestamp;
+
+            bool sourceChanged = false;
+            bool configurationChanged = false;
+            foreach (ConfigurationSetParticipantSwitchResult participant in participantResults)
+            {
+                sourceChanged |= participant.SourceChanged;
+                configurationChanged |= participant.ConfigurationChanged;
+            }
+
+            SourceChanged = sourceChanged;
+            ConfigurationChanged = configurationChanged;
         }
 
         /// <summary>Gets the caller-defined set identity.</summary>
@@ -116,6 +165,24 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         /// <summary>Gets whether the last fully coordinated set value changed.</summary>
         public bool ValueChanged { get; }
+
+        /// <summary>Gets whether at least one committed participant selected a different source.</summary>
+        public bool SourceChanged { get; }
+
+        /// <summary>Gets whether at least one committed participant changed its effective configuration snapshot.</summary>
+        public bool ConfigurationChanged { get; }
+
+        /// <summary>
+        /// Gets whether the operation changed the logical set value, at least one participant source, or effective configuration data.
+        /// </summary>
+        public bool HasChanges => ValueChanged || SourceChanged || ConfigurationChanged;
+
+        /// <summary>Gets the completed participant commits in binding order.</summary>
+        /// <remarks>
+        /// A participant that rejects during preparation has no commit result and is represented by
+        /// <see cref="FailedParticipantName"/> and <see cref="FailureKind"/> instead.
+        /// </remarks>
+        public IReadOnlyList<ConfigurationSetParticipantSwitchResult> ParticipantResults { get; }
 
         /// <summary>Gets whether all bound participants are known to represent <see cref="ActiveValue"/>.</summary>
         public bool IsConsistent { get; }

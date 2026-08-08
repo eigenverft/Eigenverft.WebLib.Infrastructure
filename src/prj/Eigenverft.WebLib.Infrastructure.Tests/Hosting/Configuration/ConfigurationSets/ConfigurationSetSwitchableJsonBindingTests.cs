@@ -195,6 +195,13 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             Assert.AreEqual(ConfigurationSetSwitchStatus.PartiallyCommitted, partial.Status);
             Assert.AreEqual(ConfigurationSetSwitchFailureKind.PartialCommit, partial.FailureKind);
             Assert.AreEqual("second", partial.FailedParticipantName);
+            Assert.IsTrue(partial.SourceChanged);
+            Assert.IsTrue(partial.ConfigurationChanged);
+            Assert.IsTrue(partial.HasChanges);
+            Assert.AreEqual(1, partial.ParticipantResults.Count);
+            Assert.AreEqual("first", partial.ParticipantResults[0].Name);
+            Assert.IsTrue(partial.ParticipantResults[0].SourceChanged);
+            Assert.IsTrue(partial.ParticipantResults[0].ConfigurationChanged);
             Assert.IsFalse(partial.IsConsistent);
             Assert.IsFalse(coordinator.IsConsistent);
             Assert.AreEqual("Stable", coordinator.ActiveValue);

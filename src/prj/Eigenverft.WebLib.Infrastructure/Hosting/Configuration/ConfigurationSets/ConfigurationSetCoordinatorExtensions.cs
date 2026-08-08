@@ -11,6 +11,30 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
     public static class ConfigurationSetCoordinatorExtensions
     {
         private static readonly object RegisteredCoordinatorsKey = new();
+        private static readonly object EventHubKey = new();
+
+        /// <summary>
+        /// Adds one configuration set and returns a fluent startup handle for binding switchable configuration sources.
+        /// </summary>
+        /// <param name="builder">The host application builder receiving the coordinator.</param>
+        /// <param name="name">Caller-defined set identity and keyed-service key.</param>
+        /// <param name="initialValue">Initial active value; it is automatically included in the allowed values.</param>
+        /// <param name="additionalAllowedValues">Additional values that may become active.</param>
+        /// <returns>A startup registration handle for this set.</returns>
+        public static ConfigurationSetRegistration AddConfigurationSet(
+            this IHostApplicationBuilder builder,
+            string name,
+            string initialValue,
+            params string[] additionalAllowedValues)
+        {
+            ArgumentNullException.ThrowIfNull(builder);
+            ConfigurationSetDefinition definition = ConfigurationSetDefinition.Create(
+                name,
+                initialValue,
+                additionalAllowedValues);
+            IConfigurationSetCoordinator coordinator = builder.AddConfigurationSet(definition);
+            return new ConfigurationSetRegistration(builder, coordinator);
+        }
 
         /// <summary>
         /// Adds one independent configuration-set coordinator and exposes the same runtime instance through keyed DI.
@@ -19,10 +43,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <param name="name">Caller-defined set identity and keyed-service key.</param>
         /// <param name="initialValue">Value active when the coordinator is created.</param>
         /// <param name="allowedValues">Complete values accepted by this set.</param>
-        /// <returns>
-        /// The coordinator runtime instance. Returning the runtime allows startup code to bind further set-specific behavior before
-        /// the host is built while later runtime consumers resolve the same instance through keyed dependency injection.
-        /// </returns>
+        /// <returns>The created coordinator runtime.</returns>
         public static IConfigurationSetCoordinator AddConfigurationSetCoordinator(
             this IHostApplicationBuilder builder,
             string name,
@@ -61,6 +82,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                 (_, _) => coordinator);
 
             GetRegisteredCoordinators(builder).Add(definition.Name, coordinator);
+            GetOrCreateEventHub(builder).Attach(coordinator);
             return coordinator;
         }
 
@@ -129,6 +151,20 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         {
             ArgumentNullException.ThrowIfNull(builder);
             return new List<IConfigurationSetCoordinator>(GetRegisteredCoordinators(builder).Values).AsReadOnly();
+        }
+
+        private static ConfigurationSetEventHub GetOrCreateEventHub(IHostApplicationBuilder builder)
+        {
+            if (builder.Properties.TryGetValue(EventHubKey, out object? value) &&
+                value is ConfigurationSetEventHub existing)
+            {
+                return existing;
+            }
+
+            var created = new ConfigurationSetEventHub();
+            builder.Properties[EventHubKey] = created;
+            builder.Services.AddSingleton<IConfigurationSetEventHub>(created);
+            return created;
         }
 
         private static Dictionary<string, IConfigurationSetCoordinator> GetRegisteredCoordinators(
