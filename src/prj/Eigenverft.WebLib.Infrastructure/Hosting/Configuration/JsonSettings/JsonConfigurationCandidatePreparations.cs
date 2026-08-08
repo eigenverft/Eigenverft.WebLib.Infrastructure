@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+using Eigenverft.WebLib.Infrastructure.Transformations;
+
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 {
     /// <summary>
@@ -55,10 +57,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
     /// </summary>
     /// <remarks>
     /// <para>
-    /// <see cref="JsonSettingsValueEncoders"/> remains the authority for the public persisted-codec contract: wrapper formats,
-    /// codec composition, parameter validation, compatibility, and migration semantics. These helpers adapt those existing
-    /// codecs to the generic candidate-preparation boundary; they deliberately do not duplicate the underlying reversible
-    /// value transformations or their security behavior.
+    /// <see cref="ReversibleStringTransforms"/> owns the reusable reversible value operations.
+    /// <see cref="JsonSettingsValueEncoders"/> remains the authority for JSON-settings persisted framing, codec composition,
+    /// parameter validation, V1 compatibility, and migration semantics. These helpers adapt those persisted codecs to the generic
+    /// candidate-preparation boundary; candidate preparation owns only isolated-snapshot application and rejection semantics.
     /// </para>
     /// <para>
     /// A codec-backed preparation scans the parsed candidate snapshot and replaces a value only when its selected codec can

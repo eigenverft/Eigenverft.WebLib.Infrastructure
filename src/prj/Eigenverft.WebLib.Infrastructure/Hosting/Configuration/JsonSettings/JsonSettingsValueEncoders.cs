@@ -1,31 +1,22 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
 using System.Reflection;
-using System.Security.Cryptography;
-using System.Text;
 
 using Eigenverft.WebLib.Infrastructure.Security.MachineBinding;
-using Eigenverft.WebLib.Infrastructure.Security.Protection;
 using Eigenverft.WebLib.Infrastructure.Text;
-
-using Microsoft.AspNetCore.DataProtection;
+using Eigenverft.WebLib.Infrastructure.Transformations;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 {
     /// <summary>
-    /// Produces self-describing encoded values and reusable codecs for JSON configuration files.
+    /// Produces self-describing persisted JSON-settings values and codecs by framing reusable reversible string transforms.
     /// </summary>
+    /// <remarks>
+    /// <see cref="ReversibleStringTransforms"/> owns the reusable value operations. This type remains the authority for the
+    /// JSON-settings persisted wrapper tokens, codec composition, V1 default layout, compatibility, and migration semantics.
+    /// </remarks>
     public static class JsonSettingsValueEncoders
     {
-        private const int AesSaltSize = 16;
-        private const int AesNonceSize = 12;
-        private const int AesTagSize = 16;
-        private const int AesKeySize = 32;
-        private const int AesPbkdf2Iterations = 100_000;
-        private const string AesPayloadVersion = "v1";
-        private static readonly Encoding StrictUtf8 = new UTF8Encoding(false, true);
         private const string DefaultDataProtectionPurpose =
             "Eigenverft.WebLib.Infrastructure.JsonSettings.ValueProtection.v1";
 
@@ -39,8 +30,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// </remarks>
         public static JsonSettingsValueCodec Base64 { get; } = new(
             "Base64",
-            EncodeBase64,
-            TryDecodeBase64Value);
+            EncodedConfigurationValueKind.Base64,
+            ReversibleStringTransforms.Base64);
 
         /// <summary>
         /// Gets the Base92JsonSafe representation codec backed by <see cref="Base92JsonSafeEncoder"/>.
@@ -53,8 +44,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// </remarks>
         public static JsonSettingsValueCodec Base92JsonSafe { get; } = new(
             "Base92JsonSafe",
-            EncodeBase92JsonSafe,
-            TryDecodeBase92JsonSafeValue);
+            EncodedConfigurationValueKind.Base92JsonSafe,
+            ReversibleStringTransforms.Base92JsonSafe);
 
         /// <summary>
         /// Gets the ROT13 obfuscation codec.
@@ -65,8 +56,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// </remarks>
         public static JsonSettingsValueCodec Rot13 { get; } = new(
             "Rot13",
-            EncodeRot13,
-            TryDecodeRot13Value);
+            EncodedConfigurationValueKind.Rot13,
+            ReversibleStringTransforms.Rot13);
 
         /// <summary>
         /// Creates a Caesar-shift obfuscation codec for ASCII letters.
@@ -85,9 +76,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 
             return new JsonSettingsValueCodec(
                 $"Caesar({normalizedShift})",
-                clearText => EncodeCaesar(clearText, normalizedShift),
-                (string encodedValue, out string clearText) =>
-                    TryDecodeCaesarValue(encodedValue, normalizedShift, out clearText));
+                EncodedConfigurationValueKind.Caesar,
+                ReversibleStringTransforms.Caesar(normalizedShift));
         }
 
         /// <summary>
@@ -99,8 +89,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// </remarks>
         public static JsonSettingsValueCodec DpapiMachine { get; } = new(
             "DpapiMachine",
-            EncodeDpapiMachine,
-            TryDecodeDpapiBase64Value);
+            EncodedConfigurationValueKind.DpapiMachine,
+            ReversibleStringTransforms.DpapiMachine);
 
         /// <summary>
         /// Gets the Windows DPAPI LocalMachine codec with a Base64Url payload.
@@ -111,8 +101,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// </remarks>
         public static JsonSettingsValueCodec DpapiMachineBase64Url { get; } = new(
             "DpapiMachineBase64Url",
-            EncodeDpapiMachineBase64Url,
-            TryDecodeDpapiBase64UrlValue);
+            EncodedConfigurationValueKind.DpapiMachineBase64Url,
+            ReversibleStringTransforms.DpapiMachineBase64Url);
 
         /// <summary>
         /// Creates a password-derived AES-GCM protection codec.
@@ -131,9 +121,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 
             return new JsonSettingsValueCodec(
                 "AesPassword",
-                clearText => EncodeAesPassword(clearText, password),
-                (string encodedValue, out string clearText) =>
-                    TryDecodeAesPasswordValue(encodedValue, password, out clearText));
+                EncodedConfigurationValueKind.AesPassword,
+                ReversibleStringTransforms.AesPassword(password));
         }
 
         /// <summary>
@@ -180,12 +169,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// </remarks>
         public static JsonSettingsValueCodec PhysicalMachineBoundAes()
         {
-            JsonSettingsValueCodec aes = AesPassword(PhysicalMachineBinding.GetFingerprint());
-
             return new JsonSettingsValueCodec(
                 "PhysicalMachineBoundAes",
-                aes.Encode,
-                aes.TryDecode);
+                EncodedConfigurationValueKind.AesPassword,
+                ReversibleStringTransforms.PhysicalMachineBoundAes());
         }
 
         /// <summary>
@@ -239,19 +226,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             ArgumentException.ThrowIfNullOrWhiteSpace(applicationName);
             ArgumentException.ThrowIfNullOrWhiteSpace(purpose);
 
-            string fullKeyDirectoryPath = Path.GetFullPath(keyDirectoryPath);
-            Directory.CreateDirectory(fullKeyDirectoryPath);
-
-            IDataProtectionProvider provider = DataProtectionProvider.Create(
-                new DirectoryInfo(fullKeyDirectoryPath),
-                builder => builder.SetApplicationName(applicationName));
-            IDataProtector protector = provider.CreateProtector(purpose);
-
             return new JsonSettingsValueCodec(
                 $"DataProtection({applicationName})",
-                clearText => EncodeDataProtection(clearText, protector),
-                (string encodedValue, out string clearText) =>
-                    TryDecodeDataProtectionValue(encodedValue, protector, out clearText));
+                EncodedConfigurationValueKind.DataProtection,
+                ReversibleStringTransforms.DataProtection(
+                    keyDirectoryPath,
+                    applicationName,
+                    purpose));
         }
 
         /// <summary>
@@ -432,45 +413,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// <remarks>Base64 is an encoding, not encryption, and does not protect sensitive data.</remarks>
         public static string EncodeBase64(string? clearText)
         {
-            string payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(clearText ?? string.Empty));
-            return EncodedConfigurationValueFormat.Wrap(EncodedConfigurationValueKind.Base64, payload);
-        }
-
-        private static string EncodeBase92JsonSafe(string clearText)
-        {
-            string payload = Base92JsonSafeEncoder.Encode(Encoding.UTF8.GetBytes(clearText));
-            return EncodedConfigurationValueFormat.Wrap(EncodedConfigurationValueKind.Base92JsonSafe, payload);
-        }
-
-        private static bool TryDecodeBase92JsonSafeValue(string encodedValue, out string clearText)
-        {
-            clearText = encodedValue;
-            return EncodedConfigurationValueFormat.TryUnwrap(
-                    encodedValue,
-                    out EncodedConfigurationValueKind encoding,
-                    out string payload) &&
-                encoding == EncodedConfigurationValueKind.Base92JsonSafe &&
-                TryDecodeBase92JsonSafePayload(payload, out clearText);
+            return Base64.Encode(clearText);
         }
 
         internal static bool TryDecodeBase92JsonSafePayload(string payload, out string clearText)
         {
-            clearText = string.Empty;
-
-            if (!Base92JsonSafeEncoder.TryDecode(payload, out byte[] bytes))
-            {
-                return false;
-            }
-
-            try
-            {
-                clearText = StrictUtf8.GetString(bytes);
-                return true;
-            }
-            catch (DecoderFallbackException)
-            {
-                return false;
-            }
+            return ReversibleStringTransforms.Base92JsonSafe.TryReverse(payload, out clearText);
         }
 
         /// <summary>
@@ -485,9 +433,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// </remarks>
         public static string EncodeDpapiMachine(string? clearText)
         {
-            byte[] protectedBytes = DpapiMachineProtection.Protect(Encoding.UTF8.GetBytes(clearText ?? string.Empty));
-            string payload = Convert.ToBase64String(protectedBytes);
-            return EncodedConfigurationValueFormat.Wrap(EncodedConfigurationValueKind.DpapiMachine, payload);
+            return DpapiMachine.Encode(clearText);
         }
 
         /// <summary>
@@ -503,153 +449,23 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         /// </remarks>
         public static string EncodeDpapiMachineBase64Url(string? clearText)
         {
-            byte[] protectedBytes = DpapiMachineProtection.Protect(Encoding.UTF8.GetBytes(clearText ?? string.Empty));
-            string payload = Base64Url.Encode(protectedBytes);
-            return EncodedConfigurationValueFormat.Wrap(
-                EncodedConfigurationValueKind.DpapiMachineBase64Url,
-                payload);
+            return DpapiMachineBase64Url.Encode(clearText);
         }
 
-        private static string EncodeRot13(string clearText)
-        {
-            return EncodedConfigurationValueFormat.Wrap(
-                EncodedConfigurationValueKind.Rot13,
-                ApplyCaesar(clearText, 13));
-        }
-
-        private static bool TryDecodeRot13Value(string encodedValue, out string clearText)
-        {
-            clearText = encodedValue;
-            return EncodedConfigurationValueFormat.TryUnwrap(
-                    encodedValue,
-                    out EncodedConfigurationValueKind encoding,
-                    out string payload) &&
-                encoding == EncodedConfigurationValueKind.Rot13 &&
-                TryDecodeRot13Payload(payload, out clearText);
-        }
         internal static bool TryDecodeRot13Payload(string payload, out string clearText)
         {
-            clearText = ApplyCaesar(payload, 13);
-            return true;
-        }
-
-        private static string EncodeCaesar(string clearText, int shift)
-        {
-            string payload = string.Concat(
-                shift.ToString(CultureInfo.InvariantCulture),
-                ":",
-                ApplyCaesar(clearText, shift));
-            return EncodedConfigurationValueFormat.Wrap(EncodedConfigurationValueKind.Caesar, payload);
-        }
-
-        private static bool TryDecodeCaesarValue(
-            string encodedValue,
-            int expectedShift,
-            out string clearText)
-        {
-            clearText = encodedValue;
-
-            return EncodedConfigurationValueFormat.TryUnwrap(
-                    encodedValue,
-                    out EncodedConfigurationValueKind encoding,
-                    out string payload) &&
-                encoding == EncodedConfigurationValueKind.Caesar &&
-                TryDecodeCaesarPayload(payload, out int encodedShift, out clearText) &&
-                encodedShift == expectedShift;
+            return ReversibleStringTransforms.Rot13.TryReverse(payload, out clearText);
         }
 
         internal static bool TryDecodeCaesarPayload(string payload, out string clearText)
         {
-            return TryDecodeCaesarPayload(payload, out _, out clearText);
-        }
-
-        private static bool TryDecodeCaesarPayload(
-            string payload,
-            out int encodedShift,
-            out string clearText)
-        {
-            encodedShift = 0;
-            clearText = string.Empty;
-            int delimiterIndex = payload.IndexOf(':');
-
-            if (delimiterIndex <= 0 ||
-                !int.TryParse(
-                    payload.Substring(0, delimiterIndex),
-                    NumberStyles.None,
-                    CultureInfo.InvariantCulture,
-                    out encodedShift) ||
-                encodedShift < 0 ||
-                encodedShift >= 26)
-            {
-                return false;
-            }
-
-            clearText = ApplyCaesar(payload.Substring(delimiterIndex + 1), -encodedShift);
-            return true;
+            return ReversibleStringTransforms.TryReverseCaesarPayload(payload, out clearText);
         }
 
         private static int NormalizeCaesarShift(int shift)
         {
             int normalized = shift % 26;
             return normalized < 0 ? normalized + 26 : normalized;
-        }
-
-        private static string ApplyCaesar(string value, int shift)
-        {
-            int normalizedShift = NormalizeCaesarShift(shift);
-            char[] characters = value.ToCharArray();
-
-            for (int index = 0; index < characters.Length; index++)
-            {
-                char character = characters[index];
-
-                if (character is >= 'a' and <= 'z')
-                {
-                    characters[index] = (char)('a' + ((character - 'a' + normalizedShift) % 26));
-                }
-                else if (character is >= 'A' and <= 'Z')
-                {
-                    characters[index] = (char)('A' + ((character - 'A' + normalizedShift) % 26));
-                }
-            }
-
-            return new string(characters);
-        }
-
-        private static string EncodeDataProtection(string clearText, IDataProtector protector)
-        {
-            string protectedPayload = protector.Protect(clearText);
-            return EncodedConfigurationValueFormat.Wrap(
-                EncodedConfigurationValueKind.DataProtection,
-                protectedPayload);
-        }
-
-        private static bool TryDecodeDataProtectionValue(
-            string encodedValue,
-            IDataProtector protector,
-            out string clearText)
-        {
-            clearText = encodedValue;
-
-            if (!EncodedConfigurationValueFormat.TryUnwrap(
-                    encodedValue,
-                    out EncodedConfigurationValueKind encoding,
-                    out string payload) ||
-                encoding != EncodedConfigurationValueKind.DataProtection)
-            {
-                return false;
-            }
-
-            try
-            {
-                clearText = protector.Unprotect(payload);
-                return true;
-            }
-            catch (CryptographicException)
-            {
-                clearText = encodedValue;
-                return false;
-            }
         }
 
         private static string ResolveDefaultDataProtectionApplicationName()
@@ -692,236 +508,29 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             return true;
         }
 
-        private static string EncodeAesPassword(string clearText, string password)
-        {
-            byte[] salt = RandomNumberGenerator.GetBytes(AesSaltSize);
-            byte[] nonce = RandomNumberGenerator.GetBytes(AesNonceSize);
-            byte[] key = Rfc2898DeriveBytes.Pbkdf2(
-                password,
-                salt,
-                AesPbkdf2Iterations,
-                HashAlgorithmName.SHA256,
-                AesKeySize);
-            byte[] clearBytes = Encoding.UTF8.GetBytes(clearText);
-            byte[] cipherBytes = new byte[clearBytes.Length];
-            byte[] tag = new byte[AesTagSize];
-
-            try
-            {
-                using var aes = new AesGcm(key, AesTagSize);
-                aes.Encrypt(nonce, clearBytes, cipherBytes, tag);
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(key);
-            }
-
-            // Base64Url here is only the storage representation for binary AES payload parts. It is not the
-            // user-selectable Base64 codec and therefore does not add a pipeline transformation step.
-            // The explicit version is part of the persisted AES payload contract. Future KDF/cipher changes can add a new
-            // version without silently making previously written values undecodable.
-            string payload = string.Join(
-                ".",
-                AesPayloadVersion,
-                Base64Url.Encode(salt),
-                Base64Url.Encode(nonce),
-                Base64Url.Encode(tag),
-                Base64Url.Encode(cipherBytes));
-
-            return EncodedConfigurationValueFormat.Wrap(EncodedConfigurationValueKind.AesPassword, payload);
-        }
-
-        private static bool TryDecodeBase64Value(string encodedValue, out string clearText)
-        {
-            clearText = encodedValue;
-            return EncodedConfigurationValueFormat.TryUnwrap(
-                    encodedValue,
-                    out EncodedConfigurationValueKind encoding,
-                    out string payload) &&
-                encoding == EncodedConfigurationValueKind.Base64 &&
-                TryDecodeBase64Payload(payload, out clearText);
-        }
-
-        private static bool TryDecodeDpapiBase64Value(string encodedValue, out string clearText)
-        {
-            clearText = encodedValue;
-            return EncodedConfigurationValueFormat.TryUnwrap(
-                    encodedValue,
-                    out EncodedConfigurationValueKind encoding,
-                    out string payload) &&
-                encoding == EncodedConfigurationValueKind.DpapiMachine &&
-                TryDecodeDpapiBase64Payload(payload, out clearText);
-        }
-
-        private static bool TryDecodeDpapiBase64UrlValue(string encodedValue, out string clearText)
-        {
-            clearText = encodedValue;
-            return EncodedConfigurationValueFormat.TryUnwrap(
-                    encodedValue,
-                    out EncodedConfigurationValueKind encoding,
-                    out string payload) &&
-                encoding == EncodedConfigurationValueKind.DpapiMachineBase64Url &&
-                TryDecodeDpapiBase64UrlPayload(payload, out clearText);
-        }
-
-        private static bool TryDecodeAesPasswordValue(
-            string encodedValue,
-            string password,
-            out string clearText)
-        {
-            clearText = encodedValue;
-
-            if (!EncodedConfigurationValueFormat.TryUnwrap(
-                    encodedValue,
-                    out EncodedConfigurationValueKind encoding,
-                    out string payload) ||
-                encoding != EncodedConfigurationValueKind.AesPassword)
-            {
-                return false;
-            }
-
-            string[] parts = payload.Split('.', StringSplitOptions.None);
-            if (parts.Length != 5 ||
-                !string.Equals(parts[0], AesPayloadVersion, StringComparison.Ordinal) ||
-                !Base64Url.TryDecode(parts[1], out byte[] salt) || salt.Length != AesSaltSize ||
-                !Base64Url.TryDecode(parts[2], out byte[] nonce) || nonce.Length != AesNonceSize ||
-                !Base64Url.TryDecode(parts[3], out byte[] tag) || tag.Length != AesTagSize ||
-                !Base64Url.TryDecode(parts[4], out byte[] cipherBytes))
-            {
-                return false;
-            }
-
-            byte[] key = Rfc2898DeriveBytes.Pbkdf2(
-                password,
-                salt,
-                AesPbkdf2Iterations,
-                HashAlgorithmName.SHA256,
-                AesKeySize);
-            byte[] clearBytes = new byte[cipherBytes.Length];
-
-            try
-            {
-                using var aes = new AesGcm(key, AesTagSize);
-                aes.Decrypt(nonce, cipherBytes, tag, clearBytes);
-                clearText = StrictUtf8.GetString(clearBytes);
-                return true;
-            }
-            catch (CryptographicException)
-            {
-                clearText = encodedValue;
-                return false;
-            }
-            catch (DecoderFallbackException)
-            {
-                clearText = encodedValue;
-                return false;
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(key);
-            }
-        }
-
         internal static bool TryDecodeBase64Payload(string payload, out string clearText)
         {
-            clearText = string.Empty;
-
-            try
-            {
-                clearText = StrictUtf8.GetString(Convert.FromBase64String(payload));
-                return true;
-            }
-            catch (FormatException)
-            {
-                return false;
-            }
-            catch (DecoderFallbackException)
-            {
-                return false;
-            }
+            return ReversibleStringTransforms.Base64.TryReverse(payload, out clearText);
         }
 
         internal static bool TryDecodeDpapiBase64Payload(string payload, out string clearText)
         {
-            clearText = string.Empty;
-
-            try
-            {
-                return TryUnprotect(Convert.FromBase64String(payload), out clearText);
-            }
-            catch (FormatException)
-            {
-                return false;
-            }
+            return ReversibleStringTransforms.DpapiMachine.TryReverse(payload, out clearText);
         }
 
         internal static bool TryDecodeDpapiBase64UrlPayload(string payload, out string clearText)
         {
-            clearText = string.Empty;
-            return Base64Url.TryDecode(payload, out byte[] protectedBytes) &&
-                TryUnprotect(protectedBytes, out clearText);
+            return ReversibleStringTransforms.DpapiMachineBase64Url.TryReverse(payload, out clearText);
         }
 
         private static string NormalizeReadablePassword(string password, string parameterName)
         {
-            ArgumentException.ThrowIfNullOrEmpty(password, parameterName);
-
-            for (int index = 0; index < password.Length; index++)
-            {
-                char value = password[index];
-                if (value < '!' || value > '~')
-                {
-                    throw new ArgumentException(
-                        $"Password character at index {index} is U+{(int)value:X4}; only visible ASCII characters U+0021 through U+007E are allowed.",
-                        parameterName);
-                }
-            }
-
-            return password;
+            return ReversibleStringTransforms.NormalizeReadablePassword(password, parameterName);
         }
 
         private static string NormalizeReadablePassword(byte[] passwordBytes, string parameterName)
         {
-            ArgumentNullException.ThrowIfNull(passwordBytes, parameterName);
-
-            if (passwordBytes.Length == 0)
-            {
-                throw new ArgumentException("Password byte representation must not be empty.", parameterName);
-            }
-
-            for (int index = 0; index < passwordBytes.Length; index++)
-            {
-                byte value = passwordBytes[index];
-                if (value < 0x21 || value > 0x7E)
-                {
-                    throw new ArgumentException(
-                        $"Password byte at index {index} is 0x{value:X2}; only visible ASCII bytes 0x21 through 0x7E are allowed.",
-                        parameterName);
-                }
-            }
-
-            return Encoding.ASCII.GetString(passwordBytes);
-        }
-
-        private static bool TryUnprotect(byte[] protectedBytes, out string clearText)
-        {
-            clearText = string.Empty;
-
-            if (!DpapiMachineProtection.TryUnprotect(protectedBytes, out byte[] clearBytes))
-            {
-                return false;
-            }
-
-            try
-            {
-                clearText = StrictUtf8.GetString(clearBytes);
-                return true;
-            }
-            catch (DecoderFallbackException)
-            {
-                clearText = string.Empty;
-                return false;
-            }
+            return ReversibleStringTransforms.NormalizeReadablePassword(passwordBytes, parameterName);
         }
     }
 
@@ -1020,49 +629,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
         public static bool HasRecognizedWrapper(string? value)
         {
             return TryUnwrap(value, out _, out _);
-        }
-    }
-
-    internal static class Base64Url
-    {
-        public static string Encode(byte[] bytes)
-        {
-            ArgumentNullException.ThrowIfNull(bytes);
-
-            return Convert.ToBase64String(bytes)
-                .Replace('+', '-')
-                .Replace('/', '_')
-                .TrimEnd('=');
-        }
-
-        public static bool TryDecode(string? value, out byte[] bytes)
-        {
-            bytes = Array.Empty<byte>();
-
-            if (value is null)
-            {
-                return false;
-            }
-
-            try
-            {
-                string padded = value.Replace('-', '+').Replace('_', '/');
-                int remainder = padded.Length % 4;
-
-                if (remainder != 0)
-                {
-                    padded = padded.PadRight(padded.Length + 4 - remainder, '=');
-                }
-
-                bytes = Convert.FromBase64String(padded);
-                return true;
-            }
-            catch (FormatException)
-            {
-                return false;
             }
         }
-    }
     internal static class EncodedConfigurationValueDecoder
     {
         public static bool TryDecode(string? value, out string clearText)

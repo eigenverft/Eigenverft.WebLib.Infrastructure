@@ -1,14 +1,22 @@
 using System;
 
+using Eigenverft.WebLib.Infrastructure.Transformations;
+
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 {
     /// <summary>
-    /// Represents one reversible JSON-settings value transformation.
+    /// Represents one self-describing persisted JSON-settings value codec built around a reversible string operation.
     /// </summary>
     /// <remarks>
-    /// A codec may provide protection, obfuscation, or only a storage representation. Those roles are deliberately
-    /// distinct: for example, Base64 is useful for representing text or binary-derived data as a string but provides
-    /// no confidentiality. Codecs can be composed; encoding runs in declaration order and decoding in reverse order.
+    /// <para>
+    /// The neutral reversible operation is separate from this type. This codec owns JSON-settings persistence concerns:
+    /// recognized wrapper framing, persisted kind/version compatibility, complete decode semantics, and nested codec composition.
+    /// </para>
+    /// <para>
+    /// A codec may frame a transform that provides protection, obfuscation, or only a storage representation. Those roles are
+    /// deliberately distinct: for example, Base64 provides no confidentiality. Codec composition encodes in declaration order
+    /// and decodes in reverse while preserving each stage's persisted wrapper.
+    /// </para>
     /// </remarks>
     public sealed class JsonSettingsValueCodec
     {
@@ -16,6 +24,33 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 
         private readonly Func<string, string> _encode;
         private readonly TryDecodeDelegate _tryDecode;
+
+        internal JsonSettingsValueCodec(
+            string name,
+            EncodedConfigurationValueKind persistedKind,
+            ReversibleStringTransform transform)
+            : this(
+                name,
+                clearText => EncodedConfigurationValueFormat.Wrap(persistedKind, transform.Apply(clearText)),
+                (string encodedValue, out string clearText) =>
+                {
+                    clearText = encodedValue;
+                    if (!EncodedConfigurationValueFormat.TryUnwrap(
+                            encodedValue,
+                            out EncodedConfigurationValueKind actualKind,
+                            out string payload) ||
+                        actualKind != persistedKind ||
+                        !transform.TryReverse(payload, out string reversed))
+                    {
+                        return false;
+                    }
+
+                    clearText = reversed;
+                    return true;
+                })
+        {
+            ArgumentNullException.ThrowIfNull(transform);
+        }
 
         internal JsonSettingsValueCodec(
             string name,

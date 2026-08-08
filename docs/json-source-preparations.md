@@ -2,7 +2,25 @@
 
 This feature adds one extension boundary between JSON parsing and configuration publication.
 
-It is intentionally parallel to the existing encoded-settings stack. `EncodeAndAddEnvironmentJsonSettings`, `JsonSettingsValueEncoders`, decoded JSON providers, persisted formats, and existing shortcuts remain unchanged.
+It is intentionally compatible with the existing encoded-settings stack. Existing public APIs, persisted `enc:` formats, V1 defaults, and shortcuts remain unchanged, while their reversible value operations are now shared through a neutral transform layer.
+
+The three ownership layers are deliberately different:
+
+```text
+ReversibleStringTransform
+    reversible string operation only
+    no JSON, no enc: wrapper, no provider lifecycle
+            ↓
+JsonSettingsValueCodec
+    persisted enc: framing + token/version compatibility
+    nested codec composition + migration contract
+            ↓
+JsonConfigurationCandidatePreparation
+    apply decode/validation/normalization to an isolated candidate
+    reject before publication on failure
+```
+
+This means the same AES, DPAPI, Base92, ROT13, Caesar, Data Protection, and machine-binding operations can be tested and reused independently without making either the encoded-settings stack or SwitchableJson own those implementations.
 
 The application-facing idea is simple:
 
@@ -19,6 +37,26 @@ IConfiguration
 ```
 
 A candidate preparation may decode values, validate them, normalize them, or perform several such steps as one reusable bundle.
+
+## Neutral reversible transforms
+
+The lowest reusable layer can be used without JSON configuration at all:
+
+```csharp
+ReversibleStringTransform transform =
+    ReversibleStringTransforms.AesPassword("example-password");
+
+string payload = transform.Apply("secret-value");
+
+if (!transform.TryReverse(payload, out string clearText))
+{
+    throw new InvalidOperationException("The value cannot be reversed in this transform context.");
+}
+```
+
+`payload` above is only the transform payload. It does **not** contain the JSON-settings `enc:<token>:` framing. `JsonSettingsValueCodec` adds and validates that persistence contract when the same operation is used by `JsonSettingsValueEncoders`, `EncodeAndAddEnvironmentJsonSettings`, decoded JSON providers, or candidate preparations.
+
+Raw transform `Compose(...)` is likewise value-level composition only. It does not insert persistence framing between stages. The established `JsonSettingsValueEncoders.Compose(...)` remains the correct API when nested persisted wrappers and V1 compatibility matter.
 
 ## Application-facing API
 
