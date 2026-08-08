@@ -214,7 +214,9 @@ Editing `ApplyMode` in JSON does not change policy; the code-owned value wins an
 
 ## Programmatic switching
 
-The coordinator is available through keyed DI and can be switched directly:
+There are deliberately two programmatic control paths.
+
+A direct keyed coordinator switch is **ephemeral runtime control**:
 
 ```csharp
 var coordinator = services.GetRequiredKeyedService<IConfigurationSetCoordinator>(
@@ -223,7 +225,22 @@ var coordinator = services.GetRequiredKeyedService<IConfigurationSetCoordinator>
 ConfigurationSetSwitchResult result = coordinator.TrySwitch("Failover");
 ```
 
-A direct coordinator switch is currently a runtime operation only. It does not automatically rewrite `ConfigurationSets.json`. This distinction is intentional until persistent programmatic switching receives its own explicit state-store API.
+It changes the running coordinator but does not rewrite the state store's desired value or `ConfigurationSets.json`.
+
+For persistent control, use the state store:
+
+```csharp
+var stateStore = services.GetRequiredService<IConfigurationSetStateStore>();
+
+ConfigurationSetStateApplyResult result =
+    stateStore.TrySetDesiredValue("RoutingProfile", "Failover");
+```
+
+`TrySetDesiredValue(...)` persists the canonical desired state before any live switch is attempted. For a `Runtime` set, the coordinator is then switched immediately. If candidate preparation rejects, the persisted desired value remains while the active runtime stays on last-known-good; `HasDesiredStateDrift` exposes that difference and a later `Reload()` can retry convergence.
+
+For a `StartupOnly` set, `TrySetDesiredValue(...)` persists the new value without changing the running coordinator and returns a pending-restart change.
+
+The state store uses separate lifecycle event kinds for programmatic desired-state updates, and its own canonical write is suppressed from echoing back through the file watcher as a second artificial apply event.
 
 ## Observability
 
@@ -303,12 +320,11 @@ They add a semantic coordination layer above configuration sources: a named valu
 - self-describing central state file;
 - per-set `Runtime` / `StartupOnly` state-file policy;
 - visible code-owned `ApplyMode` metadata;
-- desired-vs-active status and pending-restart reporting;
+- desired-vs-active status, generic desired-state drift, and pending-restart reporting;
+- explicit persistent `TrySetDesiredValue(...)` control distinct from ephemeral coordinator switching;
+- persistent Runtime requests retain desired state when last-known-good runtime activation rejects;
+- internal state-file writes do not echo as duplicate watcher apply events;
 - global watcher disable through `reloadOnChange: false`;
 - runtime file watching when enabled.
 
-## Current open V1 decision
-
-One state-management contract remains intentionally explicit rather than hidden behind convenience behavior: a persistent programmatic switch API that changes desired state in `ConfigurationSets.json` as well as runtime state, distinct from the existing ephemeral `IConfigurationSetCoordinator.TrySwitch(...)` primitive.
-
-That should be resolved before an administrative HTTP integration claims a persistent control-plane contract.
+The core state-management distinction needed by a later administrative HTTP or CLI integration is now explicit: those surfaces can choose persistent state-store control or ephemeral coordinator control rather than relying on hidden behavior.

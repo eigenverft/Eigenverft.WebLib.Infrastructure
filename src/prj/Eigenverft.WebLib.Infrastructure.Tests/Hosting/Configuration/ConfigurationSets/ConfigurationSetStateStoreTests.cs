@@ -605,6 +605,200 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Configuration.Configura
             host.StopAsync().GetAwaiter().GetResult();
         }
 
+        [TestMethod]
+        public void PersistentRuntimeDesiredValueIsWrittenBeforeLiveSwitchAndPublishesLifecycle()
+        {
+            using var directory = new TemporaryDirectory();
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator routing = builder
+                .AddConfigurationSet("RoutingProfile", "Primary", "Failover")
+                .Coordinator;
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+
+            ConfigurationSetStateStoreEventArgs? observed = null;
+            store.LifecycleChanged += (_, args) =>
+            {
+                if (args.Kind == ConfigurationSetStateStoreEventKind.DesiredValueUpdated)
+                {
+                    observed = args;
+                }
+            };
+
+            ConfigurationSetStateApplyResult result = store.TrySetDesiredValue("RoutingProfile", "Failover");
+
+            Assert.IsTrue(result.Succeeded);
+            Assert.AreEqual(1, result.SetResults.Count);
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Succeeded, result.SetResults[0].Status);
+            Assert.AreEqual("Failover", routing.ActiveValue);
+            Assert.IsNotNull(observed);
+            Assert.AreSame(result, observed.ApplyResult);
+
+            ConfigurationSetStateStatus status = store.GetStatus().SetStates.Single();
+            Assert.AreEqual("Failover", status.ActiveValue);
+            Assert.AreEqual("Failover", status.DesiredValue);
+            Assert.IsFalse(status.HasDesiredStateDrift);
+
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(store.FilePath));
+            JsonElement routingState = document.RootElement.GetProperty("ConfigurationSets").GetProperty("RoutingProfile");
+            Assert.AreEqual("Failover", routingState.GetProperty("Value").GetString());
+            Assert.AreEqual("Runtime", routingState.GetProperty("ApplyMode").GetString());
+        }
+
+        [TestMethod]
+        public void PersistentStartupOnlyDesiredValueIsWrittenAndReportedPendingWithoutLiveSwitch()
+        {
+            using var directory = new TemporaryDirectory();
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator release = builder
+                .AddConfigurationSet("ReleaseChannel", "Stable", "Beta")
+                .StateFileApplyMode(ConfigurationSetStateApplyMode.StartupOnly)
+                .Coordinator;
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+
+            ConfigurationSetStateApplyResult result = store.TrySetDesiredValue("ReleaseChannel", "Beta");
+
+            Assert.IsTrue(result.Succeeded);
+            Assert.AreEqual(0, result.SetResults.Count);
+            Assert.IsTrue(result.HasPendingRestart);
+            Assert.AreEqual(1, result.PendingRestartChanges.Count);
+            Assert.AreEqual("Stable", release.ActiveValue);
+
+            ConfigurationSetStateStoreStatus status = store.GetStatus();
+            ConfigurationSetStateStatus releaseStatus = status.SetStates.Single();
+            Assert.AreEqual("Stable", releaseStatus.ActiveValue);
+            Assert.AreEqual("Beta", releaseStatus.DesiredValue);
+            Assert.IsTrue(releaseStatus.HasDesiredStateDrift);
+            Assert.IsTrue(releaseStatus.HasPendingRestart);
+
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(store.FilePath));
+            JsonElement releaseState = document.RootElement.GetProperty("ConfigurationSets").GetProperty("ReleaseChannel");
+            Assert.AreEqual("Beta", releaseState.GetProperty("Value").GetString());
+            Assert.AreEqual("StartupOnly", releaseState.GetProperty("ApplyMode").GetString());
+        }
+
+        [TestMethod]
+        public void PersistentRuntimeDesiredValueRemainsPersistedWhenCandidatePreparationRejectsAndCanLaterConverge()
+        {
+            using var directory = new TemporaryDirectory();
+            directory.Write("routing-primary.json", "{ \"RouteMarker\": \"Primary\" }");
+
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator routing = builder
+                .AddConfigurationSet("RoutingProfile", "Primary", "Failover")
+                .AddSwitchableJson(value => value == "Primary" ? "routing-primary.json" : "routing-failover.json")
+                .Coordinator;
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+
+            ConfigurationSetStateApplyResult rejected = store.TrySetDesiredValue("RoutingProfile", "Failover");
+
+            Assert.AreEqual(ConfigurationSetStateApplyStatus.CompletedWithFailures, rejected.Status);
+            Assert.AreEqual(ConfigurationSetStateFailureKind.SetSwitchRejected, rejected.FailureKind);
+            Assert.AreEqual(ConfigurationSetSwitchStatus.Rejected, rejected.SetResults.Single().Status);
+            Assert.AreEqual("Primary", routing.ActiveValue);
+            Assert.AreEqual("Primary", builder.Configuration["RouteMarker"]);
+
+            ConfigurationSetStateStatus drift = store.GetStatus().SetStates.Single();
+            Assert.AreEqual("Failover", drift.DesiredValue);
+            Assert.AreEqual("Primary", drift.ActiveValue);
+            Assert.IsTrue(drift.HasDesiredStateDrift);
+            Assert.IsFalse(drift.HasPendingRestart);
+
+            using (JsonDocument document = JsonDocument.Parse(File.ReadAllText(store.FilePath)))
+            {
+                Assert.AreEqual(
+                    "Failover",
+                    document.RootElement
+                        .GetProperty("ConfigurationSets")
+                        .GetProperty("RoutingProfile")
+                        .GetProperty("Value")
+                        .GetString());
+            }
+
+            directory.Write("routing-failover.json", "{ \"RouteMarker\": \"Failover\" }");
+            ConfigurationSetStateApplyResult retried = store.Reload();
+
+            Assert.IsTrue(retried.Succeeded);
+            Assert.AreEqual("Failover", routing.ActiveValue);
+            Assert.AreEqual("Failover", builder.Configuration["RouteMarker"]);
+            Assert.IsFalse(store.GetStatus().HasDesiredStateDrift);
+        }
+
+        [TestMethod]
+        public void DirectCoordinatorSwitchRemainsEphemeralAndDoesNotRewriteStateStoreDesiredValue()
+        {
+            using var directory = new TemporaryDirectory();
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            IConfigurationSetCoordinator routing = builder
+                .AddConfigurationSet("RoutingProfile", "Primary", "Failover")
+                .Coordinator;
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: false);
+
+            ConfigurationSetSwitchResult direct = routing.TrySwitch("Failover");
+
+            Assert.IsTrue(direct.Succeeded);
+            Assert.AreEqual("Failover", routing.ActiveValue);
+            ConfigurationSetStateStatus state = store.GetStatus().SetStates.Single();
+            Assert.AreEqual("Primary", state.DesiredValue);
+            Assert.AreEqual("Failover", state.ActiveValue);
+            Assert.IsTrue(state.HasDesiredStateDrift);
+            Assert.IsFalse(state.HasPendingRestart);
+
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(store.FilePath));
+            Assert.AreEqual(
+                "Primary",
+                document.RootElement
+                    .GetProperty("ConfigurationSets")
+                    .GetProperty("RoutingProfile")
+                    .GetProperty("Value")
+                    .GetString());
+        }
+
+        [TestMethod]
+        public void PersistentDesiredValueWriteDoesNotEchoAsWatcherStateApply()
+        {
+            using var directory = new TemporaryDirectory();
+            HostApplicationBuilder builder = CreateBuilder(directory.Path);
+            _ = builder.AddConfigurationSet("RoutingProfile", "Primary", "Failover");
+            IConfigurationSetStateStore store = builder.AddConfigurationSetStateFile(
+                "ConfigurationSets.json",
+                reloadOnChange: true,
+                reloadDelayMilliseconds: 25);
+
+            using IHost host = builder.Build();
+            host.StartAsync().GetAwaiter().GetResult();
+
+            int desiredValueEvents = 0;
+            int watcherApplyEvents = 0;
+            store.LifecycleChanged += (_, args) =>
+            {
+                if (args.Kind == ConfigurationSetStateStoreEventKind.DesiredValueUpdated)
+                {
+                    Interlocked.Increment(ref desiredValueEvents);
+                }
+                else if (args.Kind == ConfigurationSetStateStoreEventKind.StateApplied)
+                {
+                    Interlocked.Increment(ref watcherApplyEvents);
+                }
+            };
+
+            ConfigurationSetStateApplyResult result = store.TrySetDesiredValue("RoutingProfile", "Failover");
+            Assert.IsTrue(result.Succeeded);
+
+            Thread.Sleep(600);
+
+            Assert.AreEqual(1, desiredValueEvents);
+            Assert.AreEqual(0, watcherApplyEvents);
+            host.StopAsync().GetAwaiter().GetResult();
+        }
+
         private static HostApplicationBuilder CreateBuilder(string contentRootPath)
         {
             return new HostApplicationBuilder(new HostApplicationBuilderSettings

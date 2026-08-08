@@ -28,6 +28,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         private readonly int _reloadDelayMilliseconds;
         private ConfigurationSetStateFileWatcher? _watcher;
         private ConfigurationSetStateApplyResult? _lastApplyResult;
+        private string? _pendingInternalWatcherSuppressionContent;
         private long _sequence;
         private bool _disposed;
 
@@ -174,6 +175,118 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             }
 
             PublishApplyLifecycle(result);
+            return result;
+        }
+
+        public ConfigurationSetStateApplyResult TrySetDesiredValue(string setName, string value)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(setName);
+            ArgumentException.ThrowIfNullOrWhiteSpace(value);
+
+            ConfigurationSetStateApplyResult result;
+
+            lock (_gate)
+            {
+                ThrowIfDisposed();
+
+                long sequence = ++_sequence;
+                DateTimeOffset timestamp = DateTimeOffset.UtcNow;
+
+                if (!_coordinatorLookup.TryGetValue(setName, out IConfigurationSetCoordinator? coordinator))
+                {
+                    result = CreateRejected(
+                        ConfigurationSetStateFailureKind.SetNotFound,
+                        new InvalidOperationException($"Configuration set '{setName}' is not managed by this state store."),
+                        sequence,
+                        timestamp);
+                }
+                else if (!coordinator.IsAllowed(value))
+                {
+                    result = CreateRejected(
+                        ConfigurationSetStateFailureKind.ValueNotAllowed,
+                        new InvalidOperationException(
+                            $"Value '{value}' is not allowed by registered configuration set '{setName}'."),
+                        sequence,
+                        timestamp);
+                }
+                else
+                {
+                    string previousDesiredValue = _desiredValues[setName];
+                    _desiredValues[setName] = value;
+                    Exception? persistenceException = null;
+
+                    try
+                    {
+                        WriteCanonicalLocked();
+                    }
+                    catch (IOException ex)
+                    {
+                        persistenceException = ex;
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        persistenceException = ex;
+                    }
+
+                    if (persistenceException is not null)
+                    {
+                        _desiredValues[setName] = previousDesiredValue;
+                        result = CreateRejected(
+                            ConfigurationSetStateFailureKind.IoError,
+                            persistenceException,
+                            sequence,
+                            timestamp);
+                    }
+                    else if (_applyModes[setName] == ConfigurationSetStateApplyMode.StartupOnly)
+                    {
+                        IReadOnlyList<ConfigurationSetPendingRestartChange> pending =
+                            string.Equals(coordinator.ActiveValue, value, StringComparison.Ordinal)
+                                ? Array.Empty<ConfigurationSetPendingRestartChange>()
+                                : new ReadOnlyCollection<ConfigurationSetPendingRestartChange>(
+                                    new List<ConfigurationSetPendingRestartChange>
+                                    {
+                                        new ConfigurationSetPendingRestartChange(
+                                            setName,
+                                            coordinator.ActiveValue,
+                                            value,
+                                            ConfigurationSetStateApplyMode.StartupOnly),
+                                    });
+
+                        result = new ConfigurationSetStateApplyResult(
+                            ConfigurationSetStateApplyStatus.Succeeded,
+                            ConfigurationSetStateFailureKind.None,
+                            Array.Empty<ConfigurationSetSwitchResult>(),
+                            pending,
+                            exception: null,
+                            sequence,
+                            timestamp);
+                    }
+                    else
+                    {
+                        ConfigurationSetSwitchResult switchResult = coordinator.TrySwitch(value);
+                        IReadOnlyList<ConfigurationSetSwitchResult> switchResults =
+                            new ReadOnlyCollection<ConfigurationSetSwitchResult>(
+                                new List<ConfigurationSetSwitchResult> { switchResult });
+
+                        result = new ConfigurationSetStateApplyResult(
+                            switchResult.Succeeded
+                                ? ConfigurationSetStateApplyStatus.Succeeded
+                                : ConfigurationSetStateApplyStatus.CompletedWithFailures,
+                            switchResult.Succeeded
+                                ? ConfigurationSetStateFailureKind.None
+                                : ConfigurationSetStateFailureKind.SetSwitchRejected,
+                            switchResults,
+                            Array.Empty<ConfigurationSetPendingRestartChange>(),
+                            exception: null,
+                            sequence,
+                            timestamp);
+                    }
+                }
+
+                _lastApplyResult = result;
+            }
+
+            PublishDesiredValueLifecycle(result);
             return result;
         }
 
@@ -443,6 +556,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             {
                 File.WriteAllText(temporaryPath, canonical, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 File.Move(temporaryPath, FilePath, overwrite: true);
+                _pendingInternalWatcherSuppressionContent = canonical;
             }
             finally
             {
@@ -480,11 +594,55 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
                     return;
                 }
 
+                if (_pendingInternalWatcherSuppressionContent is string internallyWrittenContent)
+                {
+                    _pendingInternalWatcherSuppressionContent = null;
+
+                    try
+                    {
+                        if (File.Exists(FilePath) &&
+                            string.Equals(
+                                File.ReadAllText(FilePath, Encoding.UTF8),
+                                internallyWrittenContent,
+                                StringComparison.Ordinal))
+                        {
+                            return;
+                        }
+                    }
+                    catch (IOException)
+                    {
+                        // Fall through so the normal reload path can classify and publish the I/O failure.
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // Fall through so the normal reload path can classify and publish the access failure.
+                    }
+                }
+
                 result = ReloadLocked(canonicalizeOnSuccess: true, isStartup: false);
                 _lastApplyResult = result;
             }
 
             PublishApplyLifecycle(result);
+        }
+
+        private void PublishDesiredValueLifecycle(ConfigurationSetStateApplyResult result)
+        {
+            ConfigurationSetStateStoreEventKind kind = result.Status switch
+            {
+                ConfigurationSetStateApplyStatus.Succeeded => ConfigurationSetStateStoreEventKind.DesiredValueUpdated,
+                ConfigurationSetStateApplyStatus.CompletedWithFailures => ConfigurationSetStateStoreEventKind.DesiredValueUpdatedWithFailures,
+                ConfigurationSetStateApplyStatus.Rejected => ConfigurationSetStateStoreEventKind.DesiredValueUpdateRejected,
+                _ => throw new InvalidOperationException($"Unsupported state apply status '{result.Status}'."),
+            };
+
+            PublishLifecycle(
+                new ConfigurationSetStateStoreEventArgs(
+                    kind,
+                    result,
+                    FilePath,
+                    result.Sequence,
+                    result.Timestamp));
         }
 
         private void PublishApplyLifecycle(ConfigurationSetStateApplyResult result)

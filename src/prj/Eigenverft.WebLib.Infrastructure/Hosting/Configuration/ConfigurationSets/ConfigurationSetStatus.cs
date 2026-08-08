@@ -63,10 +63,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets the code-owned state-file apply policy.</summary>
         public ConfigurationSetStateApplyMode ApplyMode { get; }
 
+        /// <summary>Gets whether the desired state differs from the value active in the running process.</summary>
+        public bool HasDesiredStateDrift =>
+            !string.Equals(ActiveValue, DesiredValue, System.StringComparison.Ordinal);
+
         /// <summary>Gets whether the desired startup-only value differs from the active runtime value.</summary>
         public bool HasPendingRestart =>
             ApplyMode == ConfigurationSetStateApplyMode.StartupOnly &&
-            !string.Equals(ActiveValue, DesiredValue, System.StringComparison.Ordinal);
+            HasDesiredStateDrift;
 
         /// <summary>Gets whether all bound participants are known to represent <see cref="ActiveValue"/>.</summary>
         public bool IsConsistent => Runtime.IsConsistent;
@@ -102,6 +106,23 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         /// <summary>Gets state-store snapshots including desired values and apply modes in registration order.</summary>
         public IReadOnlyList<ConfigurationSetStateStatus> SetStates { get; }
 
+        /// <summary>Gets whether any managed set has desired state different from its active runtime state.</summary>
+        public bool HasDesiredStateDrift
+        {
+            get
+            {
+                foreach (ConfigurationSetStateStatus state in SetStates)
+                {
+                    if (state.HasDesiredStateDrift)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
         /// <summary>Gets whether any startup-only set has a desired value waiting for the next host startup.</summary>
         public bool HasPendingRestart
         {
@@ -119,7 +140,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
             }
         }
 
-        /// <summary>Gets the most recent state-file apply result, or <see langword="null"/> when no state file has been applied yet.</summary>
+        /// <summary>Gets the most recent state-store apply or desired-value update result, or <see langword="null"/> before any state operation has completed.</summary>
         public ConfigurationSetStateApplyResult? LastApplyResult { get; }
     }
 }

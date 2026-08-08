@@ -26,7 +26,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
         Rejected = 2,
     }
 
-    /// <summary>Classifies state-file failures without coupling consumers to concrete exception types.</summary>
+    /// <summary>Classifies state-store file, validation, and switch failures without coupling consumers to concrete exception types.</summary>
     public enum ConfigurationSetStateFailureKind
     {
         /// <summary>No failure occurred.</summary>
@@ -46,6 +46,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         /// <summary>An input/output error prevented the state document from being read or materialized.</summary>
         IoError = 5,
+
+        /// <summary>A programmatic desired-state request references a configuration-set name not managed by this store.</summary>
+        SetNotFound = 6,
     }
 
     /// <summary>Identifies an observable configuration-set state-store lifecycle outcome.</summary>
@@ -62,6 +65,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         /// <summary>The state file was rejected before any requested set transition was attempted.</summary>
         StateRejected = 3,
+        /// <summary>A programmatic desired-value update was persisted and its allowed runtime action completed.</summary>
+        DesiredValueUpdated = 4,
+
+        /// <summary>A programmatic desired-value update was persisted, but its runtime transition did not fully complete.</summary>
+        DesiredValueUpdatedWithFailures = 5,
+
+        /// <summary>A programmatic desired-value update was rejected before desired state was persisted.</summary>
+        DesiredValueUpdateRejected = 6,
     }
 
     /// <summary>Describes a desired state-file value that is intentionally waiting for the next host startup.</summary>
@@ -190,6 +201,17 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.ConfigurationSe
 
         /// <summary>Loads the current state file and applies values permitted to change in the running host.</summary>
         ConfigurationSetStateApplyResult Reload();
+
+        /// <summary>
+        /// Persists one allowed desired value to the managed state file and then honors that set's registered apply mode.
+        /// </summary>
+        /// <remarks>
+        /// For <see cref="ConfigurationSetStateApplyMode.Runtime"/>, runtime switching is attempted only after the desired state file
+        /// was persisted successfully. If that runtime switch rejects, the persisted desired value remains and status reports
+        /// desired-state drift from the last-known-good active value. For <see cref="ConfigurationSetStateApplyMode.StartupOnly"/>,
+        /// the desired value is persisted and reported as pending restart without switching the running coordinator.
+        /// </remarks>
+        ConfigurationSetStateApplyResult TrySetDesiredValue(string setName, string value);
 
         /// <summary>Writes current desired values and authoritative state metadata to the state file.</summary>
         void Materialize();

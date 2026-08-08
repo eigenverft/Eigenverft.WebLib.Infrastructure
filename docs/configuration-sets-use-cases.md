@@ -336,7 +336,7 @@ Current implementation can credibly claim:
 
 Mixed per-profile `Runtime` / `StartupOnly` behavior is now part of the implementation. A startup-only edit remains visible as desired state with pending-restart status until the next host startup.
 
-Do not yet imply that a direct programmatic coordinator switch persists desired state across restart; direct `TrySwitch(...)` is currently runtime-only.
+Programmatic persistent control is available through `IConfigurationSetStateStore.TrySetDesiredValue(...)`. Keep the distinction explicit in product material: direct coordinator `TrySwitch(...)` is intentionally ephemeral runtime control, while the state-store API persists the desired baseline and honors `Runtime` / `StartupOnly`.
 
 ## Short positioning candidates
 

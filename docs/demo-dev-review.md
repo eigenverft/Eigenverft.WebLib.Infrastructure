@@ -1959,29 +1959,32 @@ This information lives in `ConfigurationSetStateStoreStatus.SetStates` and `Conf
 ✓ DesiredValue / ActiveValue / pending-restart diagnostics
 ✓ startup application of state-file values
 ✓ runtime watched state-file switching
+✓ persistent StateStore.TrySetDesiredValue control
+✓ generic desired-state drift diagnostics
+✓ persistent Runtime failure keeps desired value while active remains LKG
+✓ internal persistent writes do not echo as duplicate watcher applies
 ✓ global watcher disable when desired
 ✓ EventHub for arbitrary DI consumers
 ✓ per-set event subscription
 ✓ set-level aggregated change information
 ✓ distinction between logical/source/effective-config change
-✓ last-known-good on rejected participant preparation
-✓ partial-commit visibility and explicit inconsistency state
-```
-
-### Remaining state-management question
-
-The remaining V1 distinction is programmatic control:
+### Programmatic control is now explicit
 
 ```text
 coordinator.TrySwitch(value)
   = technical / ephemeral runtime switch
   = does not rewrite ConfigurationSets.json
 
-StateStore persistent desired-state API
-  = should update ConfigurationSets.json
-  = should honor Runtime / StartupOnly
-  = not implemented yet at this review point
+stateStore.TrySetDesiredValue(name, value)
+  = persists desired state first
+  = Runtime: then attempts live coordination
+  = StartupOnly: remains pending until restart
+  = rejected Runtime candidate: desired stays persisted, active stays LKG
 ```
+
+This separation gives a later Admin API, CLI, or operator service a deliberate choice instead of hidden persistence behavior.
+
+The implemented per-set default remains `Runtime`; `StartupOnly` is explicit opt-in. The remaining closure work is integration/regression coverage and optional higher-level diagnostics/control surfaces rather than another missing core state primitive.
 
 That persistent control-plane API is the next state-management block. The implemented per-set default is `Runtime`; `StartupOnly` is explicit opt-in.
 
