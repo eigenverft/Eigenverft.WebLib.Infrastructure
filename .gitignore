@@ -1,15 +1,28 @@
-**/bin/
-**/obj/
+# .NET and Visual Studio build artifacts
+[Bb]in/
+[Oo]bj/
 .vs/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+TestResults/
+
+# User- and editor-specific files
 *.user
 *.suo
-TestResults/
-artifacts/
+*.userosscache
+*.sln.docstates
+.vscode/
 
-# Agent run-once required local coverage
+# Sensitive file name patterns
 *[Ss][Ee][Cc][Rr][Ee][Tt]*
+
+# Local agent instruction files
 AGENTS.md
 AGENTS/
 .agents/**/*
-[Dd]ebug/
-[Rr]elease/
+
+# CI/CD outputs
+output/
+.github/workflows/.config/docfx/build/docfx_local.json
+distribute.ps1

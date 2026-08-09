@@ -303,6 +303,10 @@ dotnet build src/Eigenverft.WebLib.Infrastructure.slnx
 dotnet test src/Eigenverft.WebLib.Infrastructure.slnx
 ```
 
+## Release preparation
+
+NuGet packaging, DocFX, package-health checks, and the reusable CI/CD PowerShell support are prepared under `.github/workflows/`. The repository intentionally does **not** contain `.github/workflows/cicd.yml` yet, so no GitHub Actions release workflow is enabled by this preparation alone.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

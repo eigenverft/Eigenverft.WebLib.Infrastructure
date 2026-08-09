@@ -11,20 +11,31 @@
     <DebugType>embedded</DebugType>
     <IsPackable>true</IsPackable>
     <IsPublishable>false</IsPublishable>
+    <IsTestProject>false</IsTestProject>
+    <VersionBuild>0</VersionBuild>
+    <VersionMajor>1</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionRevision>0</VersionRevision>
+    <AssemblyVersion>$(VersionBuild).$(VersionMajor).$(VersionMinor).$(VersionRevision)</AssemblyVersion>
+    <Version>$(VersionBuild).$(VersionMajor).$(VersionMinor).$(VersionRevision)$(VersionSuffix)</Version>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>$(AssemblyName)</PackageId>
     <Authors>$(Branding)</Authors>
     <RepositoryUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <Description>Shared ASP.NET Core hosting infrastructure for self-contained Eigenverft web applications.</Description>
-    <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;directories;configuration;json</PackageTags>
+    <PackageIcon>eigenverft-logo-v7-harbor-square_128_128.png</PackageIcon>
+    <Description>Reusable ASP.NET Core hosting infrastructure for configuration, certificates, Kestrel, logging, and runtime settings.</Description>
+    <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;configuration;json;kestrel;certificates;logging;security;eigenverft</PackageTags>
     <Copyright>Copyright (c) 2026 $(Branding)</Copyright>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="../../../README.md" Pack="true" PackagePath="/" Link="README.md" />
+    <None Include="../../../README.NUGET.md" Pack="true" PackagePath="README.md" />
+    <None Include="../../../LICENSE" Pack="true" PackagePath="/" Link="LICENSE" />
+    <None Include="AddPackageFiles/eigenverft-logo-v7-harbor-square_128_128.png" Pack="true" PackagePath="/" />
   </ItemGroup>
 
   <ItemGroup>
