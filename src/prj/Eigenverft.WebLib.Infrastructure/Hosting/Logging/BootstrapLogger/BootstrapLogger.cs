@@ -121,7 +121,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Logging.BootstrapLogger
         /// <summary>
         /// Clears the cached factory. Intended for tests.
         /// </summary>
-        public static void ResetForTests()
+        internal static void ResetForTests()
         {
             BootstrapLoggerFactoryCache.ResetForTests();
         }
@@ -214,7 +214,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Logging.BootstrapLogger
         /// <summary>
         /// Clears the cached factory. Intended for tests.
         /// </summary>
-        public static void ResetForTests()
+        internal static void ResetForTests()
         {
             BootstrapLoggerFactoryCache.ResetForTests();
         }
@@ -370,7 +370,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Logging.BootstrapLogger
         /// <summary>
         /// Clears the cached factory. Intended for tests.
         /// </summary>
-        public static void ResetForTests()
+        internal static void ResetForTests()
         {
             lock (Gate)
             {
