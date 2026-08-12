@@ -10,7 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 using Eigenverft.WebLib.Infrastructure.Hosting.Kestrel;
-using Eigenverft.WebLib.Infrastructure.Security.Certificates;
+using Eigenverft.NetLib.Infrastructure.Security.Certificates;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Server.Kestrel.Core;

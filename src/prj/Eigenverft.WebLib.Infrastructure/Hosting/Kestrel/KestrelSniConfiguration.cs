@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 
-using Eigenverft.WebLib.Infrastructure.Security.Certificates;
+using Eigenverft.NetLib.Infrastructure.Security.Certificates;
 
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;

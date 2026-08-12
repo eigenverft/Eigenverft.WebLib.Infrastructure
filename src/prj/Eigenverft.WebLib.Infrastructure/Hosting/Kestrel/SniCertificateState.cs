@@ -8,7 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Eigenverft.WebLib.Infrastructure.Security.Certificates;
+using Eigenverft.NetLib.Infrastructure.Security.Certificates;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;

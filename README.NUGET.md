@@ -117,11 +117,9 @@ These mechanisms deliberately document their threat-model boundaries. Representa
 
 Serilog remains an optional consumer dependency: the production WebLib has no direct Serilog package reference and accesses the optional integration through reflection.
 
-### 🔏 Certificates
+### Certificates via NetLib
 
-`SelfSignedCertificateFactory.Create(...)` creates caller-owned self-signed certificates for TLS server/client, code-signing, and email-protection scenarios using RSA or ECDSA profiles.
-
-`ManagedCertificateFile.LoadOrCreate(...)` loads an existing managed PFX or creates a recovery certificate according to an explicit `CertificateRecoveryMode`. Managed-file replacement is prepared and validated before the target is replaced.
+The host-independent certificate primitives (`SelfSignedCertificateFactory`, `ManagedCertificateFile`, certificate option models, and `CertificateRecoveryMode`) are provided by `Eigenverft.NetLib.Infrastructure.Security.Certificates`. WebLib consumes them from its Kestrel/SNI integration and does not duplicate their implementation.
 
 ### 🌐 Kestrel and SNI
 

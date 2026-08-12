@@ -123,29 +123,16 @@ initialization throws. When used in a static field initializer, a required-mode
 failure can occur before the `Main` method body and may surface as a type
 initialization failure. This strict behavior is intentional.
 
-The `Eigenverft.WebLib.Infrastructure.Security.Certificates` namespace provides
-certificate functionality independently from Kestrel and configuration:
+The host-independent certificate primitives now live in
+`Eigenverft.NetLib.Infrastructure.Security.Certificates`. WebLib consumes those
+shared primitives from its Kestrel/SNI layer instead of maintaining a duplicate
+certificate implementation.
 
-- `SelfSignedCertificateFactory.Create(...)` creates caller-owned self-signed
-  certificates for TLS server, TLS client, combined TLS, code-signing, or email
-  protection purposes. RSA and ECDSA key profiles as well as separately typed
-  DNS and IP subject alternative names are supported.
-- `ManagedCertificateFile.LoadOrCreate(...)` loads a valid managed PFX or
-  creates a self-signed recovery certificate when the file is missing, outside
-  its validity period, unreadable, password-mismatched, or lacks a private key.
-  `CertificateRecoveryMode` controls whether that recovery may replace an
-  existing PFX.
-
-Managed PFX replacement is written to a temporary file in the target directory,
-loaded and validated, and only then moved over the target. If certificate
-creation succeeds but persistence fails, the result exposes the file exception
-and returns the usable certificate in memory with `Persisted == false`.
-`LoadException` retains a read, access, or import error that caused recovery;
-`ExistingFilePreserved` distinguishes deliberate protection from a failed
-persistence attempt.
-`ManagedCertificateResult.Certificate` is always owned and disposed by the
-caller. The certificate feature has no dependency on ASP.NET Core hosting,
-Kestrel, SNI matching, configuration reload, or logging.
+`SelfSignedCertificateFactory`, `ManagedCertificateFile`, the certificate option
+models, and `CertificateRecoveryMode` are therefore provided by NetLib. Their
+managed-PFX behavior remains unchanged: recovery is policy-controlled,
+`PreserveExisting` is the safe default, and callers own returned certificate
+instances.
 
 `ConfigureKestrelSniFromConfiguration(...)` from the
 `Eigenverft.WebLib.Infrastructure.Hosting.Kestrel` namespace configures HTTP
