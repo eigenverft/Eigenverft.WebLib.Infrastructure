@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-using Eigenverft.WebLib.Infrastructure.Security.MachineBinding;
-using Eigenverft.WebLib.Infrastructure.Text;
+using Eigenverft.NetLib.Infrastructure.Security.MachineBinding;
+using Eigenverft.NetLib.Infrastructure.Text;
+using Eigenverft.NetLib.Infrastructure.Transformations;
+
 using Eigenverft.WebLib.Infrastructure.Transformations;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
@@ -229,7 +231,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
             return new JsonSettingsValueCodec(
                 $"DataProtection({applicationName})",
                 EncodedConfigurationValueKind.DataProtection,
-                ReversibleStringTransforms.DataProtection(
+                AspNetDataProtectionStringTransforms.DataProtection(
                     keyDirectoryPath,
                     applicationName,
                     purpose));

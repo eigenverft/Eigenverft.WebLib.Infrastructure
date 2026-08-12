@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using Eigenverft.WebLib.Infrastructure.Transformations;
+using Eigenverft.NetLib.Infrastructure.Transformations;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings
 {
