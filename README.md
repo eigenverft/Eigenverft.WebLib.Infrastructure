@@ -5,17 +5,20 @@ applications.
 
 ## Current scope
 
-The `Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout` namespace contains the executable-rooted directory-layout contract.
+The executable-rooted directory-layout contract lives in
+`Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout`. WebLib's
+`Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout` namespace adds the
+ASP.NET-specific `WebApplicationBuilderFactory` on top of that shared contract.
 
-`WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` creates a host
-rooted at `AppContext.BaseDirectory`, assigns `ContentRootPath` and
-`WebRootPath`, creates the configured direct-child folders, verifies that they
-are writable, and registers the resolved `AppDirectoryLayout` before and after
-`Build()`.
+`WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` creates a web host
+rooted at `AppContext.BaseDirectory`, lets NetLib create, validate, writable-probe,
+and register the application directories, and projects the shared layout onto
+ASP.NET Core `ContentRootPath` and `WebRootPath`.
 
-`DefaultDirectory` provides typed keys and conventional names for application
-logs, data, certificates, settings, and static web content. Callers can retain
-the defaults or provide explicit overrides.
+`DefaultDirectory` comes from NetLib and provides typed keys and conventional
+names for application logs, data, state, certificates, and settings. WebLib adds
+the semantic `"Web"` layout key with the conventional `wwwroot` folder. Callers
+can retain the defaults or provide explicit overrides.
 
 `ResetToMinimalConfigurationSources(...)` from the
 `Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Sources` namespace replaces the

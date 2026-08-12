@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 
+using Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout;
 using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
 
 using Microsoft.AspNetCore.Builder;
@@ -17,7 +18,7 @@ public sealed class DirectoryLayoutTests
     public void FactoryUsesExecutableRootAndCreatesDefaultDirectories()
     {
         WebApplicationBuilder builder = CreateBuilder();
-        AppDirectoryLayout layout = builder.GetDirectoryLayout();
+        IAppDirectoryLayout layout = builder.GetDirectoryLayout();
         string expectedRoot = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
 
         Assert.AreEqual(expectedRoot, layout.RootPath);
@@ -28,7 +29,7 @@ public sealed class DirectoryLayoutTests
         Assert.AreEqual(Path.Combine(expectedRoot, "AppState"), layout[DefaultDirectory.ApplicationState]);
         Assert.AreEqual(Path.Combine(expectedRoot, "AppCerts"), layout[DefaultDirectory.ApplicationCerts]);
         Assert.AreEqual(Path.Combine(expectedRoot, "AppSettings"), layout[DefaultDirectory.ApplicationSettings]);
-        Assert.AreEqual(Path.Combine(expectedRoot, "wwwroot"), layout[DefaultDirectory.Web]);
+        Assert.AreEqual(Path.Combine(expectedRoot, "wwwroot"), layout["Web"]);
 
         foreach (string directoryPath in layout.GetByKey.Values)
         {
@@ -40,10 +41,10 @@ public sealed class DirectoryLayoutTests
     public async Task FactoryRegistersTheSameLayoutForDependencyInjection()
     {
         WebApplicationBuilder builder = CreateBuilder();
-        AppDirectoryLayout beforeBuild = builder.GetDirectoryLayout();
+        IAppDirectoryLayout beforeBuild = builder.GetDirectoryLayout();
 
         await using WebApplication application = builder.Build();
-        AppDirectoryLayout fromServices = application.Services.GetRequiredService<AppDirectoryLayout>();
+        IAppDirectoryLayout fromServices = application.Services.GetRequiredService<IAppDirectoryLayout>();
 
         Assert.AreSame(beforeBuild, fromServices);
     }
@@ -55,17 +56,16 @@ public sealed class DirectoryLayoutTests
             new Dictionary<DefaultDirectory, string>
             {
                 [DefaultDirectory.ApplicationData] = "State",
-            },
-            includeCommandLineArgs: false);
+            });
 
-        AppDirectoryLayout layout = builder.GetDirectoryLayout();
+        IAppDirectoryLayout layout = builder.GetDirectoryLayout();
 
         Assert.AreEqual("State", Path.GetFileName(layout[DefaultDirectory.ApplicationData]));
         Assert.AreEqual("AppLogs", Path.GetFileName(layout[DefaultDirectory.ApplicationLogFiles]));
         Assert.AreEqual("AppState", Path.GetFileName(layout[DefaultDirectory.ApplicationState]));
         Assert.AreEqual("AppCerts", Path.GetFileName(layout[DefaultDirectory.ApplicationCerts]));
         Assert.AreEqual("AppSettings", Path.GetFileName(layout[DefaultDirectory.ApplicationSettings]));
-        Assert.AreEqual("wwwroot", Path.GetFileName(layout[DefaultDirectory.Web]));
+        Assert.AreEqual("wwwroot", Path.GetFileName(layout["Web"]));
     }
 
     [TestMethod]
@@ -76,12 +76,21 @@ public sealed class DirectoryLayoutTests
                 new Dictionary<DefaultDirectory, string>
                 {
                     [DefaultDirectory.ApplicationData] = Path.Combine("nested", "AppData"),
-                },
-                includeCommandLineArgs: false));
+                }));
+    }
+
+    [TestMethod]
+    public void FactoryAcceptsExplicitArguments()
+    {
+        WebApplicationBuilder builder = WebApplicationBuilderFactory.CreateWithDefaultDirectory(
+            new[] { "--SampleSetting=Expected" });
+
+        Assert.AreEqual("Expected", builder.Configuration["SampleSetting"]);
+        Assert.IsNotNull(builder.GetDirectoryLayout());
     }
 
     private static WebApplicationBuilder CreateBuilder()
     {
-        return WebApplicationBuilderFactory.CreateWithDefaultDirectory(includeCommandLineArgs: false);
+        return WebApplicationBuilderFactory.CreateWithDefaultDirectory();
     }
 }

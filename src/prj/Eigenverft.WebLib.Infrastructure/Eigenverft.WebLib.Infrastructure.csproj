@@ -39,6 +39,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Eigenverft.NetLib.Infrastructure" Version="1.0.20264.38661" />
+  </ItemGroup>
+
+  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 

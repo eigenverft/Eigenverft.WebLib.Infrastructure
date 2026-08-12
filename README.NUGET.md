@@ -37,6 +37,7 @@ Install-Package Eigenverft.WebLib.Infrastructure
 Create an executable-rooted web host with the standard directory layout:
 
 ```csharp
+using Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout;
 using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
 
 var builder = WebApplicationBuilderFactory.CreateWithDefaultDirectory();
@@ -72,11 +73,11 @@ The switchable provider is intentionally agnostic: paths may represent profiles,
 
 ### 📁 Executable-rooted directory layout
 
-`Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout` provides a typed application directory contract rooted at `AppContext.BaseDirectory`.
+`Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout` provides the shared typed application directory contract rooted at `AppContext.BaseDirectory`.
 
-`WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` creates and validates the configured direct-child directories, assigns the ASP.NET Core content and web roots, and registers the resulting `AppDirectoryLayout` for access before and after `Build()`.
+`WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` from WebLib adds the ASP.NET Core projection: NetLib creates, validates, writable-probes, and registers the directories, while WebLib assigns the content/web-root behavior.
 
-`DefaultDirectory` includes conventional locations for application logs, data, state, certificates, settings, static web content, and other shared hosting state. Callers can keep the defaults or provide explicit folder-name overrides.
+`DefaultDirectory` comes from NetLib and includes conventional locations for application logs, data, state, certificates, and settings. WebLib adds the semantic `"Web"` layout key with the conventional `wwwroot` folder. Callers can keep the defaults or provide explicit folder-name overrides.
 
 ### ⚙️ Configuration sources and resolution diagnostics
 
