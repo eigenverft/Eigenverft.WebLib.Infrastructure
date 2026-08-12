@@ -5,260 +5,46 @@ applications.
 
 ## Current scope
 
-The executable-rooted directory-layout contract lives in
-`Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout`. WebLib's
-`Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout` namespace adds the
-ASP.NET-specific `WebApplicationBuilderFactory` on top of that shared contract.
+Generic application infrastructure lives in `Eigenverft.NetLib.Infrastructure`.
+WebLib intentionally adds only ASP.NET Core-specific adapters on top of that shared
+foundation.
 
-`WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` creates a web host
-rooted at `AppContext.BaseDirectory`, lets NetLib create, validate, writable-probe,
-and register the application directories, and projects the shared layout onto
-ASP.NET Core `ContentRootPath` and `WebRootPath`.
+The current WebLib production surface is deliberately small:
 
-`DefaultDirectory` comes from NetLib and provides typed keys and conventional
-names for application logs, data, state, certificates, and settings. WebLib adds
-the semantic `"Web"` layout key with the conventional `wwwroot` folder. Callers
-can retain the defaults or provide explicit overrides.
+- `WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` creates an ASP.NET
+  Core `WebApplicationBuilder` while reusing NetLib's executable-rooted directory
+  layout, validation, writable probes, and DI registration. WebLib adds only the
+  web-specific `ContentRootPath`, `WebRootPath`, and semantic `"Web"` layout entry.
+- `AspNetDataProtectionStringTransforms` adapts ASP.NET Core Data Protection to
+  NetLib's `ReversibleStringTransform` model. Generic transforms and persisted
+  configuration-value codecs remain in NetLib.
+- `ConfigureKestrelSniFromConfiguration(...)` and the Kestrel/SNI runtime state are
+  WebLib-specific because they depend directly on ASP.NET Core and Kestrel. Shared
+  certificate creation/loading primitives come from NetLib.
 
-`ResetToMinimalConfigurationSources(...)` from the
-`Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Sources` namespace replaces the
-builder's configuration sources with a minimal stack: environment variables by
-default and optionally the current process command-line arguments. Call it
-before adding other configuration providers because it clears the existing
-source collection.
+Generic configuration infrastructure is provided by NetLib, including
+`ConfigurationSets`, `SwitchableJson`, JSON source preparation,
+`ConfigurationValueCodec`, configuration-source reset helpers, and configuration
+precedence diagnostics. Bootstrap logging, certificates, machine binding, Base92,
+and reversible transforms also live in NetLib.
 
-The `Eigenverft.WebLib.Infrastructure.Hosting.Configuration.JsonSettings`
-namespace separates two related capabilities:
+The former WebLib `JsonSettings` environment/encoder facade, including
+`EncodeAndAddEnvironmentJsonSettings(...)`, has been removed. New code should use
+NetLib's `ConfigurationSets` + `SwitchableJson` model instead of relying on a WebLib
+compatibility facade.
 
-- `AddEnvironmentJsonSettings(...)` loads a common JSON file followed by its
-  `.{Environment}` override.
-- `JsonSettingsFileEncoder` and `AddJsonFileWithDecodedValues(...)` encode
-  selected values on disk and decode recognized values only in memory.
-
-`EncodeAndAddEnvironmentJsonSettings(...)` composes both capabilities when an
-application intentionally wants startup-time file encoding followed by decoded
-configuration loading. Its JSON providers are appended and therefore override
-configuration sources already present. Base64 is available for encoding only;
-Windows DPAPI machine scope is available for machine-bound protection.
-
-`ConfigurationPrecedenceDiagnosticsExtensions` from the
-`Eigenverft.WebLib.Infrastructure.Hosting.Configuration.LogConfigurationResolution`
-namespace provides `LogConfigurationResolution(...)` for startup visibility into
-configuration-provider precedence and key collisions. It logs keys and provider
-origins only, never configuration values. Public feature namespaces intentionally
-avoid generic `Diagnostic`/`Diagnostics` segments to reduce collisions with common
-framework and tooling namespaces.
-
-`BootstrapLogger<TCategoryName>.CreateLogger(...)` from the
-`Eigenverft.WebLib.Infrastructure.Hosting.Logging.BootstrapLogger` namespace
-provides a pre-host `Microsoft.Extensions.Logging.ILogger<TCategoryName>` before
-the application DI container and host logging pipeline exist. Its public surface
-remains provider-neutral. The production library has no Serilog package or
-assembly reference; optional Serilog support is discovered exclusively through
-reflection at runtime.
-
-The bootstrap logger is intentionally a separate, stable process-wide diagnostic
-channel rather than a live view of the later application logger. The first call
-creates and caches one factory for all categories. When Serilog and its Microsoft
-logging bridge are available, an explicitly initialized global
-`Serilog.Log.Logger` present at that moment is captured. Serilog's built-in
-`Logger.None`/`SilentLogger` is treated as not initialized and therefore selects
-the Microsoft fallback instead. This keeps early diagnostics visible when the
-Console provider is available. Every explicitly assigned Serilog logger remains
-valid, even if it intentionally has no sinks; the library does not inspect sink
-configuration. Replacing `Serilog.Log.Logger` later does not rebind existing
-bootstrap loggers. The Microsoft fallback applies Console and the `Logging`
-configuration section when their extensions are available. Configuration passed
-after the first factory creation is intentionally ignored.
-
-This separation allows startup diagnostics, including configuration-provider
-precedence and collision checks, to report on the application logging
-configuration without depending on that same configuration for their output.
-The cached factory is process-owned; callers may create loggers from it but must
-not dispose it.
-Consumers that want a Serilog-backed bootstrap channel must assign
-`Serilog.Log.Logger` before the first actual `BootstrapLogger` access. Merely
-referencing Serilog and Console packages does not initialize either provider.
-
-There are therefore two deliberately different bootstrap modes:
+Typical web-host setup remains intentionally small:
 
 ```csharp
-private static readonly ILogger<Program> Logger =
-    BootstrapLogger<Program>.CreateLogger();
+using Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout;
+using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
+
+var builder = WebApplicationBuilderFactory.CreateWithDefaultDirectory();
+var directories = builder.GetDirectoryLayout();
+
+string settingsDirectory =
+    directories[DefaultDirectory.ApplicationSettings];
 ```
-
-`CreateLogger(...)` is the automatic best-effort mode. It captures an already
-initialized Serilog global logger when available and otherwise uses Microsoft
-logging. It does not create or configure Serilog itself.
-
-```csharp
-private static readonly ILogger<Program> Logger =
-    BootstrapLogger<Program>.CreateRequiredSerilogLogger();
-```
-
-`CreateRequiredSerilogLogger(...)` is the explicit fail-fast mode. It creates an
-isolated Serilog bootstrap pipeline from
-`AppContext.BaseDirectory/AppSettings/BootstrapLoggerSettings.json`, assigns the
-created instance to `Serilog.Log.Logger`, and exposes it through the same
-provider-neutral `ILogger<TCategoryName>` surface. The consumer must reference
-Serilog core, `Serilog.Settings.Configuration`,
-`Serilog.Extensions.Logging`, and every sink or enricher named by the JSON file.
-The WebLib continues to access all Serilog APIs exclusively through reflection.
-Missing packages, a missing or invalid file, or an incompatible Serilog API are
-startup errors; this mode never falls back to Microsoft logging.
-
-The required mode accepts optional `configurationFile`, `baseDirectory`,
-`sectionName`, and `reloadOnChange` arguments. The first three select the exact
-isolated configuration source. `reloadOnChange` defaults to `false`; when enabled,
-existing minimum-level overrides and level switches can follow JSON changes, but
-the sink pipeline is not reconstructed. Environment-specific files, environment
-variables, command-line arguments, DPAPI decoding, and the later application
-logger configuration are intentionally not loaded by this API.
-
-Both modes initialize the same process-wide bootstrap cache. Required Serilog
-initialization must therefore be the first BootstrapLogger operation. Repeating
-the required call with the same file, section, and reload setting reuses the
-factory; requesting a different required identity or invoking it after automatic
-initialization throws. When used in a static field initializer, a required-mode
-failure can occur before the `Main` method body and may surface as a type
-initialization failure. This strict behavior is intentional.
-
-The host-independent certificate primitives now live in
-`Eigenverft.NetLib.Infrastructure.Security.Certificates`. WebLib consumes those
-shared primitives from its Kestrel/SNI layer instead of maintaining a duplicate
-certificate implementation.
-
-`SelfSignedCertificateFactory`, `ManagedCertificateFile`, the certificate option
-models, and `CertificateRecoveryMode` are therefore provided by NetLib. Their
-managed-PFX behavior remains unchanged: recovery is policy-controlled,
-`PreserveExisting` is the safe default, and callers own returned certificate
-instances.
-
-`ConfigureKestrelSniFromConfiguration(...)` from the
-`Eigenverft.WebLib.Infrastructure.Hosting.Kestrel` namespace configures HTTP
-and HTTPS listeners, binding scope, HTTP protocols, the Kestrel Server header,
-TLS protocol policy, and reloadable SNI certificate selection. It retains the
-existing configuration contract used by the source applications:
-
-```json
-{
-  "CertificatesDirectory": "certs",
-  "KestrelSettings": {
-    "HTTP_PORT": 8080,
-    "HTTPS_PORT": 8443,
-    "ListenScope": "Localhost",
-    "AddServerHeader": false,
-    "Protocols": "Http1AndHttp2AndHttp3",
-    "PreferLongestSuffixMatch": true,
-    "TlsProtocolPolicy": "Default"
-  },
-  "CertificatesMappingSettings": [
-    {
-      "SNI": "localhost",
-      "FileName": "localhost.pfx",
-      "Password": "yourPassword",
-      "CertificateRecoveryMode": "PreserveExisting",
-      "AdditionalSelfSignedCertificateDnsNames": [
-        "*.localhost"
-      ],
-      "AdditionalSelfSignedCertificateIpAddresses": [
-        "127.0.0.1"
-      ]
-    }
-  ]
-}
-```
-
-An application can override the configured certificate directory explicitly:
-
-```csharp
-builder.WebHost.ConfigureKestrelSniFromConfiguration(
-    certDirOverride: defaultDirs["ApplicationCerts"]);
-```
-
-The three existing top-level configuration areas also define their lifecycle:
-
-- `CertificatesDirectory` is resolved once during startup.
-- `KestrelSettings` is startup-fixed, including ports, binding, protocols, TLS
-  policy, Server header, and the SNI matching strategy.
-- `CertificatesMappingSettings` is the complete hot-reload boundary.
-
-On configuration reload, the normalized certificate mappings, managed PFX
-content fingerprints, and active certificate validity are compared with the
-current snapshot.
-A fully unchanged and usable generation is a no-op. A changed generation is
-loaded fully before one immutable selection snapshot is published. This also
-allows a configuration reload to pick up an externally replaced PFX even when
-its mapping did not change. If the new generation cannot be built, the running
-host retains its last-known-good snapshot. A candidate that needs a memory-only
-recovery certificate also leaves a still-usable last-known-good snapshot active;
-the memory-only candidate is published only when no complete usable generation
-remains. Old published snapshots remain owned until host shutdown because a
-certificate may still be used by a TLS handshake that began before the swap.
-Each configured host owns its own state; there is no static process-wide
-certificate selection state. PFX files do not receive a separate file watcher;
-their state is reevaluated on configuration reload and host restart.
-
-The mapping's `SNI` value is always included as a DNS SAN when a self-signed
-certificate is generated, or as an IP SAN when the value is an IP address.
-`AdditionalSelfSignedCertificateDnsNames` and
-`AdditionalSelfSignedCertificateIpAddresses` add further SANs only to
-automatically generated certificates; an existing valid PFX retains its own
-certificate contents. IP values found in the DNS-name list are normalized to
-IP SANs for tolerant handling of existing configuration.
-
-SNI matching accepts an exact configured name or a suffix beginning at a DNS
-label boundary. For example, `api.example.com` matches `example.com`, while
-`notexample.com` does not. When no configured suffix matches or a client sends
-no SNI value, the first usable mapping in configuration order is the fallback.
-`PreferLongestSuffixMatch` changes only match precedence; the fallback remains
-the first configured usable mapping.
-
-Certificate recovery remains availability-oriented but is not implicitly
-destructive. `CertificateRecoveryMode` is configured per mapping and is part of
-the hot-reloadable mapping plan:
-
-- `PreserveExisting` is the default. A genuinely missing PFX is created, while
-  every existing unusable PFX remains unchanged and the generated recovery
-  certificate is returned only in memory.
-- `ReplaceExpired` additionally replaces a PFX that was successfully imported
-  and found to be expired. It does not replace a not-yet-valid, unreadable,
-  access-denied, corrupt, or password-mismatched file.
-- `ReplaceAnyUnusable` explicitly allows the previous full self-healing
-  behavior. It can overwrite an externally managed PFX after import, password,
-  read, or access failures and should therefore be enabled only for mappings
-  whose files the library is allowed to replace.
-
-Missing files are finalized without overwrite, so a PFX placed concurrently by
-another writer wins. Any generated self-signed certificate can keep HTTPS
-cryptographically available, but it is not automatically trusted by clients.
-
-`CertificatesDirectory` and `certDirOverride` accept either fully qualified
-paths such as `D:\certs` or paths relative to the host content root such as
-`certs`. Without either setting, the directory defaults to
-`{ContentRoot}/certs`; `AppContext.BaseDirectory` is the root fallback when the
-host supplies no content root.
-
-`TlsProtocolPolicy: Default` is the recommended policy and enables TLS 1.2 and
-TLS 1.3. `Strict` permits only TLS 1.3, `MaximumTlsCompatibility` additionally
-permits TLS 1.0 and TLS 1.1, and `Legacy` also enables obsolete SSL protocols.
-The policy is applied directly to the HTTPS endpoint created by this method.
-An unknown `Protocols`, `TlsProtocolPolicy`, or `ListenScope` string uses the
-safe default instead of preventing development startup. The plaintext listener
-is intentionally HTTP/1; the HTTPS listener defaults to HTTP/1 and HTTP/2.
-
-The library targets `net8.0` and `net10.0`. A `net9.0` consumer uses the
-compatible `net8.0` asset; preview target frameworks are intentionally
-excluded.
-
-The current package surface covers hosting-directory, configuration-source,
-JSON-settings, named Configuration Sets, bootstrap-logging, certificate, and Kestrel
-SNI primitives. Configuration Sets provide named configuration profiles on top of
-normal .NET `IConfiguration`, including multi-file coordination, runtime events,
-self-describing `ConfigurationSets.json` state, and arbitrary `value => sourcePath`
-mapping when a directory convention is not appropriate. See
-[`docs/configuration-sets.md`](docs/configuration-sets.md) for the complete technical contract, control-plane guidance, and practical use cases.
-
 ## Related repositories
 
 This library is developed library-first to keep reusable web infrastructure

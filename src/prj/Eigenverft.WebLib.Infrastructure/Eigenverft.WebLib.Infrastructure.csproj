@@ -27,8 +27,8 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>eigenverft-logo-v7-harbor-square_128_128.png</PackageIcon>
-    <Description>Reusable ASP.NET Core hosting infrastructure for configuration, certificates, Kestrel, logging, and runtime settings.</Description>
-    <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;configuration;json;kestrel;certificates;logging;security;eigenverft</PackageTags>
+    <Description>ASP.NET Core adapters for Eigenverft.NetLib.Infrastructure, including web-host directory setup, Data Protection transforms, and Kestrel/SNI configuration.</Description>
+    <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;kestrel;sni;data-protection;security;eigenverft</PackageTags>
     <Copyright>Copyright (c) 2026 $(Branding)</Copyright>
   </PropertyGroup>
 
@@ -39,7 +39,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Eigenverft.NetLib.Infrastructure" Version="1.0.20264.39599" />
+    <PackageReference Include="Eigenverft.NetLib.Infrastructure" Version="1.0.20264.39698" />
   </ItemGroup>
 
   <ItemGroup>
