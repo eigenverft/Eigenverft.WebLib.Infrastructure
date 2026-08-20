@@ -35,7 +35,9 @@ the application name, purpose, and persistent key-ring directory explicit.
 For persisted configuration values,
 `AspNetDataProtectionConfigurationValueCodecs.DataProtection(...)` adds the NetLib codec envelope.
 Its directory-layout overload derives the standard key-ring path and entry-assembly name, leaving
-only the application-specific purpose to the caller.
+only the application-specific purpose to the caller. The result is a normal
+`ConfigurationValueCodec` and can be used independently or at any position in
+`ConfigurationValueCodecs.Compose(...)`.
 
 ### Kestrel and SNI configuration
 
@@ -129,6 +131,38 @@ and the application name from `Assembly.GetEntryAssembly()`; neither depends on 
 configuration. Here, `nameof(certificatePasswordCodec)` is the persisted purpose, so treat that
 variable name as a compatibility contract. Back up and retain the complete key ring while protected
 values may still depend on it.
+
+#### Defense in depth and limits
+
+The persisted certificate password passes through the codecs in order:
+
+```text
+clear text → application byte factor → deployment secret → machine binding → Data Protection → JSON
+```
+
+An offline attacker must reverse every layer. In practical terms, that requires the protected JSON
+value, the exact codec composition and order, the application factor obtainable from the assembly,
+`APP_CONFIGURATION_PROTECTION_SECRET`, the original system/platform UUID used by the machine
+binding, the complete Data Protection key ring, and the matching application name and purpose. The
+live `ConfigurationValueCodec` instance is not required if the recipe can be reconstructed from the
+assembly or source. The algorithms, recipe, and identifiers are not secrets; security comes from the
+independently held secret and key material. Merely exposing the JSON file, executable, environment
+secret, or key-ring directory alone is therefore insufficient. A complete application-directory
+copy still lacks the deployment secret and original platform identity unless those were collected
+separately.
+
+This separation reduces the chance that one path-traversal bug, accidental file publication, backup
+leak, or configuration disclosure immediately reveals the PFX password. It is defense in depth, not
+a runtime security boundary. Code execution inside the application process, or equivalent access
+under its identity, can read the already decoded configuration, inspect process state, or invoke the
+same protection pipeline. A process dump, secret-bearing log, or endpoint that exposes configuration
+can bypass several layers at once.
+
+Availability is the inverse risk: losing any required factor can make the value permanently
+unrecoverable. Retain the key ring and deployment secret, keep the application name and purpose
+stable, and account for platform-UUID changes during VM cloning, migration, or reprovisioning. Omit
+the machine-bound layer when portable restore or multi-machine use is more important than resistance
+to an offline application-directory copy.
 
 `KestrelSettings.json`:
 

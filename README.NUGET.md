@@ -64,7 +64,8 @@ stack in WebLib.
 
 `AspNetDataProtectionConfigurationValueCodecs.DataProtection(...)` provides the configuration-value
 convenience layer. Pass the application directory layout and a stable purpose; WebLib derives the
-standard key-ring path and entry-assembly discriminator.
+standard key-ring path and entry-assembly discriminator. The returned `ConfigurationValueCodec` can
+be used independently or at any position in `ConfigurationValueCodecs.Compose(...)`.
 
 ## 🌐 Kestrel and SNI
 
@@ -151,6 +152,26 @@ layout and its application discriminator from `Assembly.GetEntryAssembly()`, rat
 configuration. Preserve the complete key ring, application name, and purpose while protected values
 may still need to be decoded. Because the purpose comes from
 `nameof(certificatePasswordCodec)`, treat that variable name as a persisted compatibility contract.
+
+### Defense in depth and limits
+
+The stored password is protected in this order:
+
+```text
+clear text → application byte factor → deployment secret → machine binding → Data Protection → JSON
+```
+
+Offline reversal requires the protected JSON value, exact codec composition and order, application
+factor, deployment secret, original platform UUID, complete Data Protection key ring, and matching
+application name and purpose. The live codec object is unnecessary if its recipe is reconstructed
+from the assembly or source. A leak of only the JSON file, executable, environment secret, or
+key-ring directory is insufficient. This makes accidental single-source exposure less likely to
+reveal the PFX password.
+
+It does not protect against code execution inside the application process: such an attacker can read
+the decoded configuration or invoke the same pipeline. Losing any factor also prevents legitimate
+recovery. Preserve the key ring and deployment secret, keep identities stable, and omit machine
+binding when portable restore or multi-machine deployment is required.
 
 `KestrelSettings.json`:
 

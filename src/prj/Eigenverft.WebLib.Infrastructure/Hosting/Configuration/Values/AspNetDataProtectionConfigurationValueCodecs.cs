@@ -9,6 +9,10 @@ using Eigenverft.WebLib.Infrastructure.Transformations;
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values
 {
     /// <summary>Creates configuration-value codecs backed by ASP.NET Core Data Protection.</summary>
+    /// <remarks>
+    /// Each result is an ordinary <see cref="ConfigurationValueCodec"/> and can be used independently or at any position
+    /// in <see cref="ConfigurationValueCodecs.Compose(ConfigurationValueCodec[])"/>.
+    /// </remarks>
     public static class AspNetDataProtectionConfigurationValueCodecs
     {
         /// <summary>
