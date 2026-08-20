@@ -22,10 +22,51 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
         /// </param>
         /// <param name="kestrelSettingsSectionPath">The configuration section containing startup-fixed Kestrel settings.</param>
         /// <remarks>
+        /// <para>
+        /// Add the configuration sources before building the application, then call this method once:
+        /// </para>
+        /// <code><![CDATA[
+        /// builder.WebHost.ConfigureKestrelSniFromConfiguration(
+        ///     certDirOverride: directories[DefaultDirectory.ApplicationCerts]);
+        /// ]]></code>
+        /// <para>Minimal configuration:</para>
+        /// <code><![CDATA[
+        /// {
+        ///   "KestrelSettings": {
+        ///     "HTTP_PORT": 8080,
+        ///     "HTTPS_PORT": 8443,
+        ///     "ListenScope": "Localhost",
+        ///     "AddServerHeader": false,
+        ///     "Protocols": "Http1AndHttp2",
+        ///     "PreferLongestSuffixMatch": true,
+        ///     "TlsProtocolPolicy": "Default"
+        ///   },
+        ///   "CertificatesMappingSettings": [
+        ///     {
+        ///       "SNI": "localhost",
+        ///       "FileName": "localhost.pfx",
+        ///       "Password": "change-me",
+        ///       "CertificateRecoveryMode": "PreserveExisting",
+        ///       "AdditionalSelfSignedCertificateDnsNames": ["*.localhost"],
+        ///       "AdditionalSelfSignedCertificateIpAddresses": ["127.0.0.1", "::1"]
+        ///     }
+        ///   ]
+        /// }
+        /// ]]></code>
+        /// <para>
+        /// The certificate-directory override takes precedence over the top-level <c>CertificatesDirectory</c>
+        /// setting. When neither is supplied, <c>certs</c> below the content root is used.
+        /// </para>
+        /// <para>
         /// <c>CertificatesMappingSettings</c> is the only hot-reload boundary. Ports, bind scope,
         /// protocols, TLS policy, matching strategy, and certificate directory require a host restart.
-        /// Each mapping can opt into replacing existing unusable PFX files through
-        /// <c>CertificateRecoveryMode</c>; the default preserves them.
+        /// A failed reload keeps the last-known-good certificate generation active.
+        /// </para>
+        /// <para>
+        /// Missing PFX files are created as self-signed TLS server certificates. Each mapping can opt into
+        /// replacing existing unusable PFX files through <c>CertificateRecoveryMode</c>; the default
+        /// <c>PreserveExisting</c> mode never overwrites an existing unusable file.
+        /// </para>
         /// </remarks>
         public static void ConfigureKestrelSniFromConfiguration(
             this ConfigureWebHostBuilder configureWebHostBuilder,

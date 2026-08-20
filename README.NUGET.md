@@ -64,9 +64,96 @@ stack in WebLib.
 
 ## 🌐 Kestrel and SNI
 
-WebLib provides the ASP.NET Core/Kestrel-specific listener and SNI configuration
-layer. Shared X.509 certificate creation and managed certificate-file handling are
-provided by `Eigenverft.NetLib.Infrastructure.Security.Certificates`.
+`ConfigureKestrelSniFromConfiguration(...)` is the package's top-level server setup. It configures
+HTTP/HTTPS listeners, TLS policy, managed PFX files, SNI selection, and atomic certificate reloads
+while using NetLib's certificate primitives underneath.
+
+```csharp
+using Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout;
+using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
+using Eigenverft.WebLib.Infrastructure.Hosting.Kestrel;
+using Microsoft.AspNetCore.Builder;
+
+WebApplicationBuilder builder =
+    WebApplicationBuilderFactory.CreateWithDefaultDirectory(args);
+
+IAppDirectoryLayout directories = builder.GetDirectoryLayout();
+
+builder.WebHost.ConfigureKestrelSniFromConfiguration(
+    certDirOverride: directories[DefaultDirectory.ApplicationCerts]);
+
+WebApplication app = builder.Build();
+app.Run();
+```
+
+Minimal `appsettings.json`:
+
+```json
+{
+  "KestrelSettings": {
+    "HTTP_PORT": 8080,
+    "HTTPS_PORT": 8443,
+    "ListenScope": "Localhost",
+    "AddServerHeader": false,
+    "Protocols": "Http1AndHttp2",
+    "PreferLongestSuffixMatch": true,
+    "TlsProtocolPolicy": "Default"
+  },
+  "CertificatesMappingSettings": [
+    {
+      "SNI": "localhost",
+      "FileName": "localhost.pfx",
+      "Password": "change-me",
+      "CertificateRecoveryMode": "PreserveExisting",
+      "AdditionalSelfSignedCertificateDnsNames": [
+        "*.localhost"
+      ],
+      "AdditionalSelfSignedCertificateIpAddresses": [
+        "127.0.0.1",
+        "::1"
+      ]
+    }
+  ]
+}
+```
+
+The extension loads existing PFX files or creates missing self-signed TLS server certificates.
+It matches exact SNI names and DNS suffixes, prefers the longest suffix by default, and uses the
+first mapping as the fallback when SNI is absent or unmatched.
+
+Certificate-directory resolution uses the explicit override first, then the top-level
+`CertificatesDirectory` value, and finally `certs` below the content root. Mapping paths and
+symbolic-link targets cannot escape that directory.
+
+| Setting | Default | Behavior |
+| --- | --- | --- |
+| `HTTP_PORT` | disabled | Positive values enable a plaintext HTTP/1 listener. |
+| `HTTPS_PORT` | disabled | Values from `1` through `65535` enable the SNI HTTPS listener. |
+| `ListenScope` | `Localhost` | Use `AnyIP` to bind all available addresses. |
+| `AddServerHeader` | `false` | Controls Kestrel's `Server` response header. |
+| `Protocols` | `Http1AndHttp2` | HTTPS `HttpProtocols` value. |
+| `PreferLongestSuffixMatch` | `true` | Tries the most-specific configured suffix first. |
+| `TlsProtocolPolicy` | `Default` | TLS 1.2/1.3 by default; `Strict` selects TLS 1.3 only. |
+
+At least one listener and one usable certificate mapping are required. Store real PFX passwords
+in a protected configuration or secret provider rather than source control.
+
+Recovery policy is explicit:
+
+- `PreserveExisting` creates missing files but never overwrites an existing unusable PFX;
+- `ReplaceExpired` replaces only a successfully opened, expired PFX;
+- `ReplaceAnyUnusable` can also replace files affected by password, import, read, or access
+  failures.
+
+Only `CertificatesMappingSettings` is hot-reloadable. WebLib publishes a complete replacement
+generation atomically and keeps the last-known-good certificates active if a reload fails.
+Listener changes require a host restart. A PFX file change is observed on the next configuration
+reload; changing the file alone does not emit a reload token.
+
+When migrating from the earlier helper, replace `SanNames` with the typed
+`AdditionalSelfSignedCertificateDnsNames` and
+`AdditionalSelfSignedCertificateIpAddresses` properties and use the
+`Eigenverft.WebLib.Infrastructure.Hosting.Kestrel` namespace.
 
 ## 🎯 Target frameworks
 
