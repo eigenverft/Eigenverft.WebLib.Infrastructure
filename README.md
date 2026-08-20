@@ -237,12 +237,38 @@ Provision its initial clear-text value on the target machine rather than committ
 then rewrites matching values as codec envelopes while publishing clear text only in memory.
 Additional DNS and IP values are used as typed SANs when WebLib generates a certificate.
 
-`CertificateRecoveryMode` controls replacement of unusable files:
+`CertificateRecoveryMode` expresses who owns an existing PFX and when WebLib may replace it:
 
-- `PreserveExisting` creates a missing PFX but never overwrites an existing unusable file;
-- `ReplaceExpired` replaces only a PFX that was opened successfully and found expired;
-- `ReplaceAnyUnusable` may replace files affected by password, import, read, or access failures
-  and can therefore overwrite an externally managed certificate.
+- `PreserveExisting` is the safe default for original, externally issued, or administrator-managed
+  certificates.
+- `ReplaceExpired` permits normal expiry renewal for an application-managed certificate.
+- `ReplaceAnyUnusable` is for fully application-managed, disposable certificates, such as
+  self-signed certificates in internal proxy setups.
+
+The complete decision matrix is:
+
+| PFX state or failure | `PreserveExisting` | `ReplaceExpired` | `ReplaceAnyUnusable` |
+| --- | --- | --- | --- |
+| File or parent directory is missing | Create, validate, and persist a new self-signed PFX | Same | Same |
+| Valid, currently active, and contains a private key | Load the existing PFX | Same | Same |
+| Successfully imported but expired | Keep the file; return self-signed recovery in memory | Atomically replace with a new self-signed PFX | Atomically replace with a new self-signed PFX |
+| Successfully imported but not yet valid | Keep + memory recovery | Keep + memory recovery | Replace |
+| Successfully imported but missing its private key | Keep + memory recovery | Keep + memory recovery | Replace |
+| Password mismatch, corrupt PFX, unsupported content, or other import failure | Keep + memory recovery | Keep + memory recovery | Authorize replacement |
+| I/O read failure, such as a sharing or device error | Keep + memory recovery | Keep + memory recovery | Authorize replacement |
+| Access denied while reading | Keep + memory recovery | Keep + memory recovery | Authorize replacement, although the same permissions may prevent the write |
+| An authorized create/replace reaches export, validation, temporary-file write, or atomic move, but persistence fails | Return the generated certificate in memory and report the persistence failure | Same | Same |
+| Another process creates a previously missing file first | Do not overwrite the winner; return this process's generated certificate in memory | Same | Same |
+
+“Keep + memory recovery” means the original file remains byte-for-byte untouched and a generated
+self-signed certificate is available only for the running process. At initial startup it can keep the
+TLS listener available. During reload, WebLib retains a complete usable last-known-good generation
+instead of publishing a memory-only recovery generation.
+
+Deleting an application-managed self-signed PFX deliberately requests fresh creation on the next
+load under every mode. `ReplaceAnyUnusable` is needed only when an unusable file remains present. It
+can overwrite an externally managed certificate if selected incorrectly, and authorization to
+replace does not guarantee that filesystem permissions will allow the operation.
 
 Only `CertificatesMappingSettings` is hot-reloadable. A configuration reload builds and validates
 a complete replacement generation before publishing it. Changing ports, bind scope, protocols,

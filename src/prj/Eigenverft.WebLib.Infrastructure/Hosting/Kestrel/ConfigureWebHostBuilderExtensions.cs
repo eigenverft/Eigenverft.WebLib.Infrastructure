@@ -112,7 +112,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
         /// <para>
         /// Missing PFX files are created as self-signed TLS server certificates. Each mapping can opt into
         /// replacing existing unusable PFX files through <c>CertificateRecoveryMode</c>; the default
-        /// <c>PreserveExisting</c> mode never overwrites an existing unusable file.
+        /// <c>PreserveExisting</c> mode never overwrites an existing unusable file and uses an in-memory
+        /// recovery certificate instead. <c>ReplaceExpired</c> is for managed expiry renewal, while
+        /// <c>ReplaceAnyUnusable</c> is intended only for fully application-managed, replaceable files.
+        /// Deleting such a self-signed PFX requests fresh creation under every mode because the file is missing.
         /// </para>
         /// </remarks>
         public static void ConfigureKestrelSniFromConfiguration(
