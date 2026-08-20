@@ -28,13 +28,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
         /// reloadable certificate mappings:
         /// </para>
         /// <code><![CDATA[
-        /// builder.ResetToMinimalConfigurationSources(
-        ///     includeCommandLineArguments: true);
+        /// builder.ResetToMinimalConfigurationSources(includeCommandLineArguments: true);
         ///
         /// builder.Configuration.AddJsonFile(
         ///     Path.Combine(settingsDirectory, "KestrelSettings.json"),
-        ///     optional: false,
-        ///     reloadOnChange: false);
+        ///     optional: false, reloadOnChange: false);
         ///
         /// // Generate a different stable factor for each application.
         /// byte[] applicationFactor =
@@ -55,20 +53,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
         ///         ConfigurationValueCodecs.AesPassword(applicationFactor),
         ///         ConfigurationValueCodecs.AesPassword(configurationProtectionSecret),
         ///         ConfigurationValueCodecs.PhysicalMachineBoundAes(),
-        ///         new ConfigurationValueCodec(
-        ///             nameof(AspNetDataProtectionStringTransforms.DataProtection),
-        ///             ConfigurationValueKind.DataProtection,
-        ///             AspNetDataProtectionStringTransforms.DataProtection(
-        ///                 directories[DefaultDirectory.ApplicationProtectionKeys],
-        ///                 typeof(Program).Assembly.GetName().Name!,
-        ///                 nameof(certificatePasswordCodec))));
+        ///         AspNetDataProtectionConfigurationValueCodecs.DataProtection(
+        ///             directories, nameof(certificatePasswordCodec)));
         ///
         /// var certificateSourceOptions = new SwitchableJsonRegistrationOptions
         /// {
         ///     ReloadOnChange = true,
         ///     ValueProtection = JsonConfigurationValueProtection.ForPaths(
-        ///         certificatePasswordCodec,
-        ///         "CertificatesMappingSettings:*:Password"),
+        ///         certificatePasswordCodec, "CertificatesMappingSettings:*:Password"),
         /// };
         ///
         /// builder.AddSwitchableJsonFile(

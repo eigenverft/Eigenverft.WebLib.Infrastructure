@@ -7,6 +7,7 @@
 - Kept `WebApplicationBuilderFactory` focused on the ASP.NET Core content root, web root, and semantic `"Web"` directory projection.
 - Initialized `WebRootPath` through `WebApplicationOptions` so clean deployments do not depend on a pre-existing `wwwroot` directory.
 - Included the ASP.NET Core Data Protection transform adapter and configuration-driven Kestrel/SNI certificate handling.
+- Added a Data Protection configuration-value codec factory that derives the standard key-ring path and application assembly identity.
 - Published dedicated `net8.0` and `net10.0` assets.
 - Adopted the shared Eigenverft CI/CD, DocFX, reporting, artifact-distribution, and deployment-channel documentation workflow.
 

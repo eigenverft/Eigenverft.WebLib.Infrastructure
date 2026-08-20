@@ -62,6 +62,10 @@ The generic transform and configuration-value codec infrastructure remains in
 NetLib, so Data Protection can participate without duplicating the generic codec
 stack in WebLib.
 
+`AspNetDataProtectionConfigurationValueCodecs.DataProtection(...)` provides the configuration-value
+convenience layer. Pass the application directory layout and a stable purpose; WebLib derives the
+standard key-ring path and entry-assembly discriminator.
+
 ## 🌐 Kestrel and SNI
 
 `ConfigureKestrelSniFromConfiguration(...)` is the package's top-level server setup. It configures
@@ -75,26 +79,22 @@ using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.Sources;
 using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.SwitchableJson;
 using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.Values;
 using Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout;
+using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values;
 using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
 using Eigenverft.WebLib.Infrastructure.Hosting.Kestrel;
-using Eigenverft.WebLib.Infrastructure.Transformations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 
-WebApplicationBuilder builder =
-    WebApplicationBuilderFactory.CreateWithDefaultDirectory(args);
+WebApplicationBuilder builder = WebApplicationBuilderFactory.CreateWithDefaultDirectory(args);
 
 IAppDirectoryLayout directories = builder.GetDirectoryLayout();
-string settingsDirectory =
-    directories[DefaultDirectory.ApplicationSettings];
+string settingsDirectory = directories[DefaultDirectory.ApplicationSettings];
 
-builder.ResetToMinimalConfigurationSources(
-    includeCommandLineArguments: true);
+builder.ResetToMinimalConfigurationSources(includeCommandLineArguments: true);
 
 builder.Configuration.AddJsonFile(
     Path.Combine(settingsDirectory, "KestrelSettings.json"),
-    optional: false,
-    reloadOnChange: false);
+    optional: false, reloadOnChange: false);
 
 // Generate a different stable factor for each application.
 byte[] applicationFactor =
@@ -115,20 +115,14 @@ ConfigurationValueCodec certificatePasswordCodec =
         ConfigurationValueCodecs.AesPassword(applicationFactor),
         ConfigurationValueCodecs.AesPassword(configurationProtectionSecret),
         ConfigurationValueCodecs.PhysicalMachineBoundAes(),
-        new ConfigurationValueCodec(
-            nameof(AspNetDataProtectionStringTransforms.DataProtection),
-            ConfigurationValueKind.DataProtection,
-            AspNetDataProtectionStringTransforms.DataProtection(
-                directories[DefaultDirectory.ApplicationProtectionKeys],
-                typeof(Program).Assembly.GetName().Name!,
-                nameof(certificatePasswordCodec))));
+        AspNetDataProtectionConfigurationValueCodecs.DataProtection(
+            directories, nameof(certificatePasswordCodec)));
 
 var certificateSourceOptions = new SwitchableJsonRegistrationOptions
 {
     ReloadOnChange = true,
     ValueProtection = JsonConfigurationValueProtection.ForPaths(
-        certificatePasswordCodec,
-        "CertificatesMappingSettings:*:Password"),
+        certificatePasswordCodec, "CertificatesMappingSettings:*:Password"),
 };
 
 builder.AddSwitchableJsonFile(
@@ -152,11 +146,11 @@ target machine. This generic external deployment secret can protect other applic
 the factor and selected path separate this certificate use. It is not itself a certificate password.
 The byte array avoids an assembly string-table entry but remains a recoverable structural factor
 rather than a secret. The outer ASP.NET Core Data Protection layer uses the persistent
-`ApplicationProtectionKeys` directory. Preserve its complete key ring, application name, and purpose
-while protected values may still need to be decoded. Because the purpose comes from
+`ApplicationProtectionKeys` directory. The convenience codec derives that path from the directory
+layout and its application discriminator from `Assembly.GetEntryAssembly()`, rather than mutable host
+configuration. Preserve the complete key ring, application name, and purpose while protected values
+may still need to be decoded. Because the purpose comes from
 `nameof(certificatePasswordCodec)`, treat that variable name as a persisted compatibility contract.
-The application discriminator comes directly from the entry assembly rather than mutable host
-configuration.
 
 `KestrelSettings.json`:
 

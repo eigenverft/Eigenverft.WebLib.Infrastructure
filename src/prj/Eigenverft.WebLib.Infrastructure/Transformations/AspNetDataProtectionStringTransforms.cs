@@ -9,6 +9,10 @@ using Microsoft.AspNetCore.DataProtection;
 namespace Eigenverft.WebLib.Infrastructure.Transformations
 {
     /// <summary>Creates reversible string transforms backed by ASP.NET Core Data Protection.</summary>
+    /// <remarks>
+    /// Use <see cref="Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs"/> when a persisted
+    /// <c>ConfigurationValueCodec</c> is required.
+    /// </remarks>
     public static class AspNetDataProtectionStringTransforms
     {
         /// <summary>Creates an ASP.NET Core Data Protection transform with explicit application and purpose isolation.</summary>
