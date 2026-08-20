@@ -69,15 +69,72 @@ HTTP/HTTPS listeners, TLS policy, managed PFX files, SNI selection, and atomic c
 while using NetLib's certificate primitives underneath.
 
 ```csharp
+using System;
+using System.IO;
+using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.Sources;
+using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.SwitchableJson;
+using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.Values;
 using Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout;
 using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
 using Eigenverft.WebLib.Infrastructure.Hosting.Kestrel;
+using Eigenverft.WebLib.Infrastructure.Transformations;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 
 WebApplicationBuilder builder =
     WebApplicationBuilderFactory.CreateWithDefaultDirectory(args);
 
 IAppDirectoryLayout directories = builder.GetDirectoryLayout();
+string settingsDirectory =
+    directories[DefaultDirectory.ApplicationSettings];
+
+builder.ResetToMinimalConfigurationSources(
+    includeCommandLineArguments: true);
+
+builder.Configuration.AddJsonFile(
+    Path.Combine(settingsDirectory, "KestrelSettings.json"),
+    optional: false,
+    reloadOnChange: false);
+
+// Generate a different stable factor for each application.
+byte[] applicationFactor =
+{
+    0x23, 0x52, 0x66, 0x37, 0x5A, 0x39, 0x27, 0x27,
+    0x5E, 0x52, 0x6C, 0x2E, 0x36, 0x49, 0x45, 0x4E,
+    0x79, 0x4A, 0x52, 0x43, 0x4E, 0x4D, 0x3F, 0x5E,
+    0x50, 0x5A, 0x6A, 0x5F, 0x4E, 0x32, 0x28, 0x4E,
+};
+
+string configurationProtectionSecret =
+    Environment.GetEnvironmentVariable("APP_CONFIGURATION_PROTECTION_SECRET")
+    ?? throw new InvalidOperationException(
+        "APP_CONFIGURATION_PROTECTION_SECRET is required.");
+
+ConfigurationValueCodec certificatePasswordCodec =
+    ConfigurationValueCodecs.Compose(
+        ConfigurationValueCodecs.AesPassword(applicationFactor),
+        ConfigurationValueCodecs.AesPassword(configurationProtectionSecret),
+        ConfigurationValueCodecs.PhysicalMachineBoundAes(),
+        new ConfigurationValueCodec(
+            nameof(AspNetDataProtectionStringTransforms.DataProtection),
+            ConfigurationValueKind.DataProtection,
+            AspNetDataProtectionStringTransforms.DataProtection(
+                directories[DefaultDirectory.ApplicationProtectionKeys],
+                typeof(Program).Assembly.GetName().Name!,
+                nameof(certificatePasswordCodec))));
+
+var certificateSourceOptions = new SwitchableJsonRegistrationOptions
+{
+    ReloadOnChange = true,
+    ValueProtection = JsonConfigurationValueProtection.ForPaths(
+        certificatePasswordCodec,
+        "CertificatesMappingSettings:*:Password"),
+};
+
+builder.AddSwitchableJsonFile(
+    "KestrelCertificateMappings",
+    Path.Combine(settingsDirectory, "CertificatesMappingSettings.json"),
+    certificateSourceOptions);
 
 builder.WebHost.ConfigureKestrelSniFromConfiguration(
     certDirOverride: directories[DefaultDirectory.ApplicationCerts]);
@@ -86,7 +143,22 @@ WebApplication app = builder.Build();
 app.Run();
 ```
 
-Minimal `appsettings.json`:
+This replaces the implicit `appsettings*.json` providers and keeps the startup-fixed listener
+configuration separate from the reloadable certificate mappings. The switchable source protects
+only `CertificatesMappingSettings:*:Password` on disk, decodes it before publication, and retains
+the last-known-good configuration after a rejected reload. Generate a stable application-specific
+byte-array factor, protect `APP_CONFIGURATION_PROTECTION_SECRET`, and provision the file on its
+target machine. This generic external deployment secret can protect other application configuration;
+the factor and selected path separate this certificate use. It is not itself a certificate password.
+The byte array avoids an assembly string-table entry but remains a recoverable structural factor
+rather than a secret. The outer ASP.NET Core Data Protection layer uses the persistent
+`ApplicationProtectionKeys` directory. Preserve its complete key ring, application name, and purpose
+while protected values may still need to be decoded. Because the purpose comes from
+`nameof(certificatePasswordCodec)`, treat that variable name as a persisted compatibility contract.
+The application discriminator comes directly from the entry assembly rather than mutable host
+configuration.
+
+`KestrelSettings.json`:
 
 ```json
 {
@@ -98,7 +170,14 @@ Minimal `appsettings.json`:
     "Protocols": "Http1AndHttp2",
     "PreferLongestSuffixMatch": true,
     "TlsProtocolPolicy": "Default"
-  },
+  }
+}
+```
+
+`CertificatesMappingSettings.json`:
+
+```json
+{
   "CertificatesMappingSettings": [
     {
       "SNI": "localhost",
@@ -135,8 +214,9 @@ symbolic-link targets cannot escape that directory.
 | `PreferLongestSuffixMatch` | `true` | Tries the most-specific configured suffix first. |
 | `TlsProtocolPolicy` | `Default` | TLS 1.2/1.3 by default; `Strict` selects TLS 1.3 only. |
 
-At least one listener and one usable certificate mapping are required. Store real PFX passwords
-in a protected configuration or secret provider rather than source control.
+At least one listener and one usable certificate mapping are required. Provision the initial PFX
+password on the target machine rather than committing it; NetLib rewrites the selected value as a
+codec envelope during source registration and exposes clear text only in memory.
 
 Recovery policy is explicit:
 

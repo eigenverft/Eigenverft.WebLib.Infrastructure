@@ -42,15 +42,72 @@ certificate lifecycle in one place.
 Add the configuration sources before the application is built, then call the extension once:
 
 ```csharp
+using System;
+using System.IO;
+using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.Sources;
+using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.SwitchableJson;
+using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.Values;
 using Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout;
 using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
 using Eigenverft.WebLib.Infrastructure.Hosting.Kestrel;
+using Eigenverft.WebLib.Infrastructure.Transformations;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 
 WebApplicationBuilder builder =
     WebApplicationBuilderFactory.CreateWithDefaultDirectory(args);
 
 IAppDirectoryLayout directories = builder.GetDirectoryLayout();
+string settingsDirectory =
+    directories[DefaultDirectory.ApplicationSettings];
+
+builder.ResetToMinimalConfigurationSources(
+    includeCommandLineArguments: true);
+
+builder.Configuration.AddJsonFile(
+    Path.Combine(settingsDirectory, "KestrelSettings.json"),
+    optional: false,
+    reloadOnChange: false);
+
+// Generate a different stable factor for each application.
+byte[] applicationFactor =
+{
+    0x23, 0x52, 0x66, 0x37, 0x5A, 0x39, 0x27, 0x27,
+    0x5E, 0x52, 0x6C, 0x2E, 0x36, 0x49, 0x45, 0x4E,
+    0x79, 0x4A, 0x52, 0x43, 0x4E, 0x4D, 0x3F, 0x5E,
+    0x50, 0x5A, 0x6A, 0x5F, 0x4E, 0x32, 0x28, 0x4E,
+};
+
+string configurationProtectionSecret =
+    Environment.GetEnvironmentVariable("APP_CONFIGURATION_PROTECTION_SECRET")
+    ?? throw new InvalidOperationException(
+        "APP_CONFIGURATION_PROTECTION_SECRET is required.");
+
+ConfigurationValueCodec certificatePasswordCodec =
+    ConfigurationValueCodecs.Compose(
+        ConfigurationValueCodecs.AesPassword(applicationFactor),
+        ConfigurationValueCodecs.AesPassword(configurationProtectionSecret),
+        ConfigurationValueCodecs.PhysicalMachineBoundAes(),
+        new ConfigurationValueCodec(
+            nameof(AspNetDataProtectionStringTransforms.DataProtection),
+            ConfigurationValueKind.DataProtection,
+            AspNetDataProtectionStringTransforms.DataProtection(
+                directories[DefaultDirectory.ApplicationProtectionKeys],
+                typeof(Program).Assembly.GetName().Name!,
+                nameof(certificatePasswordCodec))));
+
+var certificateSourceOptions = new SwitchableJsonRegistrationOptions
+{
+    ReloadOnChange = true,
+    ValueProtection = JsonConfigurationValueProtection.ForPaths(
+        certificatePasswordCodec,
+        "CertificatesMappingSettings:*:Password"),
+};
+
+builder.AddSwitchableJsonFile(
+    "KestrelCertificateMappings",
+    Path.Combine(settingsDirectory, "CertificatesMappingSettings.json"),
+    certificateSourceOptions);
 
 builder.WebHost.ConfigureKestrelSniFromConfiguration(
     certDirOverride: directories[DefaultDirectory.ApplicationCerts]);
@@ -60,7 +117,24 @@ app.MapGet("/", () => "HTTPS is ready");
 app.Run();
 ```
 
-Minimal `appsettings.json`:
+`ResetToMinimalConfigurationSources(...)` removes the implicit `appsettings*.json` providers.
+The two explicit files then separate startup-fixed server policy from reloadable certificate
+mappings. The switchable source is useful here because it combines last-known-good reloads with
+targeted value protection: only `CertificatesMappingSettings:*:Password` is encoded on disk and
+decoded before WebLib sees the candidate configuration. Generate a stable, application-specific
+`applicationFactor` byte array; it avoids placing the factor in the assembly string table but
+remains recoverable and is not a secret. Actual secrecy depends on protecting
+`APP_CONFIGURATION_PROTECTION_SECRET`. This generic external deployment secret can protect other
+application configuration too; the application-owned factor and selected path provide the
+certificate-specific separation. It is not itself a certificate password. The machine-bound layer
+means the encoded file must be provisioned on its target machine. The outer ASP.NET Core Data
+Protection layer uses the persistent `ApplicationProtectionKeys` directory plus the stable
+entry-assembly name and purpose. The assembly name cannot be overridden through host configuration.
+Here, `nameof(certificatePasswordCodec)` is the persisted purpose; treat that variable name as a
+compatibility contract. Back up and retain the complete key ring while protected values may still
+depend on it.
+
+`KestrelSettings.json`:
 
 ```json
 {
@@ -72,7 +146,14 @@ Minimal `appsettings.json`:
     "Protocols": "Http1AndHttp2",
     "PreferLongestSuffixMatch": true,
     "TlsProtocolPolicy": "Default"
-  },
+  }
+}
+```
+
+`CertificatesMappingSettings.json`:
+
+```json
+{
   "CertificatesMappingSettings": [
     {
       "SNI": "localhost",
@@ -121,9 +202,10 @@ Listener settings are startup-fixed:
 At least one listener must be enabled. Certificate mappings are required even for the HTTP-only
 form of this SNI helper.
 
-Each certificate mapping requires `SNI` and `FileName`. `Password` defaults to an empty string;
-store real PFX passwords in a protected configuration or secret provider rather than source
-control. Additional DNS and IP values are used as typed SANs when WebLib generates a certificate.
+Each certificate mapping requires `SNI` and `FileName`. `Password` defaults to an empty string.
+Provision its initial clear-text value on the target machine rather than committing it; registration
+then rewrites matching values as codec envelopes while publishing clear text only in memory.
+Additional DNS and IP values are used as typed SANs when WebLib generates a certificate.
 
 `CertificateRecoveryMode` controls replacement of unusable files:
 

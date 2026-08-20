@@ -23,13 +23,63 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
         /// <param name="kestrelSettingsSectionPath">The configuration section containing startup-fixed Kestrel settings.</param>
         /// <remarks>
         /// <para>
-        /// Add the configuration sources before building the application, then call this method once:
+        /// Add the configuration sources before building the application, then call this method once. For example,
+        /// reset the implicit <c>appsettings*.json</c> sources and load startup-fixed Kestrel settings separately from
+        /// reloadable certificate mappings:
         /// </para>
         /// <code><![CDATA[
+        /// builder.ResetToMinimalConfigurationSources(
+        ///     includeCommandLineArguments: true);
+        ///
+        /// builder.Configuration.AddJsonFile(
+        ///     Path.Combine(settingsDirectory, "KestrelSettings.json"),
+        ///     optional: false,
+        ///     reloadOnChange: false);
+        ///
+        /// // Generate a different stable factor for each application.
+        /// byte[] applicationFactor =
+        /// {
+        ///     0x23, 0x52, 0x66, 0x37, 0x5A, 0x39, 0x27, 0x27,
+        ///     0x5E, 0x52, 0x6C, 0x2E, 0x36, 0x49, 0x45, 0x4E,
+        ///     0x79, 0x4A, 0x52, 0x43, 0x4E, 0x4D, 0x3F, 0x5E,
+        ///     0x50, 0x5A, 0x6A, 0x5F, 0x4E, 0x32, 0x28, 0x4E,
+        /// };
+        ///
+        /// string configurationProtectionSecret =
+        ///     Environment.GetEnvironmentVariable("APP_CONFIGURATION_PROTECTION_SECRET")
+        ///     ?? throw new InvalidOperationException(
+        ///         "APP_CONFIGURATION_PROTECTION_SECRET is required.");
+        ///
+        /// ConfigurationValueCodec certificatePasswordCodec =
+        ///     ConfigurationValueCodecs.Compose(
+        ///         ConfigurationValueCodecs.AesPassword(applicationFactor),
+        ///         ConfigurationValueCodecs.AesPassword(configurationProtectionSecret),
+        ///         ConfigurationValueCodecs.PhysicalMachineBoundAes(),
+        ///         new ConfigurationValueCodec(
+        ///             nameof(AspNetDataProtectionStringTransforms.DataProtection),
+        ///             ConfigurationValueKind.DataProtection,
+        ///             AspNetDataProtectionStringTransforms.DataProtection(
+        ///                 directories[DefaultDirectory.ApplicationProtectionKeys],
+        ///                 typeof(Program).Assembly.GetName().Name!,
+        ///                 nameof(certificatePasswordCodec))));
+        ///
+        /// var certificateSourceOptions = new SwitchableJsonRegistrationOptions
+        /// {
+        ///     ReloadOnChange = true,
+        ///     ValueProtection = JsonConfigurationValueProtection.ForPaths(
+        ///         certificatePasswordCodec,
+        ///         "CertificatesMappingSettings:*:Password"),
+        /// };
+        ///
+        /// builder.AddSwitchableJsonFile(
+        ///     "KestrelCertificateMappings",
+        ///     Path.Combine(settingsDirectory, "CertificatesMappingSettings.json"),
+        ///     certificateSourceOptions);
+        ///
         /// builder.WebHost.ConfigureKestrelSniFromConfiguration(
         ///     certDirOverride: directories[DefaultDirectory.ApplicationCerts]);
         /// ]]></code>
-        /// <para>Minimal configuration:</para>
+        /// <para>Minimal <c>KestrelSettings.json</c>:</para>
         /// <code><![CDATA[
         /// {
         ///   "KestrelSettings": {
@@ -40,7 +90,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
         ///     "Protocols": "Http1AndHttp2",
         ///     "PreferLongestSuffixMatch": true,
         ///     "TlsProtocolPolicy": "Default"
-        ///   },
+        ///   }
+        /// }
+        /// ]]></code>
+        /// <para>Minimal <c>CertificatesMappingSettings.json</c>:</para>
+        /// <code><![CDATA[
+        /// {
         ///   "CertificatesMappingSettings": [
         ///     {
         ///       "SNI": "localhost",
