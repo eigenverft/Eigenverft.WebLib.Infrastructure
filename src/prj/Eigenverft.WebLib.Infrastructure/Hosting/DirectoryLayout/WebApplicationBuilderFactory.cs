@@ -6,7 +6,6 @@ using System.Linq;
 using Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout;
 
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
 {
@@ -71,18 +70,17 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
             var effectiveMap = new Dictionary<string, string>(folderMap, StringComparer.OrdinalIgnoreCase);
             EnsureCanonicalWebMapping(effectiveMap, strictWwwrootName);
 
+            string contentRootPath = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
+
             var builder = WebApplication.CreateBuilder(new WebApplicationOptions
             {
                 Args = args ?? Array.Empty<string>(),
-                ContentRootPath = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory),
+                ContentRootPath = contentRootPath,
+                WebRootPath = Path.Combine(contentRootPath, effectiveMap[WebKey]),
             });
 
-            // All generic layout creation, validation, writable probing, DI registration and retrieval live in NetLib.
+            // All generic layout creation, validation, writable probing and DI registration live in NetLib.
             builder.AddDirectoryLayout(effectiveMap);
-            IAppDirectoryLayout layout = builder.GetDirectoryLayout();
-
-            // WebLib owns only the ASP.NET-specific projection of the shared layout.
-            builder.WebHost.UseWebRoot(layout[WebKey]);
 
             return builder;
         }
