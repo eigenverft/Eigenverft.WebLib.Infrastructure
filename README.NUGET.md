@@ -2,11 +2,11 @@
 
 [![NuGet Version](https://img.shields.io/nuget/v/Eigenverft.WebLib.Infrastructure?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure) [![NuGet Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.Infrastructure?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure) [![Targets](https://img.shields.io/badge/targets-.NET%208%20%7C%2010-512BD4?logo=dotnet&logoColor=white)](#-target-frameworks) [![License](https://img.shields.io/github/license/eigenverft/Eigenverft.WebLib.Infrastructure?logo=mit)](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/LICENSE)
 
-ASP.NET Core adapters for `Eigenverft.NetLib.Infrastructure`.
+ASP.NET Core adapters for
+[`Eigenverft.NetLib.Infrastructure`](https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure).
 
-WebLib intentionally stays thin: generic hosting, configuration, transforms,
-certificates, bootstrap logging, and directory-layout behavior belong to NetLib.
-WebLib contains only the pieces that require ASP.NET Core or Kestrel.
+WebLib intentionally stays thin and contains only the pieces that require ASP.NET Core
+or Kestrel. Host-independent infrastructure belongs to NetLib.
 
 ---
 
@@ -36,14 +36,16 @@ layout:
 ```csharp
 using Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout;
 using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
+using Microsoft.AspNetCore.Builder;
 
-var builder = WebApplicationBuilderFactory.CreateWithDefaultDirectory();
-var directories = builder.GetDirectoryLayout();
+WebApplicationBuilder builder =
+    WebApplicationBuilderFactory.CreateWithDefaultDirectory();
 
-string settingsDirectory =
-    directories[DefaultDirectory.ApplicationSettings];
+IAppDirectoryLayout directories = builder.GetDirectoryLayout();
+string protectionKeysDirectory =
+    directories[DefaultDirectory.ApplicationProtectionKeys];
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 app.Run();
 ```
 
@@ -65,22 +67,6 @@ stack in WebLib.
 WebLib provides the ASP.NET Core/Kestrel-specific listener and SNI configuration
 layer. Shared X.509 certificate creation and managed certificate-file handling are
 provided by `Eigenverft.NetLib.Infrastructure.Security.Certificates`.
-
-## ⚙️ Generic configuration belongs to NetLib
-
-The following capabilities are supplied by `Eigenverft.NetLib.Infrastructure` and
-are intentionally not duplicated in WebLib:
-
-- named `ConfigurationSets`;
-- `SwitchableJson` runtime configuration;
-- JSON source preparation;
-- self-describing `ConfigurationValueCodec` values;
-- minimal configuration-source reset helpers;
-- configuration precedence/collision diagnostics.
-
-The former WebLib `JsonSettings` environment/encoder facade, including
-`EncodeAndAddEnvironmentJsonSettings(...)`, has been removed rather than carried
-forward as a compatibility layer.
 
 ## 🎯 Target frameworks
 

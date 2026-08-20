@@ -12,8 +12,8 @@
     <IsPackable>true</IsPackable>
     <IsPublishable>false</IsPublishable>
     <IsTestProject>false</IsTestProject>
-    <VersionBuild>0</VersionBuild>
-    <VersionMajor>1</VersionMajor>
+    <VersionBuild>1</VersionBuild>
+    <VersionMajor>0</VersionMajor>
     <VersionMinor>0</VersionMinor>
     <VersionRevision>0</VersionRevision>
     <AssemblyVersion>$(VersionBuild).$(VersionMajor).$(VersionMinor).$(VersionRevision)</AssemblyVersion>
@@ -21,12 +21,13 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>$(AssemblyName)</PackageId>
     <Authors>$(Branding)</Authors>
-    <RepositoryUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</RepositoryUrl>
+    <RepositoryUrl>https://github.com/eigenverft/$(AssemblyName)</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageProjectUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/eigenverft/$(AssemblyName)</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>eigenverft-logo-v7-harbor-square_128_128.png</PackageIcon>
+    <PackageReleaseNotes>Initial public release of the ASP.NET Core hosting, Data Protection, and Kestrel/SNI adapters for Eigenverft.NetLib.Infrastructure. Details: https://github.com/eigenverft/$(AssemblyName)/blob/main/ReleaseNotes.md</PackageReleaseNotes>
     <Description>ASP.NET Core adapters for Eigenverft.NetLib.Infrastructure, including web-host directory setup, Data Protection transforms, and Kestrel/SNI configuration.</Description>
     <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;kestrel;sni;data-protection;security;eigenverft</PackageTags>
     <Copyright>Copyright (c) 2026 $(Branding)</Copyright>

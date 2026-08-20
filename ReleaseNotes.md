@@ -1,6 +1,16 @@
 # Release Notes
 
-## 2026-08-12
+## 1.0 public release — 2026-08-20
+
+- Added the first public NuGet release of the ASP.NET Core-specific adapters built on `Eigenverft.NetLib.Infrastructure`.
+- Updated the NetLib dependency to `1.0.20264.50794`, including the shared `ApplicationProtectionKeys` directory.
+- Kept `WebApplicationBuilderFactory` focused on the ASP.NET Core content root, web root, and semantic `"Web"` directory projection.
+- Initialized `WebRootPath` through `WebApplicationOptions` so clean deployments do not depend on a pre-existing `wwwroot` directory.
+- Included the ASP.NET Core Data Protection transform adapter and configuration-driven Kestrel/SNI certificate handling.
+- Published dedicated `net8.0` and `net10.0` assets.
+- Adopted the shared Eigenverft CI/CD, DocFX, reporting, artifact-distribution, and deployment-channel documentation workflow.
+
+## Pre-release consolidation — 2026-08-12
 
 - Replaced WebLib's duplicated generic directory-layout implementation with `Eigenverft.NetLib.Infrastructure`.
 - Kept `WebApplicationBuilderFactory.CreateWithDefaultDirectory()` as the web-specific adapter while `DefaultDirectory`, layout validation, registration, and `GetDirectoryLayout()` now come from NetLib.

@@ -57,10 +57,10 @@ Test-VariableValue -Variable { $GitHubToken } -WarnIfNullOrEmpty -HideValue
 Test-VariableValue -Variable { $NuGetApiKey } -WarnIfNullOrEmpty -HideValue
 Test-VariableValue -Variable { $IntTestNuGetApiKey } -WarnIfNullOrEmpty -HideValue
 Test-VariableValue -Variable { $PowerShellGalleryApiKey } -WarnIfNullOrEmpty -HideValue
-$GitHubToken = Get-ConfigValue -Check $GitHubToken -FilePath (Join-Path $PSScriptRoot 'cicd.secrets.json') -Property 'NUGET_GITHUB_PUSH'
-$NuGetApiKey = Get-ConfigValue -Check $NuGetApiKey -FilePath (Join-Path $PSScriptRoot 'cicd.secrets.json') -Property 'NUGET_PAT'
-$IntTestNuGetApiKey = Get-ConfigValue -Check $IntTestNuGetApiKey -FilePath (Join-Path $PSScriptRoot 'cicd.secrets.json') -Property 'NUGET_TEST_PAT'
-$PowerShellGalleryApiKey = Get-ConfigValue -Check $PowerShellGalleryApiKey -FilePath (Join-Path $PSScriptRoot 'cicd.secrets.json') -Property 'PsGalleryApiKey'
+$GitHubToken = Get-ConfigValue -Check $GitHubToken -FilePath (Join-Path $PSScriptRoot 'cicd.secrets.json') -Property 'GitHubToken'
+$NuGetApiKey = Get-ConfigValue -Check $NuGetApiKey -FilePath (Join-Path $PSScriptRoot 'cicd.secrets.json') -Property 'NuGetApiKey'
+$IntTestNuGetApiKey = Get-ConfigValue -Check $IntTestNuGetApiKey -FilePath (Join-Path $PSScriptRoot 'cicd.secrets.json') -Property 'IntTestNuGetApiKey'
+$PowerShellGalleryApiKey = Get-ConfigValue -Check $PowerShellGalleryApiKey -FilePath (Join-Path $PSScriptRoot 'cicd.secrets.json') -Property 'PowerShellGalleryApiKey'
 Test-VariableValue -Variable { $GitHubToken } -ExitIfNullOrEmpty -HideValue
 Test-VariableValue -Variable { $NuGetApiKey } -ExitIfNullOrEmpty -HideValue
 Test-VariableValue -Variable { $IntTestNuGetApiKey } -ExitIfNullOrEmpty -HideValue
@@ -86,7 +86,7 @@ Test-VariableValue -Variable { $GitRemoteUrl } -ExitIfNullOrEmpty
 $BranchDeploymentConfig = Convert-BranchToDeploymentInfo -BranchName "$GitCurrentBranch"
 
 # Generates a version based on the current date time to verify the version functions work as expected
-$GeneratedVersion = Convert-DateTimeTo64SecVersionComponents -VersionBuild 0 -VersionMajor 1
+$GeneratedVersion = Convert-DateTimeTo64SecVersionComponents -VersionBuild 1 -VersionMajor 0
 #$GeneratedVersion.VersionFull = "0.1.20256.30636"
 $GeneratedVersionAsDateTime = Convert-64SecVersionComponentsToDateTime -VersionBuild $GeneratedVersion.VersionBuild -VersionMajor $GeneratedVersion.VersionMajor -VersionMinor $GeneratedVersion.VersionMinor -VersionRevision $GeneratedVersion.VersionRevision
 Test-VariableValue -Variable { $GeneratedVersion } -ExitIfNullOrEmpty
@@ -147,11 +147,36 @@ $ProjPublishRootPath = Get-Path -Paths @("$OutputRootPath","projpublish")
 $ReportsRootPath =  Get-Path -Paths @("$OutputRootPath","reports")
 $DocsRootPath = Get-Path -Paths @("$OutputRootPath","docs")
 
-# Initialize the array to accumulate projects.
+# GitHub Pages publication model
+# ------------------------------
+# The versioned build tree under output/docs is intentionally NOT committed. It is an immutable
+# build result and may contain many versions of the same deployment channel.
+#
+# The repository-level docs tree is different: it is the current/live snapshot served by GitHub
+# Pages when Pages is configured as main:/docs. Documentation type comes first in the public URL,
+# then the deployment channel.
+#
+# Example:
+#   output/docs/.../production/<version>/docfx   -> versioned build result
+#   docs/docfx/production                       -> current production documentation
+#   docs/docfx/quality                          -> current quality/integration documentation
+#   docs/reports/production                     -> current production build/release reports
+#
+# docs/index.html and docs/.nojekyll are durable root files and are never part of a channel mirror.
+$GitHubPagesDocsRootPath = Get-Path -Paths @("$GitRepositoryRoot","docs")
+$GitHubPagesReportsChannelPath = Get-Path -Paths @("$GitHubPagesDocsRootPath","reports",$BranchDeploymentConfig.Channel.Value)
+$GitHubPagesDocFxChannelPath = Get-Path -Paths @("$GitHubPagesDocsRootPath","docfx",$BranchDeploymentConfig.Channel.Value)
+$GitHubPagesStagingRootPath = Get-Path -Paths @("$OutputRootPath","pages")
+$GitHubPagesReportsChannelStagingPath = Get-Path -Paths @("$GitHubPagesStagingRootPath","reports",$BranchDeploymentConfig.Channel.Value)
+$GitHubPagesDocFxChannelStagingPath = Get-Path -Paths @("$GitHubPagesStagingRootPath","docfx",$BranchDeploymentConfig.Channel.Value)
+
+# Main pipeline preparation: discover every solution below src and resolve its projects.
+# The resulting solution-to-project execution plan drives all subsequent build, test,
+# pack, publish, documentation, reporting, and distribution stages.
 $SolutionFileInfos = Find-FilesByPattern -Path "$GitRepositoryRoot\src" -Pattern "*.sln;*.slnx"
 $SolutionProjectPaths = @()
 foreach ($solutionFile in $SolutionFileInfos) {
-    # all ready sorted by the drydock.exe
+    # Drydock returns the project paths in their deterministic execution order.
     $CurrentProjectPaths = Invoke-ProcessTyped -Executable "drydock.exe" -Arguments @( "sln", "--location", "$($solutionFile.FullName)") -ReturnType 'Objects'
     $SolutionProjectPaths += [pscustomobject]@{ Sln =$solutionFile; Prj = ($CurrentProjectPaths | ForEach-Object { Get-Item $_ }) };
 }
@@ -330,6 +355,15 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
 
         if ($IsPackable -eq $true)
         {
+            # Render the checked-in DocFX templates for this concrete project/build.
+            # Convert-TemplateFilePlaceholders removes the .template token from the file name, so:
+            #   docfx_local.template.json -> docfx_local.json
+            #   index.template.md         -> index.md
+            #
+            # Those rendered files are transient build inputs beside their templates; they are NOT the
+            # GitHub Pages publication tree. The rendered JSON points DocFX at the versioned
+            # output/docs/.../<channel>/<version>/docfx directory below. A later publication step mirrors
+            # that already-built result into repository docs/docfx/<channel>/ for GitHub Pages.
             $DocFxReplacementsByToken = @{
                 "sourceCodeDirectory" = "$($ProjectFileInfo.DirectoryName.Replace('\','/'))"
                 "outputDirectory"     = (Get-Path -Paths @("$DocsDirectory","docfx")).Replace('\','/')
@@ -433,7 +467,126 @@ if ($PushToNuGetOrg -eq $true)
     }
 }
 
-# additional publish copys
+# Publish the current deployment-channel documentation snapshot.
+#
+# This deliberately reuses the outputs already produced by this script. DocFX is NOT built a
+# second time by a Pages-specific workflow. The same build therefore behaves consistently on a
+# developer machine and in GitHub Actions:
+#
+#   1. Reports are generated into the versioned output/reports tree.
+#   2. DocFX is generated into the versioned output/docs tree.
+#   3. Reports and DocFX are staged separately under output/pages.
+#   4. Reports are mirrored to docs/reports/<channel>; DocFX is mirrored to docs/docfx/<channel>.
+#   5. In CI only, those current-channel snapshots are committed and pushed back to the branch.
+#
+# A local run intentionally stops after step 4. This makes the complete documentation result easy
+# to inspect locally without a GitHub-specific deployment step or a second build implementation.
+$null = New-Directory -Paths @($GitHubPagesReportsChannelStagingPath)
+$null = New-Directory -Paths @($GitHubPagesDocFxChannelStagingPath)
+Remove-FilesByPattern -Path "$GitHubPagesReportsChannelStagingPath" -Pattern "*"
+Remove-FilesByPattern -Path "$GitHubPagesDocFxChannelStagingPath" -Pattern "*"
+
+foreach ($SolutionProjectPath in $SolutionProjectPaths) {
+    $SolutionFileInfo = $SolutionProjectPath.Sln
+
+    foreach ($ProjectFileInfo in $SolutionProjectPath.Prj) {
+        $ReportsDirectory = Get-Path -Paths @($ReportsRootPath,$SolutionFileInfo.BaseName,$ProjectFileInfo.BaseName,$ChannelVersionRelativePath)
+        $DocsDirectory = Get-Path -Paths @($DocsRootPath,$SolutionFileInfo.BaseName,$ProjectFileInfo.BaseName,$ChannelVersionRelativePath)
+
+        # Reports are published at the channel root so the landing page can link directly to build,
+        # dependency, vulnerability, license and BOM information without knowing internal output paths.
+        if (Test-Path -Path "$ReportsDirectory" -PathType Container)
+        {
+            Copy-FilesRecursively -SourceDirectory "$ReportsDirectory" -DestinationDirectory "$GitHubPagesReportsChannelStagingPath" -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true
+        }
+
+        # Public DocFX URLs are grouped by documentation type first: /docfx/<channel>/.
+        if (Test-Path -Path "$DocsDirectory\docfx" -PathType Container)
+        {
+            Copy-FilesRecursively -SourceDirectory "$DocsDirectory\docfx" -DestinationDirectory "$GitHubPagesDocFxChannelStagingPath" -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true -CleanDestination MirrorTree
+        }
+    }
+}
+
+# Build a small browsable index for the report channel from the files that were actually produced.
+# This page is generated from the same local/CI staging tree as the reports themselves, so
+# docs/reports/<channel>/ remains directly browsable after every MirrorTree publication.
+$GitHubPagesReportFileInfos = @(Get-ChildItem -Path "$GitHubPagesReportsChannelStagingPath" -File | Sort-Object Name)
+$GitHubPagesReportLinks = @()
+foreach ($GitHubPagesReportFileInfo in $GitHubPagesReportFileInfos)
+{
+    $GitHubPagesReportFileNameHtml = [System.Net.WebUtility]::HtmlEncode($GitHubPagesReportFileInfo.Name)
+    $GitHubPagesReportFileUrl = [System.Uri]::EscapeDataString($GitHubPagesReportFileInfo.Name)
+    $GitHubPagesReportLinks += ('<li><a href="{0}">{1}</a></li>' -f $GitHubPagesReportFileUrl,$GitHubPagesReportFileNameHtml)
+}
+
+$GitHubPagesReportListHtml = if ($GitHubPagesReportLinks.Count -gt 0) { $GitHubPagesReportLinks -join [Environment]::NewLine } else { "<li>No reports were produced by this build.</li>" }
+$GitHubPagesReportIndexHtml = @"
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>$DeploymentChannel build reports - $GitRepositoryName</title>
+</head>
+<body>
+  <main>
+    <h1>$DeploymentChannel build reports</h1>
+    <p>Reports produced by the current $DeploymentChannel CI/CD snapshot.</p>
+    <ul>
+$GitHubPagesReportListHtml
+    </ul>
+    <p><a href="../../docfx/$DeploymentChannel/">Open $DeploymentChannel DocFX documentation</a></p>
+    <p><a href="../../">Back to documentation overview</a></p>
+  </main>
+</body>
+</html>
+"@
+Set-Content -Path (Get-Path -Paths @($GitHubPagesReportsChannelStagingPath,"index.html")) -Value $GitHubPagesReportIndexHtml -Encoding UTF8
+
+# Mirror only the current channel leaves. Durable docs root files and other channels stay untouched.
+$null = New-Directory -Paths @($GitHubPagesReportsChannelPath)
+$null = New-Directory -Paths @($GitHubPagesDocFxChannelPath)
+Copy-FilesRecursively -SourceDirectory "$GitHubPagesReportsChannelStagingPath" -DestinationDirectory "$GitHubPagesReportsChannelPath" -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true -CleanDestination MirrorTree
+Copy-FilesRecursively -SourceDirectory "$GitHubPagesDocFxChannelStagingPath" -DestinationDirectory "$GitHubPagesDocFxChannelPath" -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true -CleanDestination MirrorTree
+
+if ($RunEnvironment.IsCI)
+{
+    # CI owns publication of the live channel snapshot. The workflow only triggers automatically for
+    # src/** changes, so this docs-only commit does not start another release and cannot form a loop.
+    # The workflow requires `permissions: contents: write`; repository Actions permissions must also
+    # allow a read/write GITHUB_TOKEN.
+    #
+    # Do not call Invoke-GitAddCommitPush when the snapshot is byte-for-byte unchanged: git commit
+    # returns exit code 1 for "nothing to commit", which should not turn a successful rebuild into a
+    # failed release.
+    $GitHubPagesReportsGitPath = "docs/reports/$DeploymentChannel"
+    $GitHubPagesDocFxGitPath = "docs/docfx/$DeploymentChannel"
+    $GitHubPagesChannelGitStatus = @(& git -C "$GitRepositoryRoot" status --porcelain -- "$GitHubPagesReportsGitPath" "$GitHubPagesDocFxGitPath")
+    if ($LASTEXITCODE -ne 0)
+    {
+        throw "Unable to inspect Git status for '$DeploymentChannel' documentation publication paths."
+    }
+
+    if ($GitHubPagesChannelGitStatus.Count -gt 0)
+    {
+        Invoke-GitAddCommitPush -TopLevelDirectory "$GitRepositoryRoot" -Folders @("$GitHubPagesReportsGitPath","$GitHubPagesDocFxGitPath") -CurrentBranch "$GitCurrentBranch" -CommitMessage "Update $DeploymentChannel documentation [skip ci]" -SafeDirectory -ExitOnError
+    }
+    else
+    {
+        Write-Host "Documentation snapshot for '$DeploymentChannel' is unchanged. Git commit/push skipped."
+    }
+}
+else
+{
+    Write-Host "Documentation snapshots updated locally at '$GitHubPagesReportsChannelPath' and '$GitHubPagesDocFxChannelPath'. Git commit/push skipped outside CI."
+}
+
+# Enrich every project publish tree before creating distributable drops.
+# A repository can contain multiple solutions and every solution can contain multiple projects.
+# Their publish trees remain isolated as publish/<solution>/<project>/<channel>/<version>.
+# Compliance files are copied next to the binaries; DocFX output is kept below a
+# project-specific DOCFX directory so aggregated documentation remains distinguishable.
 foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     foreach ($ProjectFileInfo in $SolutionProjectPath.Prj) {
         $SolutionFileInfo = $SolutionProjectPath.Sln
@@ -449,7 +602,8 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
      }
 }
 
-# additional publish cleanups
+# Remove build-only symbol files from every enriched project publish tree.
+# All repository-, solution-, and project-level drops below are created from these cleaned trees.
 foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     foreach ($ProjectFileInfo in $SolutionProjectPath.Prj) {
         $SolutionFileInfo = $SolutionProjectPath.Sln
@@ -458,7 +612,14 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
      }
 }
 
-# repository based drops of files.
+# Every aggregation level below is exposed as:
+# - <channel>/<version>: version-specific snapshot
+# - <channel>/latest: refreshed copy of the latest version in that channel
+# - distributed: refreshed channel-independent distribution
+# - zipped/<name>.<version>-<affix>.zip: NuGet-style file name for a regular ZIP archive
+
+# Build the repository-level all-in-one drop by flattening the publish trees of every
+# project from every solution. Project output file names are therefore expected to be unique.
 $RepoPublishDirectory = New-Directory -Paths @($RepoPublishRootPath,$ChannelVersionRelativePath)
 foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     $SolutionFileInfo = $SolutionProjectPath.Sln
@@ -475,7 +636,8 @@ $nugetFileEmulation = Join-Text -InputObject @("$nugetFilePart1","$($BranchDeplo
 Compress-Directory -SourceDirectory "$RepoPublishDirectory" -DestinationFile "$(Get-Path -Paths @($RepositoryDropRootPath,$GitRepositoryName,"zipped","$nugetFileEmulation.zip"))"
 
 
-# solution based drops of files.
+# Build one solution-level drop by flattening all project publish trees belonging to that
+# solution. The solution staging directory is cleared first to prevent stale artifacts.
 foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     $SolutionFileInfo = $SolutionProjectPath.Sln
     $SolutionPublishDirectory = New-Directory -Paths @($SlnPublishRootPath,$SolutionFileInfo.BaseName,$ChannelVersionRelativePath)
@@ -492,7 +654,8 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     Compress-Directory -SourceDirectory "$SolutionPublishDirectory" -DestinationFile "$(Get-Path -Paths @($SolutionsDropRootPath,$SolutionFileInfo.BaseName,"zipped","$nugetFileEmulation.zip"))"
 }
 
-# project based drops of files.
+# Build one project-level drop for every solution/project association.
+# Project drops are keyed by project base name, which must be unique across the repository.
 foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     $SolutionFileInfo = $SolutionProjectPath.Sln
     foreach ($ProjectFileInfo in $SolutionProjectPath.Prj) {
