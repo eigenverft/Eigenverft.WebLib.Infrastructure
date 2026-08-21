@@ -1,0 +1,193 @@
+{
+  "source_base_path": "D:/a/Eigenverft.WebLib.Infrastructure/Eigenverft.WebLib.Infrastructure/.github/workflows/.config/docfx/build",
+  "xrefmap": "xrefmap.yml",
+  "files": [
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.yml\" sourcestartlinenumber=\"1\">Creates configuration-value codecs backed by ASP.NET Core Data Protection.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.yml\" sourcestartlinenumber=\"1\">Creates ASP.NET Core builders that use the shared NetLib application directory layout.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.yml\" sourcestartlinenumber=\"1\">Provides configuration-driven Kestrel hosting extensions.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Kestrel",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.yml\" sourcestartlinenumber=\"1\">Creates reversible string transforms backed by ASP.NET Core Data Protection.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Transformations.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Transformations.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Transformations",
+      "Summary": null
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "api/toc.yml",
+      "output": {
+        ".json": {
+          "relative_path": "api/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/getting-started.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/getting-started.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/introduction.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/introduction.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "docs/toc.yml",
+      "output": {
+        ".json": {
+          "relative_path": "docs/toc.json"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "index.md",
+      "output": {
+        ".html": {
+          "relative_path": "index.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "index.template.md",
+      "output": {
+        ".html": {
+          "relative_path": "index.template.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Toc",
+      "source_relative_path": "toc.yml",
+      "output": {
+        ".json": {
+          "relative_path": "toc.json"
+        }
+      },
+      "version": ""
+    }
+  ],
+  "groups": [
+    {
+      "xrefmap": "xrefmap.yml"
+    }
+  ]
+}
