@@ -2,25 +2,23 @@
 
 [![NuGet Version](https://img.shields.io/nuget/v/Eigenverft.WebLib.Infrastructure?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure) [![NuGet Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.Infrastructure?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure) [![Targets](https://img.shields.io/badge/targets-.NET%208%20%7C%2010-512BD4?logo=dotnet&logoColor=white)](#-target-frameworks) [![License](https://img.shields.io/github/license/eigenverft/Eigenverft.WebLib.Infrastructure?logo=mit)](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/LICENSE)
 
-ASP.NET Core adapters for
+Production-oriented ASP.NET Core adapters for
 [`Eigenverft.NetLib.Infrastructure`](https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure).
 
-WebLib intentionally stays thin and contains only the pieces that require ASP.NET Core
-or Kestrel. Host-independent infrastructure belongs to NetLib.
+WebLib turns configuration, certificate files, and NetLib's shared directory layout into a
+reload-safe Kestrel/SNI setup. It also connects ASP.NET Core Data Protection to NetLib's composable
+configuration-value protection.
 
 ---
 
 ## ✨ At a glance
 
-| | |
-| --- | --- |
-| Package | `Eigenverft.WebLib.Infrastructure` |
-| Target frameworks | .NET 8 and .NET 10 |
-| Shared dependency | `Eigenverft.NetLib.Infrastructure` |
-| Web hosting | `WebApplicationBuilderFactory` |
-| ASP.NET security adapter | Data Protection reversible-string transform |
-| Web server | Kestrel listener and SNI certificate configuration |
-| License | MIT |
+| Capability | Problem solved | Starting point |
+| --- | --- | --- |
+| Kestrel and SNI | Configuration-driven listeners, host-name certificate selection, and last-known-good certificate reloads | `ConfigureKestrelSniFromConfiguration(...)` |
+| Managed certificates | Existing PFX loading or policy-controlled self-signed recovery | `CertificateRecoveryMode` |
+| Protected mappings | Persist certificate passwords through composable protection instead of leaving clear text after provisioning | `AspNetDataProtectionConfigurationValueCodecs` |
+| Web host directories | Apply NetLib's executable-rooted layout to content root, web root, and `wwwroot` | `WebApplicationBuilderFactory` |
 
 ## 📦 Installation
 
@@ -42,10 +40,10 @@ WebApplicationBuilder builder =
     WebApplicationBuilderFactory.CreateWithDefaultDirectory();
 
 IAppDirectoryLayout directories = builder.GetDirectoryLayout();
-string protectionKeysDirectory =
-    directories[DefaultDirectory.ApplicationProtectionKeys];
+string webRoot = directories["Web"];
 
 WebApplication app = builder.Build();
+app.MapGet("/", () => $"Web root: {webRoot}");
 app.Run();
 ```
 
@@ -73,6 +71,22 @@ be used independently or at any position in `ConfigurationValueCodecs.Compose(..
 HTTP/HTTPS listeners, TLS policy, managed PFX files, SNI selection, and atomic certificate reloads
 while using NetLib's certificate primitives underneath.
 
+The setup separates startup policy, reloadable mappings, certificates, and protection keys:
+
+```text
+<application>/
+├── AppSettings/
+│   ├── KestrelSettings.json                ← startup-fixed listener policy
+│   └── CertificatesMappingSettings.json    ← protected, reloadable SNI mappings
+├── AppCerts/
+│   └── localhost.pfx                       ← existing or WebLib-managed certificate
+├── AppProtectionKeys/
+│   └── ...                                 ← persistent Data Protection key ring
+└── wwwroot/
+```
+
+### Register configuration and protect certificate passwords
+
 ```csharp
 using System;
 using System.IO;
@@ -91,11 +105,16 @@ WebApplicationBuilder builder = WebApplicationBuilderFactory.CreateWithDefaultDi
 IAppDirectoryLayout directories = builder.GetDirectoryLayout();
 string settingsDirectory = directories[DefaultDirectory.ApplicationSettings];
 
-builder.ResetToMinimalConfigurationSources(includeCommandLineArguments: true);
+// Replace the implicit host sources with the selected process-level sources.
+builder.ResetToMinimalConfigurationSources(
+    includeCommandLineArguments: true,
+    includeEnvironmentVariables: true);
 
+// Listener policy is read once while Kestrel is configured.
 builder.Configuration.AddJsonFile(
-    Path.Combine(settingsDirectory, "KestrelSettings.json"),
-    optional: false, reloadOnChange: false);
+    path: Path.Combine(settingsDirectory, "KestrelSettings.json"),
+    optional: false,
+    reloadOnChange: false);
 
 // Generate a different stable factor for each application.
 byte[] applicationFactor =
@@ -113,24 +132,45 @@ string configurationProtectionSecret =
 
 ConfigurationValueCodec certificatePasswordCodec =
     ConfigurationValueCodecs.Compose(
-        ConfigurationValueCodecs.AesPassword(applicationFactor),
-        ConfigurationValueCodecs.AesPassword(configurationProtectionSecret),
-        ConfigurationValueCodecs.PhysicalMachineBoundAes(),
-        AspNetDataProtectionConfigurationValueCodecs.DataProtection(
-            directories, nameof(certificatePasswordCodec)));
+        codecs:
+        [
+            // Separate this application and purpose from another use of the deployment secret.
+            ConfigurationValueCodecs.AesPassword(passwordAsciiBytes: applicationFactor),
+            // Add the externally supplied secret factor.
+            ConfigurationValueCodecs.AesPassword(password: configurationProtectionSecret),
+            // Resist an offline copy to another physical-machine identity.
+            ConfigurationValueCodecs.PhysicalMachineBoundAes(),
+            // Persist the outer key material through ASP.NET Core Data Protection.
+            AspNetDataProtectionConfigurationValueCodecs.DataProtection(
+                directories: directories,
+                purpose: nameof(certificatePasswordCodec)),
+        ]);
 
-var certificateSourceOptions = new SwitchableJsonRegistrationOptions
+SwitchableJsonRegistrationOptions certificateSourceOptions = new()
 {
+    // Follow and reload the active certificate-mapping file.
     ReloadOnChange = true,
+    // Protect only certificate passwords, not routing or certificate file names.
     ValueProtection = JsonConfigurationValueProtection.ForPaths(
-        certificatePasswordCodec, "CertificatesMappingSettings:*:Password"),
+        codec: certificatePasswordCodec,
+        patterns: ["CertificatesMappingSettings:*:Password"]),
 };
 
+// Publish complete mapping generations and keep last-known-good data on failure.
 builder.AddSwitchableJsonFile(
-    "KestrelCertificateMappings",
-    Path.Combine(settingsDirectory, "CertificatesMappingSettings.json"),
-    certificateSourceOptions);
+    name: "KestrelCertificateMappings",
+    initialPath: Path.Combine(settingsDirectory, "CertificatesMappingSettings.json"),
+    options: certificateSourceOptions);
+```
 
+The reset clears every existing source and then re-adds environment variables and command-line
+arguments. The explicit JSON sources are registered afterwards and therefore have higher precedence
+for overlapping keys.
+
+### Configure Kestrel and run
+
+```csharp
+// Resolve PFX files below NetLib's validated application certificate directory.
 builder.WebHost.ConfigureKestrelSniFromConfiguration(
     certDirOverride: directories[DefaultDirectory.ApplicationCerts]);
 
@@ -138,8 +178,8 @@ WebApplication app = builder.Build();
 app.Run();
 ```
 
-This replaces the implicit `appsettings*.json` providers and keeps the startup-fixed listener
-configuration separate from the reloadable certificate mappings. The switchable source protects
+The two JSON files keep startup-fixed listener configuration separate from reloadable certificate
+mappings. The switchable source protects
 only `CertificatesMappingSettings:*:Password` on disk, decodes it before publication, and retains
 the last-known-good configuration after a rejected reload. Generate a stable application-specific
 byte-array factor, protect `APP_CONFIGURATION_PROTECTION_SECRET`, and provision the file on its
