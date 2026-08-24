@@ -40,7 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Eigenverft.NetLib.Infrastructure" Version="1.0.20264.50794" />
+    <PackageReference Include="Eigenverft.NetLib.Infrastructure" Version="1.0.20264.51349" />
   </ItemGroup>
 
   <ItemGroup>
