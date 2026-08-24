@@ -1,18 +1,24 @@
 # Introduction
 
-`Eigenverft.WebLib.Infrastructure` collects reusable ASP.NET Core hosting primitives that should not be duplicated across individual Eigenverft applications.
+`Eigenverft.WebLib.Infrastructure` provides ASP.NET Core-specific adapters built on
+[`Eigenverft.NetLib.Infrastructure`](https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure).
+NetLib contains the application-neutral infrastructure and can be used independently of ASP.NET
+Core. WebLib references NetLib, so WebLib consumers can use those shared primitives directly without
+installing an additional infrastructure package.
 
-The library is intentionally application-neutral. It provides technical building blocks for hosting, configuration, protected settings, certificates, and Kestrel without introducing profile, tenant, proxy, filter, deployment, or product-specific semantics.
+WebLib itself stays focused on ASP.NET Core integration:
 
-Major areas include:
+- executable-rooted ASP.NET Core content and web-root setup on top of NetLib's directory layout;
+- ASP.NET Core Data Protection adapters for NetLib's composable configuration-value protection;
+- Kestrel listener, TLS, SNI, and reload-safe certificate configuration built on NetLib certificate primitives.
 
-- executable-rooted directory layout;
-- configuration-source composition and resolution diagnostics;
-- runtime-switchable JSON configuration;
-- named configuration sets that coordinate multiple switchable JSON participants;
-- composable JSON settings codecs and protection helpers;
-- bootstrap logging before the final host logging pipeline exists;
-- self-signed and managed certificate handling;
-- Kestrel listener, TLS, and SNI configuration.
+Common supporting capabilities are provided by the referenced NetLib package and are intentionally
+used in WebLib examples where they form part of a complete hosting setup. These include
+configuration-source composition and diagnostics, runtime-switchable JSON configuration, named
+configuration sets, configuration-value codecs and protection helpers, bootstrap logging, and the
+generic certificate infrastructure.
 
-The package targets .NET 8 and .NET 10. Public APIs are documented with XML documentation, and the prepared CI/CD tooling can generate the API reference through DocFX. GitHub Actions publishing is intentionally not enabled until a `cicd.yml` workflow is added.
+Both libraries are application-neutral and avoid profile, tenant, proxy, filter, deployment, or
+product-specific semantics. The WebLib package targets .NET 8 and .NET 10. Public WebLib APIs are
+documented with XML documentation, and the repository CI/CD workflow generates the DocFX API
+reference and build reports.

@@ -4,7 +4,7 @@ _layout: landing
 
 # {{appName}}
 
-Reusable ASP.NET Core hosting infrastructure for directory layout, configuration, runtime-switchable JSON, named configuration sets, protected settings, bootstrap logging, certificates, and Kestrel/SNI.
+ASP.NET Core-specific hosting adapters built on `Eigenverft.NetLib.Infrastructure`, combining WebLib's web-host, Data Protection, and Kestrel/SNI integration with NetLib's shared infrastructure primitives.
 
 ## Get started
 
@@ -22,11 +22,13 @@ Continue with the [getting started guide](docs/getting-started.md), read the [in
 
 ## Core areas
 
-- Executable-rooted directory layout and hosting defaults
-- Configuration-source composition and precedence diagnostics
-- Switchable JSON sources with prepare / commit / abort and last-known-good behavior
-- Named configuration sets for coordinated multi-source switching and consistency reporting
-- Composable JSON settings encoding and protection
-- Early bootstrap logging with optional Serilog integration
-- Self-signed and managed certificate helpers
-- Kestrel listener, TLS, and SNI certificate configuration
+WebLib provides the ASP.NET Core-specific layer:
+
+- executable-rooted ASP.NET Core content and web-root setup;
+- ASP.NET Core Data Protection adapters;
+- Kestrel listener, TLS, SNI, and reload-safe certificate configuration.
+
+The referenced NetLib package provides the shared host-independent layer used by these examples,
+including directory layout, configuration-source composition and diagnostics, switchable JSON,
+named configuration sets, configuration-value protection, bootstrap logging, and generic certificate
+infrastructure.

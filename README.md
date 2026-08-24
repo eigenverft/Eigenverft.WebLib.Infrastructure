@@ -356,8 +356,8 @@ dotnet test src/Eigenverft.WebLib.Infrastructure.slnx
 
 ## CI/CD and documentation
 
-The repository uses the same reusable CI/CD workflow as NetLib for build, test, packaging,
-reports, DocFX generation, artifact distribution, and deployment-channel documentation.
+The repository CI/CD workflow handles build, test, packaging, reports, DocFX generation,
+artifact distribution, and deployment-channel documentation.
 
 ## License
 
