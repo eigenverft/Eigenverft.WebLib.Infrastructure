@@ -2,12 +2,12 @@
 
 [![NuGet Version](https://img.shields.io/nuget/v/Eigenverft.WebLib.Infrastructure?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure) [![NuGet Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.Infrastructure?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure) [![Targets](https://img.shields.io/badge/targets-.NET%208%20%7C%2010-512BD4?logo=dotnet&logoColor=white)](#-target-frameworks) [![License](https://img.shields.io/github/license/eigenverft/Eigenverft.WebLib.Infrastructure?logo=mit)](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/LICENSE)
 
-Production-oriented ASP.NET Core adapters for
+Production-oriented ASP.NET Core adapters built on
 [`Eigenverft.NetLib.Infrastructure`](https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure).
 
-WebLib turns configuration, certificate files, and NetLib's shared directory layout into a
+WebLib turns configuration, certificate files, and the shared application directory layout into a
 reload-safe Kestrel/SNI setup. It also connects ASP.NET Core Data Protection to NetLib's composable
-configuration-value protection.
+configuration-value protection without duplicating host-independent infrastructure.
 
 ---
 
@@ -314,6 +314,17 @@ The package ships dedicated assets for:
 
 A .NET 9 consumer can use the compatible `net8.0` asset.
 
+## 🔗 Project links
+
+- [GitHub repository](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure)
+- [Documentation](https://eigenverft.github.io/Eigenverft.WebLib.Infrastructure/docfx/production/)
+- [Issues](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/issues)
+- [NuGet package](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure)
+
 ## 📄 License
 
-Licensed under the MIT License by Eigenverft.
+Licensed under the [MIT License](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/LICENSE) by Eigenverft.
+
+---
+
+Made with ❤️ by Eigenverft

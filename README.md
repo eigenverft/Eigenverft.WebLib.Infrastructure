@@ -1,4 +1,8 @@
-# Eigenverft.WebLib.Infrastructure
+# 🧱 Eigenverft.WebLib.Infrastructure
+
+<!-- Maintenance note: Keep README.NUGET.md aligned with this README for shared prose, examples, headings, and feature descriptions. Exceptions: omit the GitHub badge row in the NuGet variant, and use absolute NuGet/GitHub URLs where this README can use repository-relative links. Do not copy the files 1:1. -->
+
+[![NuGet Version](https://img.shields.io/nuget/v/Eigenverft.WebLib.Infrastructure?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure) [![NuGet Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.Infrastructure?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure) [![Build Status](https://img.shields.io/github/actions/workflow/status/eigenverft/Eigenverft.WebLib.Infrastructure/cicd.yml?branch=main&label=build)](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/actions/workflows/cicd.yml) [![Targets](https://img.shields.io/badge/targets-.NET%208%20%7C%2010-512BD4?logo=dotnet&logoColor=white)](#-target-frameworks) [![License](https://img.shields.io/github/license/eigenverft/Eigenverft.WebLib.Infrastructure?logo=mit)](LICENSE)
 
 Production-oriented ASP.NET Core adapters built on
 [`Eigenverft.NetLib.Infrastructure`](https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure).
@@ -6,7 +10,9 @@ WebLib turns configuration, certificate files, and the shared application direct
 reload-safe Kestrel/SNI setup. It also connects ASP.NET Core Data Protection to NetLib's composable
 configuration-value protection without duplicating host-independent infrastructure.
 
-## At a glance
+---
+
+## ✨ At a glance
 
 | Capability | Problem solved | Starting point |
 | --- | --- | --- |
@@ -18,13 +24,13 @@ configuration-value protection without duplicating host-independent infrastructu
 WebLib targets .NET 8 and .NET 10. Installing it also brings in
 `Eigenverft.NetLib.Infrastructure` as the shared foundation.
 
-## Installation
+## 📦 Installation
 
 ```shell
 dotnet add package Eigenverft.WebLib.Infrastructure
 ```
 
-## ASP.NET Core host foundation
+## 🚀 Quick start
 
 ### Executable-rooted web application
 
@@ -48,7 +54,7 @@ app.MapGet("/", () => $"Web root: {webRoot}");
 app.Run();
 ```
 
-## ASP.NET Core Data Protection adapter
+## 🔐 ASP.NET Core Data Protection adapter
 
 `AspNetDataProtectionStringTransforms.DataProtection(...)` adapts an ASP.NET Core
 `IDataProtectionProvider` to NetLib's `ReversibleStringTransform` abstraction while keeping
@@ -61,7 +67,7 @@ only the application-specific purpose to the caller. The result is a normal
 `ConfigurationValueCodec` and can be used independently or at any position in
 `ConfigurationValueCodecs.Compose(...)`.
 
-## Kestrel and SNI configuration
+## 🌐 Kestrel and SNI
 
 `ConfigureKestrelSniFromConfiguration(...)` is the top-level entry point for
 configuration-driven HTTP/HTTPS listeners and reload-safe SNI certificate selection. It combines
@@ -347,18 +353,51 @@ Earlier copies of this helper used a single `SanNames` array. When migrating, sp
 the `Eigenverft.WebLib.Infrastructure.Hosting.Kestrel` namespace instead of an application-local
 or `Eigenverft.Routed.RequestFilters` implementation.
 
-## Build and test
+## 🎯 Target frameworks
 
-```powershell
+The package ships dedicated assets for:
+
+- `net8.0`
+- `net10.0`
+
+A .NET 9 consumer can use the compatible `net8.0` asset.
+
+## 📖 Documentation
+
+- [Guides and API reference](https://eigenverft.github.io/Eigenverft.WebLib.Infrastructure/docfx/production/)
+
+The repository CI/CD workflow handles build, test, packaging, reports, DocFX generation, artifact
+distribution, and deployment-channel documentation.
+
+## 🧪 Build and test
+
+From the repository root:
+
+```shell
 dotnet build src/Eigenverft.WebLib.Infrastructure.slnx
 dotnet test src/Eigenverft.WebLib.Infrastructure.slnx
 ```
 
-## CI/CD and documentation
+## 🚢 Releases
 
-The repository CI/CD workflow handles build, test, packaging, reports, DocFX generation,
-artifact distribution, and deployment-channel documentation.
+`main` is the production channel. Package releases are built, tested, documented, packed, and
+published by the repository CI/CD workflow.
 
-## License
+Package versions follow the Eigenverft Drydock timestamp-based versioning scheme. Published versions
+and download history are available on [NuGet.org](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure).
 
-MIT. See [LICENSE](LICENSE).
+## 🤝 Contributing and support
+
+- 🐛 [Open an issue](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/issues)
+- 🔧 [Submit a pull request](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/pulls)
+- 📦 [View the package on NuGet.org](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure)
+
+## 📄 License
+
+Licensed under the [MIT License](LICENSE) by Eigenverft.
+
+---
+
+<div align="center">
+Made with ❤️ by Eigenverft
+</div>
