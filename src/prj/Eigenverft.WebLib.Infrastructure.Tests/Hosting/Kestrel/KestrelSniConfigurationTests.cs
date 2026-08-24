@@ -59,10 +59,17 @@ public sealed class KestrelSniConfigurationTests
             string certificatePath = Path.Combine(certificateDirectory, "localhost.pfx");
             Assert.IsTrue(File.Exists(certificatePath));
 
+#if NET9_0_OR_GREATER
             using X509Certificate2 certificate = X509CertificateLoader.LoadPkcs12FromFile(
                 certificatePath,
                 "test-password",
                 X509KeyStorageFlags.EphemeralKeySet);
+#else
+            using X509Certificate2 certificate = new(
+                certificatePath,
+                "test-password",
+                X509KeyStorageFlags.EphemeralKeySet);
+#endif
             X509SubjectAlternativeNameExtension sanExtension = ReadSubjectAlternativeNames(certificate);
 
             CollectionAssert.AreEquivalent(
