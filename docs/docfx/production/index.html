@@ -71,7 +71,7 @@
             <article class="content wrap" id="_content" data-uid="">
 <h1 id="eigenverftweblibinfrastructure">Eigenverft.WebLib.Infrastructure</h1>
 
-<p>Reusable ASP.NET Core hosting infrastructure for directory layout, configuration, runtime-switchable JSON, named configuration sets, protected settings, bootstrap logging, certificates, and Kestrel/SNI.</p>
+<p>ASP.NET Core-specific hosting adapters built on <code>Eigenverft.NetLib.Infrastructure</code>, combining WebLib's web-host, Data Protection, and Kestrel/SNI integration with NetLib's shared infrastructure primitives.</p>
 <h2 id="get-started">Get started</h2>
 <p>Install the package and create an executable-rooted host:</p>
 <pre><code class="lang-csharp">using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
@@ -82,16 +82,16 @@ app.Run();
 </code></pre>
 <p>Continue with the <a href="docs/getting-started.html">getting started guide</a>, read the <a href="docs/introduction.html">introduction</a>, or browse the generated API reference.</p>
 <h2 id="core-areas">Core areas</h2>
+<p>WebLib provides the ASP.NET Core-specific layer:</p>
 <ul>
-<li>Executable-rooted directory layout and hosting defaults</li>
-<li>Configuration-source composition and precedence diagnostics</li>
-<li>Switchable JSON sources with prepare / commit / abort and last-known-good behavior</li>
-<li>Named configuration sets for coordinated multi-source switching and consistency reporting</li>
-<li>Composable JSON settings encoding and protection</li>
-<li>Early bootstrap logging with optional Serilog integration</li>
-<li>Self-signed and managed certificate helpers</li>
-<li>Kestrel listener, TLS, and SNI certificate configuration</li>
+<li>executable-rooted ASP.NET Core content and web-root setup;</li>
+<li>ASP.NET Core Data Protection adapters;</li>
+<li>Kestrel listener, TLS, SNI, and reload-safe certificate configuration.</li>
 </ul>
+<p>The referenced NetLib package provides the shared host-independent layer used by these examples,
+including directory layout, configuration-source composition and diagnostics, switchable JSON,
+named configuration sets, configuration-value protection, bootstrap logging, and generic certificate
+infrastructure.</p>
 
 </article>
           </div>

@@ -101,7 +101,8 @@
 <pre><code class="lang-shell">dotnet add package Eigenverft.WebLib.Infrastructure
 </code></pre>
 <p>Create a web host with the standard executable-rooted directory layout:</p>
-<pre><code class="lang-csharp">using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
+<pre><code class="lang-csharp">using Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout;
+using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
 
 var builder = WebApplicationBuilderFactory.CreateWithDefaultDirectory();
 var layout = builder.GetDirectoryLayout();
@@ -109,8 +110,11 @@ var layout = builder.GetDirectoryLayout();
 var app = builder.Build();
 app.Run();
 </code></pre>
-<p>To add a runtime-switchable JSON source:</p>
-<pre><code class="lang-csharp">using Eigenverft.WebLib.Infrastructure.Hosting.Configuration.SwitchableJson;
+<p><code>Eigenverft.WebLib.Infrastructure</code> references <code>Eigenverft.NetLib.Infrastructure</code>, so the shared
+host-independent NetLib primitives are available to WebLib consumers without installing an
+additional infrastructure package. For example, add a runtime-switchable JSON source with the
+NetLib configuration API:</p>
+<pre><code class="lang-csharp">using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.SwitchableJson;
 using Microsoft.Extensions.DependencyInjection;
 
 builder.AddSwitchableJsonFile(
@@ -126,8 +130,14 @@ var runtimeSettings = app.Services
 
 runtimeSettings.TrySwitch(&quot;AppSettings/runtime-candidate.json&quot;);
 </code></pre>
-<p>The switchable provider keeps its normal .NET configuration-provider position. Switching changes its active source and snapshot, not its precedence in the provider stack.</p>
-<p>See the generated API reference for configuration diagnostics, named configuration sets, JSON settings codecs, bootstrap logging, certificate helpers, and Kestrel/SNI configuration.</p>
+<p>The switchable provider keeps its normal .NET configuration-provider position. Switching changes its
+active source and snapshot, not its precedence in the provider stack. Switchable JSON, configuration
+diagnostics, named configuration sets, configuration-value codecs, bootstrap logging, and generic
+certificate helpers are provided by NetLib; WebLib builds its ASP.NET Core-specific hosting, Data
+Protection, and Kestrel/SNI adapters on top of those shared primitives.</p>
+<p>See the generated WebLib API reference for the ASP.NET Core-specific APIs and the
+<a href="https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure"><code>Eigenverft.NetLib.Infrastructure</code></a>
+repository for the shared infrastructure APIs.</p>
 
 </article>
           </div>
