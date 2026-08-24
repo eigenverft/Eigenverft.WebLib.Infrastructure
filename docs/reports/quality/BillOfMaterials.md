@@ -2,4 +2,4 @@
 
 | ProjectName | Package | ResolvedVersion |
 |-------------|---------|-----------------|
-| Eigenverft.WebLib.Infrastructure | Eigenverft.NetLib.Infrastructure | 1.0.20264.50794 |
+| Eigenverft.WebLib.Infrastructure | Eigenverft.NetLib.Infrastructure | 1.0.20264.51349 |
