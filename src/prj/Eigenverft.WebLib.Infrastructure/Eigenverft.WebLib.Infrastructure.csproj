@@ -27,7 +27,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>eigenverft-logo-v7-harbor-square_128_128.png</PackageIcon>
-    <PackageReleaseNotes>Initial public release of the ASP.NET Core hosting, Data Protection, and Kestrel/SNI adapters for Eigenverft.NetLib.Infrastructure.</PackageReleaseNotes>
+    <PackageReleaseNotes>Update Eigenverft.NetLib.Infrastructure to 1.0.20264.56982, including static host-environment support for early bootstrap scenarios.</PackageReleaseNotes>
     <Description>ASP.NET Core adapters for Eigenverft.NetLib.Infrastructure, including web-host directory setup, Data Protection transforms, and Kestrel/SNI configuration.</Description>
     <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;kestrel;sni;data-protection;security;eigenverft</PackageTags>
     <Copyright>Copyright (c) 2026 $(Branding)</Copyright>
