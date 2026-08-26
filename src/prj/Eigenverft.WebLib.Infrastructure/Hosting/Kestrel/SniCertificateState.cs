@@ -271,6 +271,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
                         mapping.SniSuffix,
                         mapping.PfxPath,
                         result.Action,
+                        mapping.RecoveryMode,
                         result.Persisted,
                         result.ExistingFilePreserved,
                         result.LoadException,
@@ -301,7 +302,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
                 throw;
             }
         }
-
         private void LogReports(CertificateSnapshot? snapshot, bool published)
         {
             if (logger is null || snapshot is null)
@@ -311,35 +311,43 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
 
             foreach (CertificateLoadReport report in snapshot.Reports)
             {
-                if (report.Action != ManagedCertificateAction.Loaded)
+                if (report.Action == ManagedCertificateAction.Loaded)
                 {
-                    logger.LogWarning(
-                        report.LoadException,
-                        "Managed certificate for SNI suffix {SniSuffix} required recovery ({Action}) at {PfxPath}.",
-                        report.SniSuffix,
-                        report.Action,
-                        report.PfxPath);
+                    continue;
                 }
 
-                if (report.ExistingFilePreserved)
-                {
-                    logger.LogWarning(
-                        published
-                            ? "The existing PFX for SNI suffix {SniSuffix} was preserved; its recovery certificate is active only in memory."
-                            : "The existing PFX for SNI suffix {SniSuffix} was preserved; its recovery certificate was not published.",
-                        report.SniSuffix);
-                }
-                else if (!report.Persisted)
-                {
-                    logger.LogWarning(
-                        report.PersistenceException,
-                        published
-                            ? "The recovery certificate for SNI suffix {SniSuffix} is active in memory but could not be persisted at {PfxPath}."
-                            : "The recovery certificate for SNI suffix {SniSuffix} could not be persisted at {PfxPath} and was not published.",
-                        report.SniSuffix,
-                        report.PfxPath);
-                }
+                logger.LogWarning(
+                    "Managed certificate recovery for SNI suffix {SniSuffix}: action {Action}, mode {RecoveryMode}, outcome {Outcome}, PFX {PfxPath}, load cause {LoadCause}, persistence cause {PersistenceCause}.",
+                    report.SniSuffix,
+                    report.Action,
+                    report.RecoveryMode,
+                    DescribeRecoveryOutcome(report, published),
+                    report.PfxPath,
+                    report.LoadException?.Message,
+                    report.PersistenceException?.Message);
             }
+        }
+
+        private static string DescribeRecoveryOutcome(CertificateLoadReport report, bool published)
+        {
+            if (!published)
+            {
+                return "NotPublishedLastKnownGoodRetained";
+            }
+
+            if (report.Persisted)
+            {
+                return "Persisted";
+            }
+
+            if (report.ExistingFilePreserved)
+            {
+                return "MemoryOnlyExistingPfxPreserved";
+            }
+
+            return report.PersistenceException is null
+                ? "MemoryOnlyByPolicy"
+                : "MemoryOnlyPersistenceFailed";
         }
 
         private void ReleaseCertificates()
@@ -498,6 +506,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
             string SniSuffix,
             string PfxPath,
             ManagedCertificateAction Action,
+            CertificateRecoveryMode RecoveryMode,
             bool Persisted,
             bool ExistingFilePreserved,
             Exception? LoadException,

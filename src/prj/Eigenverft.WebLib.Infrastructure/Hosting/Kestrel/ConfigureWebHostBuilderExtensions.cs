@@ -137,7 +137,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
                 services.AddSingleton<IHostedService>(provider =>
                 {
                     certificateState.AttachHostingServices(
-                        provider.GetRequiredService<ILoggerFactory>().CreateLogger<SniCertificateState>(),
+                        provider.GetRequiredService<ILogger<SniCertificateState>>(),
                         provider.GetRequiredService<IHostApplicationLifetime>());
                     return certificateState;
                 });
