@@ -92,10 +92,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
         ///     {
         ///       "SNI": "localhost",
         ///       "FileName": "localhost.pfx",
-        ///       "Password": "change-me",
-        ///       "CertificateRecoveryMode": "PreserveExisting",
-        ///       "AdditionalSelfSignedCertificateDnsNames": ["*.localhost"],
-        ///       "AdditionalSelfSignedCertificateIpAddresses": ["127.0.0.1", "::1"]
+        ///       "Password": "change-me"
         ///     }
         ///   ]
         /// }
@@ -110,12 +107,15 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
         /// A failed reload keeps the last-known-good certificate generation active.
         /// </para>
         /// <para>
-        /// Missing PFX files are created as self-signed TLS server certificates. Each mapping can opt into
-        /// replacing existing unusable PFX files through <c>CertificateRecoveryMode</c>; the default
-        /// <c>PreserveExisting</c> mode never overwrites an existing unusable file and uses an in-memory
-        /// recovery certificate instead. <c>ReplaceExpired</c> is for managed expiry renewal, while
-        /// <c>ReplaceAnyUnusable</c> is intended only for fully application-managed, replaceable files.
-        /// Deleting such a self-signed PFX requests fresh creation under every mode because the file is missing.
+        /// Certificate recovery is opt-in. When <c>CertificateRecoveryMode</c> is omitted or invalid, the
+        /// default <c>None</c> mode performs classic PFX loading: the file must exist, import successfully,
+        /// contain a private key, and be currently valid. Startup fails when that initial certificate cannot
+        /// be loaded; a failed hot reload keeps the last-known-good generation active.
+        /// <c>PreserveExisting</c> enables self-signed recovery only in memory and never creates or replaces
+        /// the configured PFX path. <c>ReplaceExpired</c> creates a missing managed PFX and replaces an expired
+        /// one, while <c>ReplaceAnyUnusable</c> is intended only for fully application-managed, replaceable files.
+        /// Additional self-signed DNS names and IP addresses are used only when a recovery mode generates a
+        /// self-signed certificate.
         /// </para>
         /// </remarks>
         public static void ConfigureKestrelSniFromConfiguration(

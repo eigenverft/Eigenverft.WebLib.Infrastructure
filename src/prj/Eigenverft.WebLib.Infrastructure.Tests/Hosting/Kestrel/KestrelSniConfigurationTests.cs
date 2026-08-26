@@ -43,6 +43,7 @@ public sealed class KestrelSniConfigurationTests
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "localhost.pfx",
                     ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable",
                     ["CertificatesMappingSettings:0:AdditionalSelfSignedCertificateDnsNames:0"] = "*.localhost",
                     ["CertificatesMappingSettings:0:AdditionalSelfSignedCertificateDnsNames:1"] = "127.0.0.1",
                     ["CertificatesMappingSettings:0:AdditionalSelfSignedCertificateIpAddresses:0"] = "::1"
@@ -105,7 +106,8 @@ public sealed class KestrelSniConfigurationTests
                     ["KestrelSettings:TlsProtocolPolicy"] = "999",
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "localhost.pfx",
-                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                    ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable"
                 });
 
             builder.WebHost.ConfigureKestrelSniFromConfiguration();
@@ -113,6 +115,50 @@ public sealed class KestrelSniConfigurationTests
             await application.StartAsync();
 
             Assert.IsNotNull(application);
+        }
+        finally
+        {
+            await DisposeApplicationAsync(application);
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task OmittedRecoveryModeUsesClassicPfxLoadingWithoutSelfSignedFallback()
+    {
+        string workingDirectory = CreateWorkingDirectory();
+        string certificatePath = Path.Combine(workingDirectory, "certs", "missing.pfx");
+        WebApplication? application = null;
+
+        try
+        {
+            WebApplicationBuilder builder = CreateBuilder(
+                workingDirectory,
+                new Dictionary<string, string?>
+                {
+                    ["KestrelSettings:HTTP_PORT"] = ReserveTcpPort().ToString(),
+                    ["CertificatesDirectory"] = "certs",
+                    ["CertificatesMappingSettings:0:SNI"] = "localhost",
+                    ["CertificatesMappingSettings:0:FileName"] = "missing.pfx",
+                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                });
+
+            builder.WebHost.ConfigureKestrelSniFromConfiguration();
+            application = builder.Build();
+
+            Exception? startFailure = null;
+            try
+            {
+                await application.StartAsync();
+            }
+            catch (Exception exception)
+            {
+                startFailure = exception;
+            }
+
+            Assert.IsNotNull(startFailure);
+            StringAssert.Contains(startFailure.ToString(), "missing.pfx");
+            Assert.IsFalse(File.Exists(certificatePath));
         }
         finally
         {
@@ -138,7 +184,8 @@ public sealed class KestrelSniConfigurationTests
                     ["KestrelSettings:TlsProtocolPolicy"] = "Strict",
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "localhost.pfx",
-                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                    ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable"
                 });
 
             application = builder.Build();
@@ -192,7 +239,8 @@ public sealed class KestrelSniConfigurationTests
                 {
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "first.pfx",
-                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                    ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceExpired"
                 });
 
             application = builder.Build();
@@ -243,7 +291,7 @@ public sealed class KestrelSniConfigurationTests
             Assert.AreEqual(
                 afterExternalReplacement.Thumbprint,
                 afterPreservedCorruptFile.Thumbprint,
-                "The default recovery mode replaced a still-usable last-known-good certificate.");
+                "ReplaceExpired recovery replaced a still-usable last-known-good certificate.");
             CollectionAssert.AreEqual(unchangedLengthReplacement, File.ReadAllBytes(secondPath));
 
             builder.Configuration["CertificatesMappingSettings:0:CertificateRecoveryMode"] =
@@ -287,9 +335,11 @@ public sealed class KestrelSniConfigurationTests
                     ["CertificatesMappingSettings:0:SNI"] = "fallback.local",
                     ["CertificatesMappingSettings:0:FileName"] = "fallback.pfx",
                     ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable",
                     ["CertificatesMappingSettings:1:SNI"] = "example.com",
                     ["CertificatesMappingSettings:1:FileName"] = "example.pfx",
-                    ["CertificatesMappingSettings:1:Password"] = "test-password"
+                    ["CertificatesMappingSettings:1:Password"] = "test-password",
+                    ["CertificatesMappingSettings:1:CertificateRecoveryMode"] = "ReplaceAnyUnusable"
                 });
 
             application = builder.Build();
@@ -327,7 +377,8 @@ public sealed class KestrelSniConfigurationTests
                     ["CertificatesDirectory"] = blockedCertificateDirectory,
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "localhost.pfx",
-                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                    ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable"
                 });
             builder.WebHost.ConfigureKestrelSniFromConfiguration();
 
@@ -368,7 +419,8 @@ public sealed class KestrelSniConfigurationTests
                 {
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "production.pfx",
-                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                    ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "PreserveExisting"
                 });
 
             application = builder.Build();

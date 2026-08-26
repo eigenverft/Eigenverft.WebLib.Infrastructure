@@ -247,7 +247,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
         {
             return Enum.TryParse(value, ignoreCase: true, out CertificateRecoveryMode parsed) && Enum.IsDefined(parsed)
                 ? parsed
-                : CertificateRecoveryMode.PreserveExisting;
+                : CertificateRecoveryMode.None;
         }
 
         private sealed class RawKestrelSettings
