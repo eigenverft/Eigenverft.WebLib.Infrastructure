@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Kestrel;
@@ -42,6 +43,7 @@ public sealed class KestrelSniConfigurationTests
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "localhost.pfx",
                     ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable",
                     ["CertificatesMappingSettings:0:AdditionalSelfSignedCertificateDnsNames:0"] = "*.localhost",
                     ["CertificatesMappingSettings:0:AdditionalSelfSignedCertificateDnsNames:1"] = "127.0.0.1",
                     ["CertificatesMappingSettings:0:AdditionalSelfSignedCertificateIpAddresses:0"] = "::1"
@@ -104,7 +106,8 @@ public sealed class KestrelSniConfigurationTests
                     ["KestrelSettings:TlsProtocolPolicy"] = "999",
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "localhost.pfx",
-                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                    ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable"
                 });
 
             builder.WebHost.ConfigureKestrelSniFromConfiguration();
@@ -112,6 +115,50 @@ public sealed class KestrelSniConfigurationTests
             await application.StartAsync();
 
             Assert.IsNotNull(application);
+        }
+        finally
+        {
+            await DisposeApplicationAsync(application);
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task OmittedRecoveryModeUsesClassicPfxLoadingWithoutSelfSignedFallback()
+    {
+        string workingDirectory = CreateWorkingDirectory();
+        string certificatePath = Path.Combine(workingDirectory, "certs", "missing.pfx");
+        WebApplication? application = null;
+
+        try
+        {
+            WebApplicationBuilder builder = CreateBuilder(
+                workingDirectory,
+                new Dictionary<string, string?>
+                {
+                    ["KestrelSettings:HTTP_PORT"] = ReserveTcpPort().ToString(),
+                    ["CertificatesDirectory"] = "certs",
+                    ["CertificatesMappingSettings:0:SNI"] = "localhost",
+                    ["CertificatesMappingSettings:0:FileName"] = "missing.pfx",
+                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                });
+
+            builder.WebHost.ConfigureKestrelSniFromConfiguration();
+            application = builder.Build();
+
+            Exception? startFailure = null;
+            try
+            {
+                await application.StartAsync();
+            }
+            catch (Exception exception)
+            {
+                startFailure = exception;
+            }
+
+            Assert.IsNotNull(startFailure);
+            StringAssert.Contains(startFailure.ToString(), "missing.pfx");
+            Assert.IsFalse(File.Exists(certificatePath));
         }
         finally
         {
@@ -137,7 +184,8 @@ public sealed class KestrelSniConfigurationTests
                     ["KestrelSettings:TlsProtocolPolicy"] = "Strict",
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "localhost.pfx",
-                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                    ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable"
                 });
 
             application = builder.Build();
@@ -191,7 +239,8 @@ public sealed class KestrelSniConfigurationTests
                 {
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "first.pfx",
-                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                    ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceExpired"
                 });
 
             application = builder.Build();
@@ -242,7 +291,7 @@ public sealed class KestrelSniConfigurationTests
             Assert.AreEqual(
                 afterExternalReplacement.Thumbprint,
                 afterPreservedCorruptFile.Thumbprint,
-                "The default recovery mode replaced a still-usable last-known-good certificate.");
+                "ReplaceExpired recovery replaced a still-usable last-known-good certificate.");
             CollectionAssert.AreEqual(unchangedLengthReplacement, File.ReadAllBytes(secondPath));
 
             builder.Configuration["CertificatesMappingSettings:0:CertificateRecoveryMode"] =
@@ -286,9 +335,11 @@ public sealed class KestrelSniConfigurationTests
                     ["CertificatesMappingSettings:0:SNI"] = "fallback.local",
                     ["CertificatesMappingSettings:0:FileName"] = "fallback.pfx",
                     ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable",
                     ["CertificatesMappingSettings:1:SNI"] = "example.com",
                     ["CertificatesMappingSettings:1:FileName"] = "example.pfx",
-                    ["CertificatesMappingSettings:1:Password"] = "test-password"
+                    ["CertificatesMappingSettings:1:Password"] = "test-password",
+                    ["CertificatesMappingSettings:1:CertificateRecoveryMode"] = "ReplaceAnyUnusable"
                 });
 
             application = builder.Build();
@@ -326,7 +377,8 @@ public sealed class KestrelSniConfigurationTests
                     ["CertificatesDirectory"] = blockedCertificateDirectory,
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "localhost.pfx",
-                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                    ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable"
                 });
             builder.WebHost.ConfigureKestrelSniFromConfiguration();
 
@@ -367,7 +419,8 @@ public sealed class KestrelSniConfigurationTests
                 {
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "production.pfx",
-                    ["CertificatesMappingSettings:0:Password"] = "test-password"
+                    ["CertificatesMappingSettings:0:Password"] = "test-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "PreserveExisting"
                 });
 
             application = builder.Build();
@@ -439,6 +492,65 @@ public sealed class KestrelSniConfigurationTests
 
             Assert.IsNotNull(startFailure);
             StringAssert.Contains(startFailure.ToString(), "symbolic-link targets");
+        }
+        finally
+        {
+            await DisposeApplicationAsync(application);
+            Directory.Delete(workingDirectory, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task ManagedCertificateRecoveryUsesHostLoggerWithoutExceptionPayload()
+    {
+        string workingDirectory = CreateWorkingDirectory();
+        string certificateDirectory = Path.Combine(workingDirectory, "certs");
+        string certificatePath = Path.Combine(certificateDirectory, "localhost.pfx");
+        Directory.CreateDirectory(certificateDirectory);
+        WebApplication? application = null;
+
+        try
+        {
+            using X509Certificate2 existingCertificate = SelfSignedCertificateFactory.Create(
+                new SelfSignedCertificateOptions
+                {
+                    Subject = new CertificateSubject { CommonName = "localhost" },
+                    Purpose = CertificatePurpose.TlsServer,
+                    KeyProfile = CertificateKeyProfile.Rsa2048Sha256,
+                    Validity = TimeSpan.FromDays(30),
+                    DnsNames = new[] { "localhost" }
+                });
+            File.WriteAllBytes(
+                certificatePath,
+                existingCertificate.Export(X509ContentType.Pfx, "old-password"));
+
+            WebApplicationBuilder builder = CreateBuilder(
+                workingDirectory,
+                new Dictionary<string, string?>
+                {
+                    ["KestrelSettings:HTTP_PORT"] = ReserveTcpPort().ToString(),
+                    ["CertificatesDirectory"] = certificateDirectory,
+                    ["CertificatesMappingSettings:0:SNI"] = "localhost",
+                    ["CertificatesMappingSettings:0:FileName"] = "localhost.pfx",
+                    ["CertificatesMappingSettings:0:Password"] = "new-password",
+                    ["CertificatesMappingSettings:0:CertificateRecoveryMode"] = "ReplaceAnyUnusable"
+                });
+            var logging = new RecordingLoggerProvider();
+            builder.WebHost.ConfigureKestrelSniFromConfiguration();
+            builder.Logging.ClearProviders();
+            builder.Logging.AddProvider(logging);
+            application = builder.Build();
+
+            await application.StartAsync();
+
+            LogRecord recovery = logging.Records.Single(record =>
+                record.Category.EndsWith(".SniCertificateState", StringComparison.Ordinal) &&
+                record.Message.Contains("Managed certificate recovery", StringComparison.Ordinal));
+            Assert.AreEqual(LogLevel.Warning, recovery.Level);
+            Assert.IsNull(recovery.Exception);
+            StringAssert.Contains(recovery.Message, "GeneratedForImportFailure");
+            StringAssert.Contains(recovery.Message, "ReplaceAnyUnusable");
+            StringAssert.Contains(recovery.Message, "Persisted");
         }
         finally
         {
@@ -551,6 +663,75 @@ public sealed class KestrelSniConfigurationTests
         Directory.CreateDirectory(path);
         return path;
     }
+
+    private sealed class RecordingLoggerProvider : ILoggerProvider
+    {
+        private readonly object gate = new();
+        private readonly List<LogRecord> records = new();
+
+        internal IReadOnlyList<LogRecord> Records
+        {
+            get
+            {
+                lock (gate)
+                {
+                    return records.ToArray();
+                }
+            }
+        }
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            return new RecordingLogger(categoryName, this);
+        }
+
+        public void Dispose()
+        {
+        }
+
+        private void Add(string category, LogLevel level, string message, Exception? exception)
+        {
+            lock (gate)
+            {
+                records.Add(new LogRecord(category, level, message, exception));
+            }
+        }
+
+        private sealed class RecordingLogger(string category, RecordingLoggerProvider owner) : ILogger
+        {
+            public IDisposable? BeginScope<TState>(TState state)
+                where TState : notnull
+            {
+                return RecordingScope.Instance;
+            }
+
+            public bool IsEnabled(LogLevel logLevel)
+            {
+                return true;
+            }
+
+            public void Log<TState>(
+                LogLevel logLevel,
+                EventId eventId,
+                TState state,
+                Exception? exception,
+                Func<TState, Exception?, string> formatter)
+            {
+                owner.Add(category, logLevel, formatter(state, exception), exception);
+            }
+        }
+
+        private sealed class RecordingScope : IDisposable
+        {
+            internal static RecordingScope Instance { get; } = new();
+
+            public void Dispose()
+            {
+            }
+        }
+    }
+
+    private sealed record LogRecord(string Category, LogLevel Level, string Message, Exception? Exception);
 
     private static async Task DisposeApplicationAsync(WebApplication? application)
     {

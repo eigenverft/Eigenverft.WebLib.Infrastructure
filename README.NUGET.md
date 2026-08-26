@@ -237,21 +237,13 @@ binding when portable restore or multi-machine deployment is required.
     {
       "SNI": "localhost",
       "FileName": "localhost.pfx",
-      "Password": "change-me",
-      "CertificateRecoveryMode": "PreserveExisting",
-      "AdditionalSelfSignedCertificateDnsNames": [
-        "*.localhost"
-      ],
-      "AdditionalSelfSignedCertificateIpAddresses": [
-        "127.0.0.1",
-        "::1"
-      ]
+      "Password": "change-me"
     }
   ]
 }
 ```
 
-The extension loads existing PFX files or creates missing self-signed TLS server certificates.
+The extension loads configured PFX files and performs self-signed recovery only when explicitly enabled.
 It matches exact SNI names and DNS suffixes, prefers the longest suffix by default, and uses the
 first mapping as the fallback when SNI is absent or unmatched.
 
@@ -273,27 +265,22 @@ At least one listener and one usable certificate mapping are required. Provision
 password on the target machine rather than committing it; NetLib rewrites the selected value as a
 codec envelope during source registration and exposes clear text only in memory.
 
-Recovery policy reflects certificate ownership: `PreserveExisting` protects original or externally
-managed certificates, `ReplaceExpired` permits managed renewal, and `ReplaceAnyUnusable` is for
-fully application-managed disposable certificates.
+Recovery is opt-in. An omitted or invalid `CertificateRecoveryMode` selects `None`, which performs classic PFX loading without generating or persisting fallback certificates. `PreserveExisting` enables memory-only self-signed recovery without changing the configured path, `ReplaceExpired` permits missing-file creation and managed expiry renewal, and `ReplaceAnyUnusable` is for fully application-managed disposable certificates.
 
-| PFX state or failure | `PreserveExisting` | `ReplaceExpired` | `ReplaceAnyUnusable` |
-| --- | --- | --- | --- |
-| Missing file or parent directory | Create and persist | Create and persist | Create and persist |
-| Valid and contains a private key | Load | Load | Load |
-| Imported and expired | Keep + memory recovery | Replace | Replace |
-| Imported but not yet valid | Keep + memory recovery | Keep + memory recovery | Replace |
-| Imported but missing private key | Keep + memory recovery | Keep + memory recovery | Replace |
-| Password mismatch, corrupt/unsupported PFX, or other import failure | Keep + memory recovery | Keep + memory recovery | Authorize replacement |
-| I/O read failure | Keep + memory recovery | Keep + memory recovery | Authorize replacement |
-| Access denied | Keep + memory recovery | Keep + memory recovery | Authorize replacement; the write may still fail |
-| Persistence or atomic-move failure during an authorized create/replace | Return generated certificate in memory and report the failure | Same | Same |
-| Concurrent creator wins missing-file race | Keep the winner; return this process's generated certificate in memory | Same | Same |
+| PFX state or failure | `None` | `PreserveExisting` | `ReplaceExpired` | `ReplaceAnyUnusable` |
+| --- | --- | --- | --- | --- |
+| Missing file or parent directory | Fail; create nothing | Memory recovery only | Create and persist | Create and persist |
+| Valid and contains a private key | Load | Load | Load | Load |
+| Imported and expired | Fail | Keep + memory recovery | Replace | Replace |
+| Imported but not yet valid | Fail | Keep + memory recovery | Keep + memory recovery | Replace |
+| Imported but missing private key | Fail | Keep + memory recovery | Keep + memory recovery | Replace |
+| Password mismatch, corrupt/unsupported PFX, or other import failure | Fail | Keep + memory recovery | Keep + memory recovery | Authorize replacement |
+| I/O read failure | Fail | Keep + memory recovery | Keep + memory recovery | Authorize replacement |
+| Access denied | Fail | Keep + memory recovery | Keep + memory recovery | Authorize replacement; the write may still fail |
+| Persistence or atomic-move failure during an authorized create/replace | Not applicable | Not applicable | Return generated certificate in memory and report the failure | Same |
+| Concurrent creator wins missing-file race | Not applicable | Not applicable | Keep the winner; return this process’s generated certificate in memory | Same |
 
-At startup, memory recovery can keep TLS available. During reload, a complete usable last-known-good
-generation remains active instead. Deleting an application-managed self-signed PFX requests fresh
-creation under every mode; `ReplaceAnyUnusable` matters only while an unusable file remains present.
-It can overwrite an externally managed certificate if selected incorrectly.
+At startup, an invalid PFX under `None` fails without recovery. During reload, WebLib rejects an invalid candidate and keeps the last-known-good generation active. Memory recovery can keep TLS available at startup for explicit recovery modes. Deleting an application-managed self-signed PFX requests fresh creation only under `ReplaceExpired` or `ReplaceAnyUnusable`; `PreserveExisting` remains memory-only. `ReplaceAnyUnusable` can overwrite an externally managed certificate if selected incorrectly.
 
 Only `CertificatesMappingSettings` is hot-reloadable. WebLib publishes a complete replacement
 generation atomically and keeps the last-known-good certificates active if a reload fails.

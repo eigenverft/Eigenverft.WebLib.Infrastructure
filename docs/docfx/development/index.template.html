@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>{{appName}} | Eigenverft.WebLib.Infrastructure </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="{{appName}} | Eigenverft.WebLib.Infrastructure ">
+    
+    
+      <link rel="shortcut icon" href="favicon.ico">
+      <link rel="stylesheet" href="styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="styles/docfx.css">
+      <link rel="stylesheet" href="styles/main.css">
+      <meta property="docfx:navrel" content="toc.json">
+      <meta property="docfx:tocrel" content="toc.json">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="index.html">
+                <img id="logo" class="svg" src="logo.svg" alt="Eigenverft.WebLib.Infrastructure">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+
+                <ul class="nav level1 navbar-nav">
+                      <li>
+                          <a href="docs/introduction.html" title="Guides">Guides</a>
+                      </li>
+                      <li>
+                          <a href="api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.html" title="API">API</a>
+                      </li>
+                </ul>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="article row grid">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="appname">{{appName}}</h1>
+
+<p>ASP.NET Core-specific hosting adapters built on <code>Eigenverft.NetLib.Infrastructure</code>, combining WebLib's web-host, Data Protection, and Kestrel/SNI integration with NetLib's shared infrastructure primitives.</p>
+<h2 id="get-started">Get started</h2>
+<p>Install the package and create an executable-rooted host:</p>
+<pre><code class="lang-csharp">using Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout;
+
+var builder = WebApplicationBuilderFactory.CreateWithDefaultDirectory();
+var app = builder.Build();
+app.Run();
+</code></pre>
+<p>Continue with the <a href="docs/getting-started.html">getting started guide</a>, read the <a href="docs/introduction.html">introduction</a>, or browse the generated API reference.</p>
+<h2 id="core-areas">Core areas</h2>
+<p>WebLib provides the ASP.NET Core-specific layer:</p>
+<ul>
+<li>executable-rooted ASP.NET Core content and web-root setup;</li>
+<li>ASP.NET Core Data Protection adapters;</li>
+<li>Kestrel listener, TLS, SNI, and reload-safe certificate configuration.</li>
+</ul>
+<p>The referenced NetLib package provides the shared host-independent layer used by these examples,
+including directory layout, configuration-source composition and diagnostics, switchable JSON,
+named configuration sets, configuration-value protection, bootstrap logging, and generic certificate
+infrastructure.</p>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/update-netlib-stable-reference-58187/.github/workflows/.config/docfx/build/index.template.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      <pre></pre>
+      
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="styles/docfx.js"></script>
+    <script type="text/javascript" src="styles/main.js"></script>
+  </body>
+</html>
