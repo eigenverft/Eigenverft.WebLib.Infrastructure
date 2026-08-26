@@ -1,0 +1,142 @@
+### YamlMime:XRefMap
+sorted: true
+references:
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values
+  name: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values
+  nameWithType: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs
+  name: AspNetDataProtectionConfigurationValueCodecs
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs
+  nameWithType: AspNetDataProtectionConfigurationValueCodecs
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection(Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout.IAppDirectoryLayout,System.String)
+  name: DataProtection(IAppDirectoryLayout, string)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.html#Eigenverft_WebLib_Infrastructure_Hosting_Configuration_Values_AspNetDataProtectionConfigurationValueCodecs_DataProtection_Eigenverft_NetLib_Infrastructure_Hosting_DirectoryLayout_IAppDirectoryLayout_System_String_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection(Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout.IAppDirectoryLayout,System.String)
+  name.vb: DataProtection(IAppDirectoryLayout, String)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection(Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout.IAppDirectoryLayout, string)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection(Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout.IAppDirectoryLayout, String)
+  nameWithType: AspNetDataProtectionConfigurationValueCodecs.DataProtection(IAppDirectoryLayout, string)
+  nameWithType.vb: AspNetDataProtectionConfigurationValueCodecs.DataProtection(IAppDirectoryLayout, String)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection(System.String,System.String,System.String)
+  name: DataProtection(string, string, string)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.html#Eigenverft_WebLib_Infrastructure_Hosting_Configuration_Values_AspNetDataProtectionConfigurationValueCodecs_DataProtection_System_String_System_String_System_String_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection(System.String,System.String,System.String)
+  name.vb: DataProtection(String, String, String)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection(string, string, string)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection(String, String, String)
+  nameWithType: AspNetDataProtectionConfigurationValueCodecs.DataProtection(string, string, string)
+  nameWithType.vb: AspNetDataProtectionConfigurationValueCodecs.DataProtection(String, String, String)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection*
+  name: DataProtection
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.html#Eigenverft_WebLib_Infrastructure_Hosting_Configuration_Values_AspNetDataProtectionConfigurationValueCodecs_DataProtection_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.DataProtection
+  nameWithType: AspNetDataProtectionConfigurationValueCodecs.DataProtection
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
+  name: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
+  nameWithType: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory
+  name: WebApplicationBuilderFactory
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory
+  nameWithType: WebApplicationBuilderFactory
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(System.Collections.Generic.IReadOnlyDictionary{Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout.DefaultDirectory,System.String},System.String[],System.Boolean)
+  name: CreateWithDefaultDirectory(IReadOnlyDictionary<DefaultDirectory, string>, string[]?, bool)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html#Eigenverft_WebLib_Infrastructure_Hosting_DirectoryLayout_WebApplicationBuilderFactory_CreateWithDefaultDirectory_System_Collections_Generic_IReadOnlyDictionary_Eigenverft_NetLib_Infrastructure_Hosting_DirectoryLayout_DefaultDirectory_System_String__System_String___System_Boolean_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(System.Collections.Generic.IReadOnlyDictionary{Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout.DefaultDirectory,System.String},System.String[],System.Boolean)
+  name.vb: CreateWithDefaultDirectory(IReadOnlyDictionary(Of DefaultDirectory, String), String(), Boolean)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(System.Collections.Generic.IReadOnlyDictionary<Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout.DefaultDirectory, string>, string[]?, bool)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(System.Collections.Generic.IReadOnlyDictionary(Of Eigenverft.NetLib.Infrastructure.Hosting.DirectoryLayout.DefaultDirectory, String), String(), Boolean)
+  nameWithType: WebApplicationBuilderFactory.CreateWithDefaultDirectory(IReadOnlyDictionary<DefaultDirectory, string>, string[]?, bool)
+  nameWithType.vb: WebApplicationBuilderFactory.CreateWithDefaultDirectory(IReadOnlyDictionary(Of DefaultDirectory, String), String(), Boolean)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(System.Collections.Generic.IReadOnlyDictionary{System.String,System.String},System.String[],System.Boolean)
+  name: CreateWithDefaultDirectory(IReadOnlyDictionary<string, string>, string[]?, bool)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html#Eigenverft_WebLib_Infrastructure_Hosting_DirectoryLayout_WebApplicationBuilderFactory_CreateWithDefaultDirectory_System_Collections_Generic_IReadOnlyDictionary_System_String_System_String__System_String___System_Boolean_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(System.Collections.Generic.IReadOnlyDictionary{System.String,System.String},System.String[],System.Boolean)
+  name.vb: CreateWithDefaultDirectory(IReadOnlyDictionary(Of String, String), String(), Boolean)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(System.Collections.Generic.IReadOnlyDictionary<string, string>, string[]?, bool)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(System.Collections.Generic.IReadOnlyDictionary(Of String, String), String(), Boolean)
+  nameWithType: WebApplicationBuilderFactory.CreateWithDefaultDirectory(IReadOnlyDictionary<string, string>, string[]?, bool)
+  nameWithType.vb: WebApplicationBuilderFactory.CreateWithDefaultDirectory(IReadOnlyDictionary(Of String, String), String(), Boolean)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(System.String[])
+  name: CreateWithDefaultDirectory(string[]?)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html#Eigenverft_WebLib_Infrastructure_Hosting_DirectoryLayout_WebApplicationBuilderFactory_CreateWithDefaultDirectory_System_String___
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(System.String[])
+  name.vb: CreateWithDefaultDirectory(String())
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(string[]?)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory(String())
+  nameWithType: WebApplicationBuilderFactory.CreateWithDefaultDirectory(string[]?)
+  nameWithType.vb: WebApplicationBuilderFactory.CreateWithDefaultDirectory(String())
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory*
+  name: CreateWithDefaultDirectory
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html#Eigenverft_WebLib_Infrastructure_Hosting_DirectoryLayout_WebApplicationBuilderFactory_CreateWithDefaultDirectory_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory
+  nameWithType: WebApplicationBuilderFactory.CreateWithDefaultDirectory
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
+  name: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
+  nameWithType: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions
+  name: ConfigureWebHostBuilderExtensions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions
+  nameWithType: ConfigureWebHostBuilderExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration(Microsoft.AspNetCore.Builder.ConfigureWebHostBuilder,System.String,System.String)
+  name: ConfigureKestrelSniFromConfiguration(ConfigureWebHostBuilder, string?, string)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Kestrel_ConfigureWebHostBuilderExtensions_ConfigureKestrelSniFromConfiguration_Microsoft_AspNetCore_Builder_ConfigureWebHostBuilder_System_String_System_String_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration(Microsoft.AspNetCore.Builder.ConfigureWebHostBuilder,System.String,System.String)
+  name.vb: ConfigureKestrelSniFromConfiguration(ConfigureWebHostBuilder, String, String)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration(Microsoft.AspNetCore.Builder.ConfigureWebHostBuilder, string?, string)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration(Microsoft.AspNetCore.Builder.ConfigureWebHostBuilder, String, String)
+  nameWithType: ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration(ConfigureWebHostBuilder, string?, string)
+  nameWithType.vb: ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration(ConfigureWebHostBuilder, String, String)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration*
+  name: ConfigureKestrelSniFromConfiguration
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Kestrel_ConfigureWebHostBuilderExtensions_ConfigureKestrelSniFromConfiguration_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration
+  nameWithType: ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration
+- uid: Eigenverft.WebLib.Infrastructure.Transformations
+  name: Eigenverft.WebLib.Infrastructure.Transformations
+  href: api/Eigenverft.WebLib.Infrastructure.Transformations.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Transformations
+  fullName: Eigenverft.WebLib.Infrastructure.Transformations
+  nameWithType: Eigenverft.WebLib.Infrastructure.Transformations
+- uid: Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms
+  name: AspNetDataProtectionStringTransforms
+  href: api/Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms
+  fullName: Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms
+  nameWithType: AspNetDataProtectionStringTransforms
+- uid: Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.DataProtection(System.String,System.String,System.String)
+  name: DataProtection(string, string, string)
+  href: api/Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.html#Eigenverft_WebLib_Infrastructure_Transformations_AspNetDataProtectionStringTransforms_DataProtection_System_String_System_String_System_String_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.DataProtection(System.String,System.String,System.String)
+  name.vb: DataProtection(String, String, String)
+  fullName: Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.DataProtection(string, string, string)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.DataProtection(String, String, String)
+  nameWithType: AspNetDataProtectionStringTransforms.DataProtection(string, string, string)
+  nameWithType.vb: AspNetDataProtectionStringTransforms.DataProtection(String, String, String)
+- uid: Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.DataProtection*
+  name: DataProtection
+  href: api/Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.html#Eigenverft_WebLib_Infrastructure_Transformations_AspNetDataProtectionStringTransforms_DataProtection_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.DataProtection
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.DataProtection
+  nameWithType: AspNetDataProtectionStringTransforms.DataProtection

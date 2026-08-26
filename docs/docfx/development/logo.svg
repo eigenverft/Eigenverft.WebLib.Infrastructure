@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 6.2499999 6.25"
+   width="50"
+   height="50"
+   role="img"
+   aria-label="Eigenverft logo — harbor"
+   version="1.1"
+   id="svg3"
+   sodipodi:docname="logo.svg"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   inkscape:export-filename="eigenverft-logo-v7-harbor-square-new_32_32.png"
+   inkscape:export-xdpi="3"
+   inkscape:export-ydpi="3"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview3"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="7.2407734"
+     inkscape:cx="0.13810679"
+     inkscape:cy="32.10983"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="mark" />
+  <defs
+     id="defs1">
+    <style
+       id="style1">
+      .navy{fill:#0A1B2E; stroke:#0A1B2E; stroke-width:2.2; stroke-linejoin:round; stroke-linecap:round; paint-order:stroke fill}
+      .teal{fill:#FF7A1A; stroke:#FF7A1A; stroke-width:2.2; stroke-linejoin:round; stroke-linecap:round; paint-order:stroke fill}
+    </style>
+  </defs>
+  <g
+     id="mark"
+     transform="matrix(1.147924,0,0,1.147924,-26.891775,-13.70805)">
+    <path
+       class="navy"
+       d="m 27.903644,13.786639 -3.509792,1.754535 0.858285,1.310524 2.374534,-1.340098 z"
+       id="path1"
+       style="fill:#0a1e2d;fill-opacity:1;stroke:#0a1e2d;stroke-width:0.116324;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       sodipodi:nodetypes="ccccc" />
+    <path
+       class="navy"
+       d="m 26.175604,12.352521 -2.477363,2.044086 0.442357,0.802841 3.658572,-1.84844 z"
+       id="path2"
+       style="fill:#0a1e2d;fill-opacity:1;stroke:#0a1e2d;stroke-width:0.116324;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+       sodipodi:nodetypes="ccccc" />
+    <path
+       class="teal"
+       d="m 28.48208,15.60689 -2.796835,1.529458 h 1.780947 z"
+       id="path3"
+       style="fill:#ff6e19;fill-opacity:1;stroke:#ff6e19;stroke-width:0.116324;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+       sodipodi:nodetypes="cccc" />
+  </g>
+</svg>

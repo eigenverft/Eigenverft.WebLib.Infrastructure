@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class ConfigureWebHostBuilderExtensions | Eigenverft.WebLib.Infrastructure </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class ConfigureWebHostBuilderExtensions | Eigenverft.WebLib.Infrastructure ">
+    
+    <meta name="description" content="Provides configuration-driven Kestrel hosting extensions.">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.json">
+      <meta property="docfx:tocrel" content="toc.json">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="Eigenverft.WebLib.Infrastructure">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+
+                <ul class="nav level1 navbar-nav">
+                      <li>
+                          <a href="../docs/introduction.html" title="Guides">Guides</a>
+                      </li>
+                      <li>
+                          <a href="../api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.html" title="API">API</a>
+                      </li>
+                </ul>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div>
+              <div class="sidefilter">
+                <form class="toc-filter">
+                  <span class="glyphicon glyphicon-filter filter-icon"></span>
+                  <input type="text" id="toc_filter_input" placeholder="Enter here to filter..." onkeypress="if(event.keyCode==13) {return false;}">
+                </form>
+              </div>
+              <div class="sidetoc">
+                <div class="toc" id="toc">
+
+                  <ul class="nav level1">
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values" class="">Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.html" title="AspNetDataProtectionConfigurationValueCodecs" class="">AspNetDataProtectionConfigurationValueCodecs</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.html" title="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="">Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html" title="WebApplicationBuilderFactory" class="">WebApplicationBuilderFactory</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel" class="">Eigenverft.WebLib.Infrastructure.Hosting.Kestrel</a>
+
+                        <ul class="nav level2">
+                          <li class="active">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.html" title="ConfigureWebHostBuilderExtensions" class="active">ConfigureWebHostBuilderExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Transformations.html" title="Eigenverft.WebLib.Infrastructure.Transformations" class="">Eigenverft.WebLib.Infrastructure.Transformations</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.html" title="AspNetDataProtectionStringTransforms" class="">AspNetDataProtectionStringTransforms</a>
+                          </li>
+                        </ul>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions">
+
+
+
+  <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_Kestrel_ConfigureWebHostBuilderExtensions" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions" class="text-break">Class ConfigureWebHostBuilderExtensions</h1>
+  <div class="markdown level0 summary"><p>Provides configuration-driven Kestrel hosting extensions.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">ConfigureWebHostBuilderExtensions</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.memberwiseclone">object.MemberwiseClone()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Eigenverft.html">Eigenverft</a>.<a class="xref" href="Eigenverft.WebLib.html">WebLib</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.html">Infrastructure</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.html">Hosting</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.html">Kestrel</a></h6>
+  <h6><strong>Assembly</strong>: Eigenverft.WebLib.Infrastructure.dll</h6>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_Kestrel_ConfigureWebHostBuilderExtensions_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static class ConfigureWebHostBuilderExtensions</code></pre>
+  </div>
+  <h3 id="methods">Methods
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/update-netlib-stable-reference-58187/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Kestrel_ConfigureWebHostBuilderExtensions_ConfigureKestrelSniFromConfiguration_Microsoft_AspNetCore_Builder_ConfigureWebHostBuilder_System_String_System_String_.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration(Microsoft.AspNetCore.Builder.ConfigureWebHostBuilder%2CSystem.String%2CSystem.String)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/update-netlib-stable-reference-58187/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Kestrel/ConfigureWebHostBuilderExtensions.cs/#L121">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_Kestrel_ConfigureWebHostBuilderExtensions_ConfigureKestrelSniFromConfiguration_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_Kestrel_ConfigureWebHostBuilderExtensions_ConfigureKestrelSniFromConfiguration_Microsoft_AspNetCore_Builder_ConfigureWebHostBuilder_System_String_System_String_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration(Microsoft.AspNetCore.Builder.ConfigureWebHostBuilder,System.String,System.String)">ConfigureKestrelSniFromConfiguration(ConfigureWebHostBuilder, string?, string)</h4>
+  <div class="markdown level1 summary"><p>Configures startup-fixed Kestrel listeners and reloadable SNI certificate mappings.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static void ConfigureKestrelSniFromConfiguration(this ConfigureWebHostBuilder configureWebHostBuilder, string? certDirOverride = null, string kestrelSettingsSectionPath = &quot;KestrelSettings&quot;)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.builder.configurewebhostbuilder">ConfigureWebHostBuilder</a></td>
+        <td><span class="parametername">configureWebHostBuilder</span></td>
+        <td><p>The web-host builder to configure.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">certDirOverride</span></td>
+        <td><p>An optional certificate-directory override. Relative paths are resolved against the content root.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><span class="parametername">kestrelSettingsSectionPath</span></td>
+        <td><p>The configuration section containing startup-fixed Kestrel settings.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_Kestrel_ConfigureWebHostBuilderExtensions_ConfigureKestrelSniFromConfiguration_Microsoft_AspNetCore_Builder_ConfigureWebHostBuilder_System_String_System_String__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>
+Add the configuration sources before building the application, then call this method once. For example,
+reset the implicit <code>appsettings*.json</code> sources and load startup-fixed Kestrel settings separately from
+reloadable certificate mappings:
+</p>
+<pre><code class="lang-csharp">builder.ResetToMinimalConfigurationSources(includeCommandLineArguments: true);
+<p>builder.Configuration.AddJsonFile(
+Path.Combine(settingsDirectory, &quot;KestrelSettings.json&quot;),
+optional: false, reloadOnChange: false);</p>
+<p>// Generate a different stable factor for each application.
+byte[] applicationFactor =
+{
+0x23, 0x52, 0x66, 0x37, 0x5A, 0x39, 0x27, 0x27,
+0x5E, 0x52, 0x6C, 0x2E, 0x36, 0x49, 0x45, 0x4E,
+0x79, 0x4A, 0x52, 0x43, 0x4E, 0x4D, 0x3F, 0x5E,
+0x50, 0x5A, 0x6A, 0x5F, 0x4E, 0x32, 0x28, 0x4E,
+};</p>
+<p>string configurationProtectionSecret =
+Environment.GetEnvironmentVariable(&quot;APP_CONFIGURATION_PROTECTION_SECRET&quot;)
+?? throw new InvalidOperationException(
+&quot;APP_CONFIGURATION_PROTECTION_SECRET is required.&quot;);</p>
+<p>ConfigurationValueCodec certificatePasswordCodec =
+ConfigurationValueCodecs.Compose(
+ConfigurationValueCodecs.AesPassword(applicationFactor),
+ConfigurationValueCodecs.AesPassword(configurationProtectionSecret),
+ConfigurationValueCodecs.PhysicalMachineBoundAes(),
+AspNetDataProtectionConfigurationValueCodecs.DataProtection(
+directories, nameof(certificatePasswordCodec)));</p>
+<p>var certificateSourceOptions = new SwitchableJsonRegistrationOptions
+{
+ReloadOnChange = true,
+ValueProtection = JsonConfigurationValueProtection.ForPaths(
+certificatePasswordCodec, &quot;CertificatesMappingSettings:*:Password&quot;),
+};</p>
+<p>builder.AddSwitchableJsonFile(
+&quot;KestrelCertificateMappings&quot;,
+Path.Combine(settingsDirectory, &quot;CertificatesMappingSettings.json&quot;),
+certificateSourceOptions);</p>
+<p>builder.WebHost.ConfigureKestrelSniFromConfiguration(
+certDirOverride: directories[DefaultDirectory.ApplicationCerts]);</p></code></pre>
+<p>Minimal <code>KestrelSettings.json</code>:</p>
+<pre><code class="lang-csharp">{
+  "KestrelSettings": {
+    "HTTP_PORT": 8080,
+    "HTTPS_PORT": 8443,
+    "ListenScope": "Localhost",
+    "AddServerHeader": false,
+    "Protocols": "Http1AndHttp2",
+    "PreferLongestSuffixMatch": true,
+    "TlsProtocolPolicy": "Default"
+  }
+}</code></pre>
+<p>Minimal <code>CertificatesMappingSettings.json</code>:</p>
+<pre><code class="lang-csharp">{
+  "CertificatesMappingSettings": [
+    {
+      "SNI": "localhost",
+      "FileName": "localhost.pfx",
+      "Password": "change-me"
+    }
+  ]
+}</code></pre>
+<p>
+The certificate-directory override takes precedence over the top-level <code>CertificatesDirectory</code>
+setting. When neither is supplied, <code>certs</code> below the content root is used.
+</p>
+<p>
+<code>CertificatesMappingSettings</code> is the only hot-reload boundary. Ports, bind scope,
+protocols, TLS policy, matching strategy, and certificate directory require a host restart.
+A failed reload keeps the last-known-good certificate generation active.
+</p>
+<p>
+Certificate recovery is opt-in. When <code>CertificateRecoveryMode</code> is omitted or invalid, the
+default <code>None</code> mode performs classic PFX loading: the file must exist, import successfully,
+contain a private key, and be currently valid. Startup fails when that initial certificate cannot
+be loaded; a failed hot reload keeps the last-known-good generation active.
+<code>PreserveExisting</code> enables self-signed recovery only in memory and never creates or replaces
+the configured PFX path. <code>ReplaceExpired</code> creates a missing managed PFX and replaces an expired
+one, while <code>ReplaceAnyUnusable</code> is intended only for fully application-managed, replaceable files.
+Additional self-signed DNS names and IP addresses are used only when a recovery mode generates a
+self-signed certificate.
+</p>
+</div>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/update-netlib-stable-reference-58187/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Kestrel_ConfigureWebHostBuilderExtensions.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/update-netlib-stable-reference-58187/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Kestrel/ConfigureWebHostBuilderExtensions.cs/#L14" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      <pre></pre>
+      
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>
