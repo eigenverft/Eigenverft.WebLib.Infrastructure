@@ -27,7 +27,7 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>eigenverft-logo-v7-harbor-square_128_128.png</PackageIcon>
-    <PackageReleaseNotes>Uses Eigenverft.NetLib.Infrastructure 1.0.20264.58187 and defaults Kestrel/SNI certificate mappings to classic PFX loading without automatic recovery.</PackageReleaseNotes>
+    <PackageReleaseNotes>Uses Eigenverft.NetLib.Infrastructure 1.0.20264.58446 and defaults Kestrel/SNI certificate mappings to classic PFX loading without automatic recovery.</PackageReleaseNotes>
     <Description>ASP.NET Core adapters for Eigenverft.NetLib.Infrastructure, including web-host directory setup, Data Protection transforms, and Kestrel/SNI configuration.</Description>
     <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;kestrel;sni;data-protection;security;eigenverft</PackageTags>
     <Copyright>Copyright (c) 2026 $(Branding)</Copyright>
@@ -40,7 +40,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Eigenverft.NetLib.Infrastructure" Version="1.0.20264.58187" />
+    <PackageReference Include="Eigenverft.NetLib.Infrastructure" Version="1.0.20264.58446" />
   </ItemGroup>
 
   <ItemGroup>
