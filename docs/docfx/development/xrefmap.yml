@@ -112,6 +112,148 @@ references:
   isSpec: "True"
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration
   nameWithType: ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline
+  name: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Hosting.Pipeline
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline
+  nameWithType: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions
+  name: PipelinePartitioningExtensions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions
+  nameWithType: PipelinePartitioningExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapIsolated(Microsoft.AspNetCore.Builder.IApplicationBuilder,Microsoft.AspNetCore.Http.PathString,System.Action{Microsoft.AspNetCore.Builder.IApplicationBuilder})
+  name: MapIsolated(IApplicationBuilder, PathString, Action<IApplicationBuilder>)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Pipeline_PipelinePartitioningExtensions_MapIsolated_Microsoft_AspNetCore_Builder_IApplicationBuilder_Microsoft_AspNetCore_Http_PathString_System_Action_Microsoft_AspNetCore_Builder_IApplicationBuilder__
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapIsolated(Microsoft.AspNetCore.Builder.IApplicationBuilder,Microsoft.AspNetCore.Http.PathString,System.Action{Microsoft.AspNetCore.Builder.IApplicationBuilder})
+  name.vb: MapIsolated(IApplicationBuilder, PathString, Action(Of IApplicationBuilder))
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapIsolated(Microsoft.AspNetCore.Builder.IApplicationBuilder, Microsoft.AspNetCore.Http.PathString, System.Action<Microsoft.AspNetCore.Builder.IApplicationBuilder>)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapIsolated(Microsoft.AspNetCore.Builder.IApplicationBuilder, Microsoft.AspNetCore.Http.PathString, System.Action(Of Microsoft.AspNetCore.Builder.IApplicationBuilder))
+  nameWithType: PipelinePartitioningExtensions.MapIsolated(IApplicationBuilder, PathString, Action<IApplicationBuilder>)
+  nameWithType.vb: PipelinePartitioningExtensions.MapIsolated(IApplicationBuilder, PathString, Action(Of IApplicationBuilder))
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapIsolated*
+  name: MapIsolated
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Pipeline_PipelinePartitioningExtensions_MapIsolated_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapIsolated
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapIsolated
+  nameWithType: PipelinePartitioningExtensions.MapIsolated
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapRemaining(Microsoft.AspNetCore.Builder.IApplicationBuilder,System.Action{Microsoft.AspNetCore.Builder.IApplicationBuilder})
+  name: MapRemaining(IApplicationBuilder, Action<IApplicationBuilder>)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Pipeline_PipelinePartitioningExtensions_MapRemaining_Microsoft_AspNetCore_Builder_IApplicationBuilder_System_Action_Microsoft_AspNetCore_Builder_IApplicationBuilder__
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapRemaining(Microsoft.AspNetCore.Builder.IApplicationBuilder,System.Action{Microsoft.AspNetCore.Builder.IApplicationBuilder})
+  name.vb: MapRemaining(IApplicationBuilder, Action(Of IApplicationBuilder))
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapRemaining(Microsoft.AspNetCore.Builder.IApplicationBuilder, System.Action<Microsoft.AspNetCore.Builder.IApplicationBuilder>)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapRemaining(Microsoft.AspNetCore.Builder.IApplicationBuilder, System.Action(Of Microsoft.AspNetCore.Builder.IApplicationBuilder))
+  nameWithType: PipelinePartitioningExtensions.MapRemaining(IApplicationBuilder, Action<IApplicationBuilder>)
+  nameWithType.vb: PipelinePartitioningExtensions.MapRemaining(IApplicationBuilder, Action(Of IApplicationBuilder))
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapRemaining*
+  name: MapRemaining
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Pipeline_PipelinePartitioningExtensions_MapRemaining_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapRemaining
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.MapRemaining
+  nameWithType: PipelinePartitioningExtensions.MapRemaining
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles
+  name: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles
+  nameWithType: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings
+  name: AdditionalMappings
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings
+  nameWithType: AdditionalMappings
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Combine(Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings[])
+  name: Combine(params StaticFileAdditionalMappings[])
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_AdditionalMappings_Combine_Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_StaticFileAdditionalMappings___
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Combine(Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings[])
+  name.vb: Combine(ParamArray StaticFileAdditionalMappings())
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Combine(params Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings[])
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Combine(ParamArray Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings())
+  nameWithType: AdditionalMappings.Combine(params StaticFileAdditionalMappings[])
+  nameWithType.vb: AdditionalMappings.Combine(ParamArray StaticFileAdditionalMappings())
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Combine*
+  name: Combine
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_AdditionalMappings_Combine_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Combine
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Combine
+  nameWithType: AdditionalMappings.Combine
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Media
+  name: Media
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_AdditionalMappings_Media
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Media
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Media
+  nameWithType: AdditionalMappings.Media
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Media*
+  name: Media
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_AdditionalMappings_Media_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Media
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.Media
+  nameWithType: AdditionalMappings.Media
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.WebApp
+  name: WebApp
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_AdditionalMappings_WebApp
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.WebApp
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.WebApp
+  nameWithType: AdditionalMappings.WebApp
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.WebApp*
+  name: WebApp
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_AdditionalMappings_WebApp_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.WebApp
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.WebApp
+  nameWithType: AdditionalMappings.WebApp
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings
+  name: StaticFileAdditionalMappings
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings
+  nameWithType: StaticFileAdditionalMappings
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions
+  name: StaticFileApplicationBuilderExtensions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions
+  nameWithType: StaticFileApplicationBuilderExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UsePwaHost(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  name: UsePwaHost(IApplicationBuilder)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_StaticFileApplicationBuilderExtensions_UsePwaHost_Microsoft_AspNetCore_Builder_IApplicationBuilder_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UsePwaHost(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UsePwaHost(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  nameWithType: StaticFileApplicationBuilderExtensions.UsePwaHost(IApplicationBuilder)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UsePwaHost(Microsoft.AspNetCore.Builder.IApplicationBuilder,Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings)
+  name: UsePwaHost(IApplicationBuilder, StaticFileAdditionalMappings)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_StaticFileApplicationBuilderExtensions_UsePwaHost_Microsoft_AspNetCore_Builder_IApplicationBuilder_Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_StaticFileAdditionalMappings_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UsePwaHost(Microsoft.AspNetCore.Builder.IApplicationBuilder,Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UsePwaHost(Microsoft.AspNetCore.Builder.IApplicationBuilder, Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings)
+  nameWithType: StaticFileApplicationBuilderExtensions.UsePwaHost(IApplicationBuilder, StaticFileAdditionalMappings)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UsePwaHost*
+  name: UsePwaHost
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_StaticFileApplicationBuilderExtensions_UsePwaHost_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UsePwaHost
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UsePwaHost
+  nameWithType: StaticFileApplicationBuilderExtensions.UsePwaHost
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UseStaticFiles(Microsoft.AspNetCore.Builder.IApplicationBuilder,Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings)
+  name: UseStaticFiles(IApplicationBuilder, StaticFileAdditionalMappings)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_StaticFileApplicationBuilderExtensions_UseStaticFiles_Microsoft_AspNetCore_Builder_IApplicationBuilder_Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_StaticFileAdditionalMappings_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UseStaticFiles(Microsoft.AspNetCore.Builder.IApplicationBuilder,Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UseStaticFiles(Microsoft.AspNetCore.Builder.IApplicationBuilder, Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings)
+  nameWithType: StaticFileApplicationBuilderExtensions.UseStaticFiles(IApplicationBuilder, StaticFileAdditionalMappings)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UseStaticFiles*
+  name: UseStaticFiles
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_StaticFiles_StaticFileApplicationBuilderExtensions_UseStaticFiles_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UseStaticFiles
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.UseStaticFiles
+  nameWithType: StaticFileApplicationBuilderExtensions.UseStaticFiles
 - uid: Eigenverft.WebLib.Infrastructure.Transformations
   name: Eigenverft.WebLib.Infrastructure.Transformations
   href: api/Eigenverft.WebLib.Infrastructure.Transformations.html
