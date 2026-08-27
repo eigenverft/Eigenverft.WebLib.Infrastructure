@@ -14,7 +14,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFavicon
     /// Only GET and HEAD are handled for <c>/health</c>. A GET or HEAD for <c>/favicon.ico</c> is answered with
     /// 204 only when its Referer points to <c>/health</c>.
     /// </remarks>
-    public sealed class HealthProbeFaviconAwareMiddleware
+    internal sealed class HealthProbeFaviconAwareMiddleware
     {
         private const string HealthPathText = "/health";
         private const string DefaultContentType = "text/plain; charset=utf-8";

@@ -14,7 +14,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
     /// When forwarded headers are used, call <c>UseForwardedHeaders()</c> before this middleware so the
     /// effective request scheme and host represent the external client-facing request.
     /// </remarks>
-    public sealed class CanonicalHostRedirectMiddleware
+    internal sealed class CanonicalHostRedirectMiddleware
     {
         private readonly RequestDelegate _next;
         private readonly IOptionsMonitor<CanonicalHostRedirectOptions> _optionsMonitor;

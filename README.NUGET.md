@@ -93,12 +93,6 @@ builder.Services.AddCanonicalHostRedirect(options =>
 {
     options.PrimaryApexHost = "example.com";
     options.RedirectFromHosts = ["legacy.example.net"];
-    options.Canonicalization = CanonicalHostMode.ToWww;
-    options.EnforceHttps = true;
-
-    // Null (or 443) means canonical implicit HTTPS/443.
-    // Set exactly one alternate HTTPS target port only when the deployment needs it.
-    options.HttpsTargetPort = null;
 });
 
 WebApplication app = builder.Build();
