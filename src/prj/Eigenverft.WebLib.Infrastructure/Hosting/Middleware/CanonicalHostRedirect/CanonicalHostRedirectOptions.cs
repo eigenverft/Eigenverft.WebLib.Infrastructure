@@ -1,7 +1,5 @@
 using System;
 
-using Microsoft.AspNetCore.Http;
-
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect
 {
     /// <summary>
@@ -9,11 +7,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
     /// </summary>
     public enum CanonicalHostMode
     {
-        /// <summary>
-        /// Leaves the host name unchanged and only applies HTTPS or HTTPS-port normalization.
-        /// </summary>
-        None = 0,
-
         /// <summary>
         /// Uses the configured apex host, for example <c>example.com</c>.
         /// </summary>
@@ -31,11 +24,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
     public sealed class CanonicalHostRedirectOptions
     {
         /// <summary>
-        /// Gets or sets a value indicating whether canonical redirects are enabled.
-        /// </summary>
-        public bool Enabled { get; set; } = true;
-
-        /// <summary>
         /// Gets or sets the primary apex host without a port, for example <c>example.com</c>.
         /// </summary>
         public string PrimaryApexHost { get; set; } = string.Empty;
@@ -51,11 +39,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
         public CanonicalHostMode Canonicalization { get; set; } = CanonicalHostMode.ToWww;
 
         /// <summary>
-        /// Gets or sets a value indicating whether redirected requests must use HTTPS.
-        /// </summary>
-        public bool EnforceHttps { get; set; } = true;
-
-        /// <summary>
         /// Gets or sets the optional HTTPS target port.
         /// </summary>
         /// <remarks>
@@ -65,9 +48,5 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
         /// </remarks>
         public int? HttpsTargetPort { get; set; }
 
-        /// <summary>
-        /// Gets or sets the redirect response status code. The default is 308, which preserves method and body.
-        /// </summary>
-        public int RedirectStatusCode { get; set; } = StatusCodes.Status308PermanentRedirect;
     }
 }

@@ -24,8 +24,6 @@ public sealed class CanonicalHostRedirectMiddlewareTests
         using ServiceProvider services = CreateServices(options =>
         {
             options.PrimaryApexHost = "example.com";
-            options.Canonicalization = CanonicalHostMode.ToWww;
-            options.EnforceHttps = true;
         });
 
         var middleware = new CanonicalHostRedirectMiddleware(
@@ -57,7 +55,6 @@ public sealed class CanonicalHostRedirectMiddlewareTests
         {
             options.PrimaryApexHost = "example.com";
             options.Canonicalization = CanonicalHostMode.ToApex;
-            options.EnforceHttps = true;
             options.HttpsTargetPort = 8443;
         });
 
@@ -76,13 +73,11 @@ public sealed class CanonicalHostRedirectMiddlewareTests
     }
 
     [TestMethod]
-    public async Task HttpsEnforcementNormalizesAnAlternateIncomingHttpsPortToImplicit443()
+    public async Task AlternateIncomingHttpsPortIsNormalizedToImplicit443()
     {
         using ServiceProvider services = CreateServices(options =>
         {
             options.PrimaryApexHost = "example.com";
-            options.Canonicalization = CanonicalHostMode.ToWww;
-            options.EnforceHttps = true;
         });
 
         var middleware = new CanonicalHostRedirectMiddleware(
@@ -106,8 +101,6 @@ public sealed class CanonicalHostRedirectMiddlewareTests
         {
             options.PrimaryApexHost = "example.com";
             options.RedirectFromHosts = ["legacy.example.net"];
-            options.Canonicalization = CanonicalHostMode.ToWww;
-            options.EnforceHttps = true;
         });
 
         var middleware = new CanonicalHostRedirectMiddleware(
@@ -126,37 +119,13 @@ public sealed class CanonicalHostRedirectMiddlewareTests
     }
 
     [TestMethod]
-    public async Task HostOnlyRedirectPreservesPortWhenHttpsEnforcementIsDisabled()
-    {
-        using ServiceProvider services = CreateServices(options =>
-        {
-            options.PrimaryApexHost = "example.com";
-            options.Canonicalization = CanonicalHostMode.ToWww;
-            options.EnforceHttps = false;
-        });
-
-        var middleware = new CanonicalHostRedirectMiddleware(
-            _ => Task.CompletedTask,
-            services.GetRequiredService<IOptionsMonitor<CanonicalHostRedirectOptions>>());
-
-        var context = new DefaultHttpContext();
-        context.Request.Scheme = "http";
-        context.Request.Host = new HostString("example.com", 8080);
-        context.Request.Path = "/local";
-
-        await middleware.InvokeAsync(context);
-
-        Assert.AreEqual("http://www.example.com:8080/local", context.Response.Headers.Location.ToString());
-    }
-
-    [TestMethod]
     public void RegistrationBindsTheOptionalHttpsTargetPortFromConfiguration()
     {
         var configuration = new Microsoft.Extensions.Configuration.ConfigurationManager();
         configuration.AddInMemoryCollection(new System.Collections.Generic.Dictionary<string, string?>
         {
-            ["CanonicalHostRedirectOptions:PrimaryApexHost"] = "example.com",
-            ["CanonicalHostRedirectOptions:HttpsTargetPort"] = "8443",
+            ["CanonicalHostRedirect:PrimaryApexHost"] = "example.com",
+            ["CanonicalHostRedirect:HttpsTargetPort"] = "8443",
         });
 
         var services = new ServiceCollection();
@@ -178,7 +147,28 @@ public sealed class CanonicalHostRedirectMiddlewareTests
         var configuration = new ConfigurationManager();
         configuration.AddInMemoryCollection(new System.Collections.Generic.Dictionary<string, string?>
         {
-            ["CanonicalHostRedirectOptions:PrimaryApexHost"] = "example.com:8443",
+            ["CanonicalHostRedirect:PrimaryApexHost"] = "example.com:8443",
+        });
+
+        var services = new ServiceCollection();
+        services.AddSingleton<Microsoft.Extensions.Configuration.IConfiguration>(configuration);
+        services.AddCanonicalHostRedirect();
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+
+        Assert.ThrowsExactly<OptionsValidationException>(() =>
+        {
+            _ = provider.GetRequiredService<IOptionsMonitor<CanonicalHostRedirectOptions>>().CurrentValue;
+        });
+    }
+
+    [TestMethod]
+    public void RegistrationRejectsUnsupportedCanonicalization()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new System.Collections.Generic.Dictionary<string, string?>
+        {
+            ["CanonicalHostRedirect:Canonicalization"] = "0",
         });
 
         var services = new ServiceCollection();
@@ -202,8 +192,6 @@ public sealed class CanonicalHostRedirectMiddlewareTests
         services.AddCanonicalHostRedirect(options =>
         {
             options.PrimaryApexHost = "example.com";
-            options.Canonicalization = CanonicalHostMode.ToWww;
-            options.EnforceHttps = true;
         });
         services.Configure<ForwardedHeadersOptions>(options =>
         {

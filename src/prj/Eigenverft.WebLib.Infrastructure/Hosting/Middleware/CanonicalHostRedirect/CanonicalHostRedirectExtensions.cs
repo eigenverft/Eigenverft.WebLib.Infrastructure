@@ -11,9 +11,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
     /// </summary>
     public static class CanonicalHostRedirectExtensions
     {
+        private const string ConfigurationSectionName = "CanonicalHostRedirect";
         /// <summary>
         /// Registers canonical host redirect options from the standard
-        /// <c>CanonicalHostRedirectOptions</c> configuration section.
+        /// <c>CanonicalHostRedirect</c> configuration section.
         /// </summary>
         /// <param name="services">The service collection.</param>
         /// <returns>The same service collection.</returns>
@@ -26,11 +27,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
 
             services
                 .AddOptions<CanonicalHostRedirectOptions>()
-                .BindConfiguration(nameof(CanonicalHostRedirectOptions))
+                .BindConfiguration(ConfigurationSectionName)
                 .Validate(
                     options => !options.HttpsTargetPort.HasValue ||
                                options.HttpsTargetPort.Value is >= 1 and <= 65535,
                     "HttpsTargetPort must be between 1 and 65535 when configured.")
+                .Validate(
+                    options => options.Canonicalization is CanonicalHostMode.ToApex or CanonicalHostMode.ToWww,
+                    "Canonicalization must be ToApex or ToWww.")
                 .Validate(
                     HasNoEmbeddedHostPorts,
                     "PrimaryApexHost and RedirectFromHosts must not contain ports; use HttpsTargetPort for the HTTPS target port.");

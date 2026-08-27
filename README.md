@@ -77,36 +77,27 @@ RequestFilters stack.
 
 ### Canonical host and HTTPS redirect
 
-Register canonical redirect options through normal ASP.NET Core options and place forwarded headers
-before the redirect middleware when a proxy supplies the external scheme or host:
+The normal case needs one registration and one middleware call:
 
 ```csharp
 using Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect;
-using Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware;
-using Microsoft.AspNetCore.HttpOverrides;
-
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders =
-        ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
-});
 
 builder.Services.AddCanonicalHostRedirect(options =>
-{
-    options.PrimaryApexHost = "example.com";
-    options.RedirectFromHosts = ["legacy.example.net"];
-});
+    options.PrimaryApexHost = "example.com");
 
 WebApplication app = builder.Build();
-app.UseForwardedHeaders();
-app.UseHealthProbeFaviconAware();
 app.UseCanonicalHostRedirect();
 ```
 
+The defaults canonicalize to `www`, require HTTPS, return `308 Permanent Redirect`, and target implicit
+HTTPS/443. Set `RedirectFromHosts`, `Canonicalization = CanonicalHostMode.ToApex`, or one
+`HttpsTargetPort` only when the deployment needs them. `AddCanonicalHostRedirect()` without a delegate
+binds the `CanonicalHostRedirect` configuration section.
+
 A redirect combines host and scheme normalization into one hop and preserves `PathBase`, path, and
-query. When HTTP is redirected to HTTPS, the incoming HTTP port is never copied. With the default
-`HttpsTargetPort = null`, the target uses implicit HTTPS/443; an explicitly configured alternate port
-is used consistently as the HTTPS target port.
+query. Incoming HTTP ports are never copied to HTTPS. When a reverse proxy supplies the external scheme
+or host, configure ASP.NET Core Forwarded Headers normally and call `UseForwardedHeaders()` before
+`UseCanonicalHostRedirect()`.
 
 ### Health probe and favicon suppression
 

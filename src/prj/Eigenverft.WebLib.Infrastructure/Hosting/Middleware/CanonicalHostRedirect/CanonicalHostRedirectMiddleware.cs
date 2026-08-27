@@ -45,7 +45,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
             }
 
             CanonicalHostRedirectOptions options = _optionsMonitor.CurrentValue;
-            if (!options.Enabled || !context.Request.Host.HasValue)
+            if (!context.Request.Host.HasValue)
             {
                 await _next(context).ConfigureAwait(false);
                 return;
@@ -68,11 +68,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
             string requestScheme = string.IsNullOrWhiteSpace(context.Request.Scheme)
                 ? Uri.UriSchemeHttp
                 : context.Request.Scheme;
-            string targetScheme = options.EnforceHttps ? Uri.UriSchemeHttps : requestScheme;
-            HostString targetHost = BuildTargetHost(context.Request.Host, targetHostOnly, targetScheme, options);
+            HostString targetHost = BuildTargetHost(targetHostOnly, options);
 
             bool needsRedirect =
-                !string.Equals(requestScheme, targetScheme, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(requestScheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ||
                 !HostStringEquals(context.Request.Host, targetHost);
 
             if (!needsRedirect)
@@ -82,29 +81,20 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
             }
 
             string location = UriHelper.BuildAbsolute(
-                targetScheme,
+                Uri.UriSchemeHttps,
                 targetHost,
                 context.Request.PathBase,
                 context.Request.Path,
                 context.Request.QueryString);
 
-            context.Response.StatusCode = options.RedirectStatusCode;
+            context.Response.StatusCode = StatusCodes.Status308PermanentRedirect;
             context.Response.Headers.Location = location;
         }
 
         private static HostString BuildTargetHost(
-            HostString requestHost,
             string targetHostOnly,
-            string targetScheme,
             CanonicalHostRedirectOptions options)
         {
-            if (!string.Equals(targetScheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) || !options.EnforceHttps)
-            {
-                return requestHost.Port.HasValue
-                    ? new HostString(targetHostOnly, requestHost.Port.Value)
-                    : new HostString(targetHostOnly);
-            }
-
             int? httpsTargetPort = options.HttpsTargetPort;
             if (!httpsTargetPort.HasValue || httpsTargetPort.Value == 443)
             {
@@ -136,12 +126,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
             if (string.Equals(requestHost, primaryApex, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(requestHost, primaryWww, StringComparison.OrdinalIgnoreCase))
             {
-                canonicalHost = options.Canonicalization switch
-                {
-                    CanonicalHostMode.ToApex => primaryApex,
-                    CanonicalHostMode.ToWww => primaryWww,
-                    _ => requestHost,
-                };
+                canonicalHost = options.Canonicalization == CanonicalHostMode.ToApex
+                    ? primaryApex
+                    : primaryWww;
 
                 return true;
             }
@@ -155,11 +142,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
                     continue;
                 }
 
-                canonicalHost = options.Canonicalization switch
-                {
-                    CanonicalHostMode.ToWww => primaryWww,
-                    _ => primaryApex,
-                };
+                canonicalHost = options.Canonicalization == CanonicalHostMode.ToApex
+                    ? primaryApex
+                    : primaryWww;
 
                 return true;
             }
