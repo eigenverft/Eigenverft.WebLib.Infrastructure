@@ -31,8 +31,12 @@ public sealed class HttpContextFeatureExtensionsTests
         Assert.AreSame(expected, context.Features.Get<TestFeature>());
         Assert.AreSame(expected, context.GetFeature<TestFeature>());
         Assert.AreSame(expected, context.GetRequiredFeature<TestFeature>());
-        Assert.IsTrue(context.TryGetFeature<TestFeature>(out TestFeature? found));
-        Assert.AreSame(expected, found);
+
+        if (context.TryGetFeature<TestFeature>(out TestFeature? found))
+            Assert.AreEqual("expected", found.Value);
+        else
+            Assert.Fail("Expected the feature to be available.");
+
         Assert.IsTrue(context.RemoveFeature<TestFeature>());
         Assert.IsNull(context.Features.Get<TestFeature>());
         Assert.IsFalse(context.RemoveFeature<TestFeature>());

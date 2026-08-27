@@ -36,6 +36,20 @@ public sealed class ClientNetworkMiddlewareTests
     }
 
     [TestMethod]
+    public async Task ScopedIpv6ActualAddressKeepsItsScopeId()
+    {
+        var address = new IPAddress(IPAddress.Parse("fe80::1").GetAddressBytes(), 12);
+        var context = new DefaultHttpContext();
+        context.Connection.RemoteIpAddress = address;
+
+        await InvokeAsync(context);
+
+        IClientNetworkFeature feature = context.GetRequiredFeature<IClientNetworkFeature>();
+        Assert.AreEqual(address, feature.RemoteIpAddress);
+        Assert.AreEqual(12L, feature.RemoteIpAddress.ScopeId);
+    }
+
+    [TestMethod]
     public async Task ForwardedAndXForwardedForInformationShareOneTypedChainWithoutTrustEvaluation()
     {
         DefaultHttpContext context = CreateContext("10.0.0.5");

@@ -35,8 +35,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure
             if (app.Properties.TryGetValue(markerKey, out var marker) && marker is true)
                 return app;
 
+            app.UseMiddleware<TMiddleware>();
             app.Properties[markerKey] = true;
-            return app.UseMiddleware<TMiddleware>();
+            return app;
         }
     }
 }

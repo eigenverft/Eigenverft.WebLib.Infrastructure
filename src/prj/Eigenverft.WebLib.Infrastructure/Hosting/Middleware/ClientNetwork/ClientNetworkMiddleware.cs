@@ -137,7 +137,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork
                 return new IPAddress(address.GetAddressBytes());
 
             if (address.AddressFamily == AddressFamily.InterNetworkV6)
-                return new IPAddress(address.GetAddressBytes());
+                return new IPAddress(address.GetAddressBytes(), address.ScopeId);
 
             return null;
         }

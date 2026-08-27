@@ -31,6 +31,16 @@ public sealed class ApplicationBuilderMiddlewareExtensionsTests
     }
 
     [TestMethod]
+    public void FailedMiddlewareRegistrationDoesNotLeaveAOnceMarkerBehind()
+    {
+        using ServiceProvider services = new ServiceCollection().BuildServiceProvider();
+        var app = new ApplicationBuilder(services);
+
+        Assert.ThrowsExactly<InvalidOperationException>(() => app.UseMiddlewareOnce<InvalidMiddleware>());
+        Assert.ThrowsExactly<InvalidOperationException>(() => app.UseMiddlewareOnce<InvalidMiddleware>());
+    }
+
+    [TestMethod]
     public async Task UseMiddlewareOnceDeduplicatesIndependentlyInsideNativeMapBranches()
     {
         using ServiceProvider services = new ServiceCollection().BuildServiceProvider();
@@ -112,6 +122,13 @@ public sealed class ApplicationBuilderMiddlewareExtensionsTests
         {
             context.Items[CountKey] = GetCount(context) + 1;
             return _next(context);
+        }
+    }
+
+    private sealed class InvalidMiddleware
+    {
+        public InvalidMiddleware(RequestDelegate next)
+        {
         }
     }
 }

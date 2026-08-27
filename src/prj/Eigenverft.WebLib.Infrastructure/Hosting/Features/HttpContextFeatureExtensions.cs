@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Http;
 
@@ -31,7 +32,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Features
         /// <summary>
         /// Tries to get a typed feature.
         /// </summary>
-        public static bool TryGetFeature<TFeature>(this HttpContext context, out TFeature? feature) where TFeature : class
+        public static bool TryGetFeature<TFeature>(this HttpContext context, [NotNullWhen(true)] out TFeature? feature) where TFeature : class
         {
             ArgumentNullException.ThrowIfNull(context);
             feature = context.Features.Get<TFeature>();
