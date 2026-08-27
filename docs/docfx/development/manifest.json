@@ -130,20 +130,6 @@
     },
     {
       "type": "ManagedReference",
-      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware",
-      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.yml\" sourcestartlinenumber=\"1\">Redirects requests to the configured canonical host and HTTPS target in one hop.</p>\n"
-    },
-    {
-      "type": "ManagedReference",
       "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.yml",
       "output": {
         ".html": {
@@ -183,20 +169,6 @@
       "IsMRef": true,
       "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions",
       "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.yml\" sourcestartlinenumber=\"1\">Adds the favicon-aware health probe to an ASP.NET Core request pipeline.</p>\n"
-    },
-    {
-      "type": "ManagedReference",
-      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.yml",
-      "output": {
-        ".html": {
-          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.html"
-        }
-      },
-      "version": "",
-      "Uid": null,
-      "IsMRef": true,
-      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware",
-      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.yml\" sourcestartlinenumber=\"1\">Provides a small <code>/health</code> short-circuit and suppresses browser favicon noise originating from that probe.</p>\n"
     },
     {
       "type": "ManagedReference",
