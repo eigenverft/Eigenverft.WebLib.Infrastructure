@@ -20,6 +20,9 @@ configuration-value protection without duplicating host-independent infrastructu
 | Managed certificates | Load existing PFX files or create policy-controlled self-signed recovery certificates | `CertificateRecoveryMode` and NetLib certificate primitives |
 | Protected certificate mappings | Keep persisted PFX passwords out of clear-text configuration after provisioning | `AspNetDataProtectionConfigurationValueCodecs` and SwitchableJson |
 | Web host directories | Apply NetLib's executable-rooted layout to ASP.NET Core content root, web root, and `wwwroot` | `WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` |
+| Canonical redirects | Normalize apex/www/aliases and HTTPS in one redirect without leaking an incoming HTTP port into the HTTPS target | `AddCanonicalHostRedirect(...)` + `UseCanonicalHostRedirect()` |
+| Health probe | Short-circuit GET/HEAD `/health` before later filters and suppress probe-originated `/favicon.ico` noise | `UseHealthProbeFaviconAware()` |
+| HTML status responses | Write a small explicit HTML status response for middleware short-circuits using ASP.NET Core reason phrases | `WriteHtmlStatusResponseAsync(...)` |
 
 WebLib targets .NET 8 and .NET 10. Installing it also brings in
 `Eigenverft.NetLib.Infrastructure` as the shared foundation.
@@ -66,6 +69,79 @@ Its directory-layout overload derives the standard key-ring path and entry-assem
 only the application-specific purpose to the caller. The result is a normal
 `ConfigurationValueCodec` and can be used independently or at any position in
 `ConfigurationValueCodecs.Compose(...)`.
+
+## 🧰 Small request-pipeline helpers
+
+WebLib includes a few intentionally small ASP.NET Core helpers that are useful outside the larger
+RequestFilters stack.
+
+### Canonical host and HTTPS redirect
+
+Register canonical redirect options through normal ASP.NET Core options and place forwarded headers
+before the redirect middleware when a proxy supplies the external scheme or host:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect;
+using Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware;
+using Microsoft.AspNetCore.HttpOverrides;
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedHost | ForwardedHeaders.XForwardedProto;
+});
+
+builder.Services.AddCanonicalHostRedirect(options =>
+{
+    options.PrimaryApexHost = "example.com";
+    options.RedirectFromHosts = ["legacy.example.net"];
+    options.Canonicalization = CanonicalHostMode.ToWww;
+    options.EnforceHttps = true;
+
+    // Null (or 443) means canonical implicit HTTPS/443.
+    // Set exactly one alternate HTTPS target port only when the deployment needs it.
+    options.HttpsTargetPort = null;
+});
+
+WebApplication app = builder.Build();
+app.UseForwardedHeaders();
+app.UseHealthProbeFaviconAware();
+app.UseCanonicalHostRedirect();
+```
+
+A redirect combines host and scheme normalization into one hop and preserves `PathBase`, path, and
+query. When HTTP is redirected to HTTPS, the incoming HTTP port is never copied. With the default
+`HttpsTargetPort = null`, the target uses implicit HTTPS/443; an explicitly configured alternate port
+is used consistently as the HTTPS target port.
+
+### Health probe and favicon suppression
+
+`UseHealthProbeFaviconAware()` handles only GET and HEAD for `/health`, returns `200 OK` with `OK`
+for GET, and short-circuits the rest of the pipeline. A GET or HEAD for `/favicon.ico` returns
+`204 No Content` only when its `Referer` points to `/health`. Keep this middleware before filters that
+a health probe must bypass.
+
+### Explicit HTML status response
+
+For a middleware that intentionally terminates a request with an HTML response, use:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting;
+using Microsoft.AspNetCore.Http;
+
+await context.Response.WriteHtmlStatusResponseAsync(StatusCodes.Status403Forbidden);
+```
+
+The helper uses `ReasonPhrases.GetReasonPhrase(...)`; WebLib does not maintain its own HTTP status
+code description table. General application error handling remains the responsibility of ASP.NET
+Core Status Code Pages or Problem Details.
+
+### Host filtering remains framework-owned
+
+WebLib intentionally does not provide an `AddAllowedHosts` replacement. `WebApplication.CreateBuilder()`
+already wires ASP.NET Core host filtering to the live configuration object. Clearing
+`builder.Configuration.Sources` and adding replacement sources does not remove that wiring, so a
+rebuilt `AllowedHosts` value is still consumed by the built-in host-filtering options.
 
 ## 🌐 Kestrel and SNI
 
