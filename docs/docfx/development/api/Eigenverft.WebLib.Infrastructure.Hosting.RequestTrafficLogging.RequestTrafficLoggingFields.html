@@ -339,7 +339,8 @@ public enum RequestTrafficLoggingFields</code></pre>
       </tr>
       <tr>
         <td id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingFields_None">None</td>
-        <td><p>No request traffic fields are captured.</p>
+        <td><p>Captures no optional HTTP field groups. The lifecycle envelope still emits one <code>RequestTraffic</code>
+record containing at least <code>Event</code> and <code>Outcome</code> while information logging is enabled.</p>
 </td>
       </tr>
       <tr>

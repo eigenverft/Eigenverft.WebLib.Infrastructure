@@ -336,7 +336,7 @@
     <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-request-traffic-logging/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingServiceCollectionExtensions_AddRequestTrafficLogging_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions__.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingServiceCollectionExtensions.AddRequestTrafficLogging(Microsoft.Extensions.DependencyInjection.IServiceCollection%2CSystem.Action%7BEigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-request-traffic-logging/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingServiceCollectionExtensions.cs/#L22">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-request-traffic-logging/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingServiceCollectionExtensions.cs/#L29">View Source</a>
   </span>
   <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingServiceCollectionExtensions_AddRequestTrafficLogging_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingServiceCollectionExtensions.AddRequestTrafficLogging*"></a>
   <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingServiceCollectionExtensions_AddRequestTrafficLogging_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions__" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingServiceCollectionExtensions.AddRequestTrafficLogging(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions})">AddRequestTrafficLogging(IServiceCollection, Action&lt;RequestTrafficLoggingOptions&gt;?)</h4>
@@ -387,6 +387,13 @@
       </tr>
     </tbody>
   </table>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingServiceCollectionExtensions_AddRequestTrafficLogging_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions___remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Request traffic logging intentionally owns the global ASP.NET Core <a class="xref" href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.httplogging.httploggingoptions">HttpLoggingOptions</a>
+used by this pipeline: it post-configures combined logging, the baseline logging fields, body limits,
+and header allowlists so that the interceptor can select the final per-request capture. Existing
+<code>AddHttpLogging(...)</code> configuration is therefore normalized to the A4 traffic-logging contract.
+Configure the shared capture through <a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.html">RequestTrafficLoggingOptions</a> when A4 is enabled.</p>
+</div>
 
 </article>
           </div>
