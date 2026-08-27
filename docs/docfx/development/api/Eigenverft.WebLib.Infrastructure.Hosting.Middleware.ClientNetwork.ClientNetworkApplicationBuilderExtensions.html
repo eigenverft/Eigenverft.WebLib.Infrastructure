@@ -223,7 +223,7 @@
     <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-middleware-infrastructure/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientNetworkApplicationBuilderExtensions_UseClientNetworkFeature_Microsoft_AspNetCore_Builder_IApplicationBuilder_.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkApplicationBuilderExtensions.UseClientNetworkFeature(Microsoft.AspNetCore.Builder.IApplicationBuilder)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-middleware-infrastructure/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/ClientNetwork/ClientNetworkApplicationBuilderExtensions.cs/#L17">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-middleware-infrastructure/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/ClientNetwork/ClientNetworkApplicationBuilderExtensions.cs/#L21">View Source</a>
   </span>
   <a id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientNetworkApplicationBuilderExtensions_UseClientNetworkFeature_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkApplicationBuilderExtensions.UseClientNetworkFeature*"></a>
   <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientNetworkApplicationBuilderExtensions_UseClientNetworkFeature_Microsoft_AspNetCore_Builder_IApplicationBuilder_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkApplicationBuilderExtensions.UseClientNetworkFeature(Microsoft.AspNetCore.Builder.IApplicationBuilder)">UseClientNetworkFeature(IApplicationBuilder)</h4>
@@ -266,6 +266,10 @@
       </tr>
     </tbody>
   </table>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientNetworkApplicationBuilderExtensions_UseClientNetworkFeature_Microsoft_AspNetCore_Builder_IApplicationBuilder__remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Place this before middleware such as Forwarded Headers that rewrites
+<code>HttpContext.Connection.RemoteIpAddress</code> when the feature must capture the actual remote peer.</p>
+</div>
 
 </article>
           </div>
