@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 
+using Eigenverft.NetLib.Infrastructure.Networking;
 using Eigenverft.WebLib.Infrastructure.Hosting.Features;
 
 using Microsoft.AspNetCore.Http;
@@ -36,7 +36,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork
         {
             ArgumentNullException.ThrowIfNull(context);
 
-            var remoteIpAddress = NormalizeAddress(context.Connection.RemoteIpAddress)
+            var remoteIpAddress = context.Connection.RemoteIpAddress?.Normalize()
                 ?? throw new InvalidOperationException(
                     "The client-network feature requires HttpContext.Connection.RemoteIpAddress to contain an IPv4 or IPv6 address.");
 
@@ -95,7 +95,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork
                 return new ClientForwardedIpAddress(source, rawValue, null, true);
 
             if (IPAddress.TryParse(value, out var directAddress))
-                return new ClientForwardedIpAddress(source, rawValue, NormalizeAddress(directAddress), false);
+                return new ClientForwardedIpAddress(source, rawValue, directAddress.Normalize(), false);
 
             if (value[0] == '[')
             {
@@ -106,7 +106,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork
                     var remainder = value.Substring(closingBracket + 1);
                     if ((remainder.Length == 0 || IsValidPortSuffix(remainder)) && IPAddress.TryParse(host, out var bracketedAddress))
                     {
-                        return new ClientForwardedIpAddress(source, rawValue, NormalizeAddress(bracketedAddress), false);
+                        return new ClientForwardedIpAddress(source, rawValue, bracketedAddress.Normalize(), false);
                     }
                 }
             }
@@ -118,28 +118,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork
                 var portText = value.Substring(firstColon + 1);
                 if (IsValidPort(portText) && IPAddress.TryParse(host, out var endpointAddress))
                 {
-                    return new ClientForwardedIpAddress(source, rawValue, NormalizeAddress(endpointAddress), false);
+                    return new ClientForwardedIpAddress(source, rawValue, endpointAddress.Normalize(), false);
                 }
             }
 
             return new ClientForwardedIpAddress(source, rawValue, null, true);
-        }
-
-        private static IPAddress? NormalizeAddress(IPAddress? address)
-        {
-            if (address is null)
-                return null;
-
-            if (address.AddressFamily == AddressFamily.InterNetworkV6 && address.IsIPv4MappedToIPv6)
-                address = address.MapToIPv4();
-
-            if (address.AddressFamily == AddressFamily.InterNetwork)
-                return new IPAddress(address.GetAddressBytes());
-
-            if (address.AddressFamily == AddressFamily.InterNetworkV6)
-                return new IPAddress(address.GetAddressBytes(), address.ScopeId);
-
-            return null;
         }
 
         private static bool IsValidPortSuffix(string value)
