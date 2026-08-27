@@ -4,3 +4,5 @@
   href: getting-started.md
 - name: Request flood protection
   href: flood-protection.md
+- name: Isolated static and PWA hosting
+  href: static-pwa-hosting.md

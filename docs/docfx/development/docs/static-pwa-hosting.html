@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Isolated static and PWA hosting | Eigenverft.WebLib.Infrastructure </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Isolated static and PWA hosting | Eigenverft.WebLib.Infrastructure ">
+    
+    
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.json">
+      <meta property="docfx:tocrel" content="toc.json">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="Eigenverft.WebLib.Infrastructure">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+
+                <ul class="nav level1 navbar-nav">
+                      <li>
+                          <a href="../docs/introduction.html" title="Guides">Guides</a>
+                      </li>
+                      <li>
+                          <a href="../api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.html" title="API">API</a>
+                      </li>
+                </ul>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div>
+              <div class="sidefilter">
+                <form class="toc-filter">
+                  <span class="glyphicon glyphicon-filter filter-icon"></span>
+                  <input type="text" id="toc_filter_input" placeholder="Enter here to filter..." onkeypress="if(event.keyCode==13) {return false;}">
+                </form>
+              </div>
+              <div class="sidetoc">
+                <div class="toc" id="toc">
+
+                  <ul class="nav level1">
+                    <li class="">
+                      <a href="introduction.html" title="Introduction" class="">Introduction</a>
+                    </li>
+                    <li class="">
+                      <a href="getting-started.html" title="Getting started" class="">Getting started</a>
+                    </li>
+                    <li class="active">
+                      <a href="static-pwa-hosting.html" title="Isolated static and PWA hosting" class="active">Isolated static and PWA hosting</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="isolated-static-and-pwa-hosting">Isolated static and PWA hosting</h1>
+
+<p>WebLib's static/PWA hosting APIs are intentionally small. They compose normal ASP.NET Core branch,
+static-file, default-file, and endpoint middleware instead of introducing a separate routing or mount system.</p>
+<p>The main pieces are:</p>
+<ul>
+<li><code>MapIsolated(path, ...)</code> for an exclusively owned URL subtree.</li>
+<li><code>MapRemaining(...)</code> for the shell pipeline that receives requests not claimed by an earlier isolated subtree.</li>
+<li><code>UseStaticFiles(AdditionalMappings...)</code> for normal ASP.NET Core static files with typed additive MIME mappings.</li>
+</ul>
+<h2 id="pipeline-ownership">Pipeline ownership</h2>
+<p><code>MapIsolated</code> delegates to native ASP.NET Core <code>Map</code> with non-rejoining branch semantics. A matching request
+never continues into <code>MapRemaining</code>. If the branch does not serve or otherwise handle the request, the native
+end of that branch returns HTTP 404.</p>
+<p>The matched path segment is preserved. This is useful for folder-oriented hosting because a request such as
+<code>/apps/index.html</code> remains <code>/apps/index.html</code> inside the branch and normal static-file middleware resolves it
+against <code>wwwroot/apps/index.html</code>. No separate physical-folder mount layer is required.</p>
+<pre><code class="lang-csharp">using Eigenverft.WebLib.Infrastructure.Hosting.Pipeline;
+using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
+
+app.MapIsolated(&quot;/apps&quot;, apps =&gt;
+{
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
+});
+
+app.MapIsolated(&quot;/downloads&quot;, downloads =&gt;
+{
+    downloads.UseStaticFiles(AdditionalMappings.Media);
+});
+
+app.MapRemaining(shell =&gt;
+{
+    shell.UseRouting();
+    shell.UseEndpoints(endpoints =&gt;
+    {
+        endpoints.MapRazorComponents&lt;App&gt;();
+    });
+});
+</code></pre>
+<p><code>MapRemaining</code> deliberately exposes a normal <code>IApplicationBuilder</code>. Endpoint APIs such as <code>MapStaticAssets()</code> and
+<code>MapRazorComponents&lt;T&gt;()</code> therefore stay inside native <code>UseEndpoints(...)</code>; WebLib does not add a hybrid
+pipeline/router builder just to flatten that syntax.</p>
+<p>Declare all isolated branches before <code>MapRemaining</code>. <code>MapRemaining</code> is terminal for the rest of the application,
+so middleware registered after it is intentionally unreachable.</p>
+<h2 id="missing-files-and-status-code-re-execution">Missing files and status-code re-execution</h2>
+<p>An isolated static/PWA subtree owns its misses. A request for <code>/apps/missing.js</code> that is not served by the
+branch ends as 404 inside that branch and cannot fall through to Razor Components, a SPA fallback, or another
+shell endpoint.</p>
+<p>This remains true when the application has global status-code re-execution configured before the branches:</p>
+<pre><code class="lang-csharp">app.UseStatusCodePagesWithReExecute(&quot;/errors/{0}&quot;);
+
+app.MapIsolated(&quot;/apps&quot;, apps =&gt;
+{
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
+});
+
+app.MapRemaining(shell =&gt;
+{
+    // shell/error endpoints
+});
+</code></pre>
+<p>For isolated requests, WebLib disables an already-active outer status-code-pages feature. Without that guard,
+an outer <code>UseStatusCodePagesWithReExecute(...)</code> could re-run the downstream pipeline with <code>/errors/404</code>, which
+would no longer match <code>/apps</code> and could transfer handling to the shell. Disabling the outer feature keeps the
+404 owned by the isolated branch while leaving normal status-code re-execution available to non-isolated
+requests.</p>
+<h2 id="additive-content-type-mappings">Additive content-type mappings</h2>
+<p>ASP.NET Core's <code>FileExtensionContentTypeProvider</code> remains an internal implementation detail. WebLib always
+creates the target framework's normal provider first and adds a mapping only when that provider does not already
+define the extension. Framework defaults therefore remain the base and are never replaced by a WebLib group.</p>
+<p>Current predefined groups are:</p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th><code>net8.0</code> additions</th>
+<th><code>net10.0</code> additions</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AdditionalMappings.WebApp</code></td>
+<td><code>.br</code> → <code>application/octet-stream</code>; <code>.dat</code> → <code>application/octet-stream</code></td>
+<td>same</td>
+<td><code>.webmanifest</code> and <code>.wasm</code> are already ASP.NET Core defaults and are not redefined.</td>
+</tr>
+<tr>
+<td><code>AdditionalMappings.Media</code></td>
+<td><code>.avif</code> → <code>image/avif</code></td>
+<td>none</td>
+<td>ASP.NET Core 10 already includes <code>.avif</code>, so this group is intentionally a no-op there.</td>
+</tr>
+</tbody>
+</table>
+<p>Combine predefined groups when a branch needs both:</p>
+<pre><code class="lang-csharp">var mappings = AdditionalMappings.Combine(
+    AdditionalMappings.WebApp,
+    AdditionalMappings.Media);
+
+app.MapIsolated(&quot;/apps&quot;, apps =&gt;
+{
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(mappings);
+});
+</code></pre>
+<p>The group type is opaque by design. Consumers select semantic groups rather than mutating a public
+<code>FileExtensionContentTypeProvider</code> or maintaining a second copy of ASP.NET Core's mapping table.</p>
+<h2 id="default-files-and-web-app-mappings">Default files and web-app mappings</h2>
+<p>WebLib does not add a PWA-specific hosting convenience. Compose the native ASP.NET Core default-file middleware
+with the typed additive static-file extension when a web app needs <code>/index.html</code> behavior:</p>
+<pre><code class="lang-csharp">app.MapIsolated(&quot;/apps&quot;, apps =&gt;
+{
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
+});
+</code></pre>
+<p>For example, <code>wwwroot/apps/index.html</code> is served for <code>/apps/</code> through normal ASP.NET Core default-file behavior.
+Missing files still end at the native isolated-branch 404. No endpoint clearing, route-value clearing, custom terminal
+404, SPA/Razor fallback, or PWA-specific hosting abstraction is added.</p>
+<h2 id="migration-from-legacy-helpers">Migration from legacy helpers</h2>
+<p>The older RequestFilters-era hosting code mixed several concerns: PWA/Blazor MIME mappings, folder mounting,
+conditional branching, endpoint/route-value clearing, default files, and custom terminal 404 middleware. WP6
+splits those concerns along the existing ASP.NET Core abstractions instead.</p>
+<p>Use these replacements:</p>
+<ul>
+<li>Replace <code>AddPwaAndBlazorMappings</code> with <code>AdditionalMappings.WebApp</code>. Only mappings still missing from the
+current ASP.NET Core target framework are carried forward.</li>
+<li>Do not migrate <code>UseStaticFilesWithPwaAndBlazorContentTypes(...)</code> as a separate API. Use
+<code>UseStaticFiles(AdditionalMappings.WebApp)</code>.</li>
+<li>Replace folder/branch-specific <code>UseNonAssetFiles</code> style hosting with <code>MapIsolated(path, ...)</code> plus native
+<code>UseDefaultFiles()</code> where needed and <code>UseStaticFiles(...)</code> inside the branch.</li>
+<li>Put the Razor/Blazor/API shell under <code>MapRemaining(...)</code> when explicit remaining-pipeline ownership is useful.</li>
+</ul>
+<p>No endpoint clearing, route-value clearing, custom route system, or universal mount primitive is required.</p>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-static-pwa-hosting/.github/workflows/.config/docfx/build/docs/static-pwa-hosting.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      <pre></pre>
+      
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>
