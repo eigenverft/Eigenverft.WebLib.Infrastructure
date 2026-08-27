@@ -101,14 +101,12 @@
 <h1 id="isolated-static-and-pwa-hosting">Isolated static and PWA hosting</h1>
 
 <p>WebLib's static/PWA hosting APIs are intentionally small. They compose normal ASP.NET Core branch,
-static-file, file-server, default-file, and endpoint middleware instead of introducing a separate routing
-or mount system.</p>
+static-file, default-file, and endpoint middleware instead of introducing a separate routing or mount system.</p>
 <p>The main pieces are:</p>
 <ul>
 <li><code>MapIsolated(path, ...)</code> for an exclusively owned URL subtree.</li>
 <li><code>MapRemaining(...)</code> for the shell pipeline that receives requests not claimed by an earlier isolated subtree.</li>
 <li><code>UseStaticFiles(AdditionalMappings...)</code> for normal ASP.NET Core static files with typed additive MIME mappings.</li>
-<li><code>UsePwaHost(...)</code> for file-server/default-file behavior plus the same additive mapping model.</li>
 </ul>
 <h2 id="pipeline-ownership">Pipeline ownership</h2>
 <p><code>MapIsolated</code> delegates to native ASP.NET Core <code>Map</code> with non-rejoining branch semantics. A matching request
@@ -122,7 +120,8 @@ using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
 
 app.MapIsolated(&quot;/apps&quot;, apps =&gt;
 {
-    apps.UsePwaHost();
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
 });
 
 app.MapIsolated(&quot;/downloads&quot;, downloads =&gt;
@@ -153,7 +152,8 @@ shell endpoint.</p>
 
 app.MapIsolated(&quot;/apps&quot;, apps =&gt;
 {
-    apps.UsePwaHost();
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
 });
 
 app.MapRemaining(shell =&gt;
@@ -202,24 +202,24 @@ define the extension. Framework defaults therefore remain the base and are never
 
 app.MapIsolated(&quot;/apps&quot;, apps =&gt;
 {
-    apps.UsePwaHost(mappings);
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(mappings);
 });
 </code></pre>
 <p>The group type is opaque by design. Consumers select semantic groups rather than mutating a public
 <code>FileExtensionContentTypeProvider</code> or maintaining a second copy of ASP.NET Core's mapping table.</p>
-<h2 id="usepwahost"><code>UsePwaHost</code></h2>
-<p><code>UsePwaHost</code> is a convenience over ASP.NET Core file-server middleware. It enables normal default-file
-behavior and static-file serving, and applies a typed mapping group. The parameterless form uses
-<code>AdditionalMappings.WebApp</code>.</p>
+<h2 id="default-files-and-web-app-mappings">Default files and web-app mappings</h2>
+<p>WebLib does not add a PWA-specific hosting convenience. Compose the native ASP.NET Core default-file middleware
+with the typed additive static-file extension when a web app needs <code>/index.html</code> behavior:</p>
 <pre><code class="lang-csharp">app.MapIsolated(&quot;/apps&quot;, apps =&gt;
 {
-    apps.UsePwaHost();
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
 });
 </code></pre>
-<p>For example, <code>wwwroot/apps/index.html</code> is served for <code>/apps/</code> through normal default-file behavior. The helper
-does not add endpoint clearing, route-value clearing, a custom terminal 404, or a SPA/Razor fallback.</p>
-<p><code>UsePwaHost</code> can technically be used outside <code>MapIsolated</code>, but then it has normal ASP.NET Core middleware
-fallthrough semantics. Use it inside <code>MapIsolated</code> when the URL subtree must be exclusively owned.</p>
+<p>For example, <code>wwwroot/apps/index.html</code> is served for <code>/apps/</code> through normal ASP.NET Core default-file behavior.
+Missing files still end at the native isolated-branch 404. No endpoint clearing, route-value clearing, custom terminal
+404, SPA/Razor fallback, or PWA-specific hosting abstraction is added.</p>
 <h2 id="migration-from-legacy-helpers">Migration from legacy helpers</h2>
 <p>The older RequestFilters-era hosting code mixed several concerns: PWA/Blazor MIME mappings, folder mounting,
 conditional branching, endpoint/route-value clearing, default files, and custom terminal 404 middleware. WP6
@@ -229,9 +229,9 @@ splits those concerns along the existing ASP.NET Core abstractions instead.</p>
 <li>Replace <code>AddPwaAndBlazorMappings</code> with <code>AdditionalMappings.WebApp</code>. Only mappings still missing from the
 current ASP.NET Core target framework are carried forward.</li>
 <li>Do not migrate <code>UseStaticFilesWithPwaAndBlazorContentTypes(...)</code> as a separate API. Use
-<code>UseStaticFiles(AdditionalMappings.WebApp)</code> or <code>UsePwaHost(...)</code>.</li>
-<li>Replace folder/branch-specific <code>UseNonAssetFiles</code> style hosting with <code>MapIsolated(path, ...)</code> plus normal
-<code>UseStaticFiles(...)</code> or <code>UsePwaHost(...)</code> inside the branch.</li>
+<code>UseStaticFiles(AdditionalMappings.WebApp)</code>.</li>
+<li>Replace folder/branch-specific <code>UseNonAssetFiles</code> style hosting with <code>MapIsolated(path, ...)</code> plus native
+<code>UseDefaultFiles()</code> where needed and <code>UseStaticFiles(...)</code> inside the branch.</li>
 <li>Put the Razor/Blazor/API shell under <code>MapRemaining(...)</code> when explicit remaining-pipeline ownership is useful.</li>
 </ul>
 <p>No endpoint clearing, route-value clearing, custom route system, or universal mount primitive is required.</p>

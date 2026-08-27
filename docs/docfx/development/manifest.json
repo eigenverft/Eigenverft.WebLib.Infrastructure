@@ -154,7 +154,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions",
-      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.yml\" sourcestartlinenumber=\"1\">Adds typed, additive static-file mappings and a thin PWA file-hosting convenience over ASP.NET Core.</p>\n"
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.yml\" sourcestartlinenumber=\"1\">Adds typed, additive static-file mappings over ASP.NET Core defaults.</p>\n"
     },
     {
       "type": "ManagedReference",
