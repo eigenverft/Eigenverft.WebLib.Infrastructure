@@ -1,6 +1,12 @@
 ### YamlMime:XRefMap
 sorted: true
 references:
+- uid: Eigenverft.WebLib.Infrastructure.Hosting
+  name: Eigenverft.WebLib.Infrastructure.Hosting
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Hosting
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting
+  nameWithType: Eigenverft.WebLib.Infrastructure.Hosting
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values
   name: Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.html
@@ -84,6 +90,28 @@ references:
   isSpec: "True"
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.CreateWithDefaultDirectory
   nameWithType: WebApplicationBuilderFactory.CreateWithDefaultDirectory
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions
+  name: HttpResponseExtensions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions
+  nameWithType: HttpResponseExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.WriteHtmlStatusResponseAsync(Microsoft.AspNetCore.Http.HttpResponse,System.Int32,System.Threading.CancellationToken)
+  name: WriteHtmlStatusResponseAsync(HttpResponse, int, CancellationToken)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_HttpResponseExtensions_WriteHtmlStatusResponseAsync_Microsoft_AspNetCore_Http_HttpResponse_System_Int32_System_Threading_CancellationToken_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.WriteHtmlStatusResponseAsync(Microsoft.AspNetCore.Http.HttpResponse,System.Int32,System.Threading.CancellationToken)
+  name.vb: WriteHtmlStatusResponseAsync(HttpResponse, Integer, CancellationToken)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.WriteHtmlStatusResponseAsync(Microsoft.AspNetCore.Http.HttpResponse, int, System.Threading.CancellationToken)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.WriteHtmlStatusResponseAsync(Microsoft.AspNetCore.Http.HttpResponse, Integer, System.Threading.CancellationToken)
+  nameWithType: HttpResponseExtensions.WriteHtmlStatusResponseAsync(HttpResponse, int, CancellationToken)
+  nameWithType.vb: HttpResponseExtensions.WriteHtmlStatusResponseAsync(HttpResponse, Integer, CancellationToken)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.WriteHtmlStatusResponseAsync*
+  name: WriteHtmlStatusResponseAsync
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_HttpResponseExtensions_WriteHtmlStatusResponseAsync_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.WriteHtmlStatusResponseAsync
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.WriteHtmlStatusResponseAsync
+  nameWithType: HttpResponseExtensions.WriteHtmlStatusResponseAsync
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
   name: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.html
@@ -112,6 +140,275 @@ references:
   isSpec: "True"
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration
   nameWithType: ConfigureWebHostBuilderExtensions.ConfigureKestrelSniFromConfiguration
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect
+  name: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect
+  nameWithType: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode
+  name: CanonicalHostMode
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode
+  nameWithType: CanonicalHostMode
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.None
+  name: None
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostMode_None
+  commentId: F:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.None
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.None
+  nameWithType: CanonicalHostMode.None
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.ToApex
+  name: ToApex
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostMode_ToApex
+  commentId: F:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.ToApex
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.ToApex
+  nameWithType: CanonicalHostMode.ToApex
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.ToWww
+  name: ToWww
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostMode_ToWww
+  commentId: F:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.ToWww
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.ToWww
+  nameWithType: CanonicalHostMode.ToWww
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions
+  name: CanonicalHostRedirectExtensions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions
+  nameWithType: CanonicalHostRedirectExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.AddCanonicalHostRedirect(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  name: AddCanonicalHostRedirect(IServiceCollection)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectExtensions_AddCanonicalHostRedirect_Microsoft_Extensions_DependencyInjection_IServiceCollection_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.AddCanonicalHostRedirect(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.AddCanonicalHostRedirect(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  nameWithType: CanonicalHostRedirectExtensions.AddCanonicalHostRedirect(IServiceCollection)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.AddCanonicalHostRedirect(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions})
+  name: AddCanonicalHostRedirect(IServiceCollection, Action<CanonicalHostRedirectOptions>)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectExtensions_AddCanonicalHostRedirect_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions__
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.AddCanonicalHostRedirect(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions})
+  name.vb: AddCanonicalHostRedirect(IServiceCollection, Action(Of CanonicalHostRedirectOptions))
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.AddCanonicalHostRedirect(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action<Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions>)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.AddCanonicalHostRedirect(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action(Of Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions))
+  nameWithType: CanonicalHostRedirectExtensions.AddCanonicalHostRedirect(IServiceCollection, Action<CanonicalHostRedirectOptions>)
+  nameWithType.vb: CanonicalHostRedirectExtensions.AddCanonicalHostRedirect(IServiceCollection, Action(Of CanonicalHostRedirectOptions))
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.AddCanonicalHostRedirect*
+  name: AddCanonicalHostRedirect
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectExtensions_AddCanonicalHostRedirect_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.AddCanonicalHostRedirect
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.AddCanonicalHostRedirect
+  nameWithType: CanonicalHostRedirectExtensions.AddCanonicalHostRedirect
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.UseCanonicalHostRedirect(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  name: UseCanonicalHostRedirect(IApplicationBuilder)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectExtensions_UseCanonicalHostRedirect_Microsoft_AspNetCore_Builder_IApplicationBuilder_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.UseCanonicalHostRedirect(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.UseCanonicalHostRedirect(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  nameWithType: CanonicalHostRedirectExtensions.UseCanonicalHostRedirect(IApplicationBuilder)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.UseCanonicalHostRedirect*
+  name: UseCanonicalHostRedirect
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectExtensions_UseCanonicalHostRedirect_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.UseCanonicalHostRedirect
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.UseCanonicalHostRedirect
+  nameWithType: CanonicalHostRedirectExtensions.UseCanonicalHostRedirect
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware
+  name: CanonicalHostRedirectMiddleware
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware
+  nameWithType: CanonicalHostRedirectMiddleware
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.#ctor(Microsoft.AspNetCore.Http.RequestDelegate,Microsoft.Extensions.Options.IOptionsMonitor{Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions})
+  name: CanonicalHostRedirectMiddleware(RequestDelegate, IOptionsMonitor<CanonicalHostRedirectOptions>)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectMiddleware__ctor_Microsoft_AspNetCore_Http_RequestDelegate_Microsoft_Extensions_Options_IOptionsMonitor_Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions__
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.#ctor(Microsoft.AspNetCore.Http.RequestDelegate,Microsoft.Extensions.Options.IOptionsMonitor{Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions})
+  name.vb: New(RequestDelegate, IOptionsMonitor(Of CanonicalHostRedirectOptions))
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.CanonicalHostRedirectMiddleware(Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.Extensions.Options.IOptionsMonitor<Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions>)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.New(Microsoft.AspNetCore.Http.RequestDelegate, Microsoft.Extensions.Options.IOptionsMonitor(Of Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions))
+  nameWithType: CanonicalHostRedirectMiddleware.CanonicalHostRedirectMiddleware(RequestDelegate, IOptionsMonitor<CanonicalHostRedirectOptions>)
+  nameWithType.vb: CanonicalHostRedirectMiddleware.New(RequestDelegate, IOptionsMonitor(Of CanonicalHostRedirectOptions))
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.#ctor*
+  name: CanonicalHostRedirectMiddleware
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectMiddleware__ctor_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.#ctor
+  isSpec: "True"
+  name.vb: New
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.CanonicalHostRedirectMiddleware
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.New
+  nameWithType: CanonicalHostRedirectMiddleware.CanonicalHostRedirectMiddleware
+  nameWithType.vb: CanonicalHostRedirectMiddleware.New
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext)
+  name: InvokeAsync(HttpContext)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectMiddleware_InvokeAsync_Microsoft_AspNetCore_Http_HttpContext_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext)
+  nameWithType: CanonicalHostRedirectMiddleware.InvokeAsync(HttpContext)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.InvokeAsync*
+  name: InvokeAsync
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectMiddleware_InvokeAsync_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.InvokeAsync
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectMiddleware.InvokeAsync
+  nameWithType: CanonicalHostRedirectMiddleware.InvokeAsync
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions
+  name: CanonicalHostRedirectOptions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions
+  nameWithType: CanonicalHostRedirectOptions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Canonicalization
+  name: Canonicalization
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_Canonicalization
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Canonicalization
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Canonicalization
+  nameWithType: CanonicalHostRedirectOptions.Canonicalization
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Canonicalization*
+  name: Canonicalization
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_Canonicalization_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Canonicalization
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Canonicalization
+  nameWithType: CanonicalHostRedirectOptions.Canonicalization
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled
+  name: Enabled
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_Enabled
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled
+  nameWithType: CanonicalHostRedirectOptions.Enabled
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled*
+  name: Enabled
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_Enabled_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled
+  nameWithType: CanonicalHostRedirectOptions.Enabled
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps
+  name: EnforceHttps
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_EnforceHttps
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps
+  nameWithType: CanonicalHostRedirectOptions.EnforceHttps
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps*
+  name: EnforceHttps
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_EnforceHttps_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps
+  nameWithType: CanonicalHostRedirectOptions.EnforceHttps
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.HttpsTargetPort
+  name: HttpsTargetPort
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_HttpsTargetPort
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.HttpsTargetPort
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.HttpsTargetPort
+  nameWithType: CanonicalHostRedirectOptions.HttpsTargetPort
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.HttpsTargetPort*
+  name: HttpsTargetPort
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_HttpsTargetPort_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.HttpsTargetPort
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.HttpsTargetPort
+  nameWithType: CanonicalHostRedirectOptions.HttpsTargetPort
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.PrimaryApexHost
+  name: PrimaryApexHost
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_PrimaryApexHost
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.PrimaryApexHost
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.PrimaryApexHost
+  nameWithType: CanonicalHostRedirectOptions.PrimaryApexHost
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.PrimaryApexHost*
+  name: PrimaryApexHost
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_PrimaryApexHost_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.PrimaryApexHost
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.PrimaryApexHost
+  nameWithType: CanonicalHostRedirectOptions.PrimaryApexHost
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectFromHosts
+  name: RedirectFromHosts
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_RedirectFromHosts
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectFromHosts
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectFromHosts
+  nameWithType: CanonicalHostRedirectOptions.RedirectFromHosts
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectFromHosts*
+  name: RedirectFromHosts
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_RedirectFromHosts_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectFromHosts
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectFromHosts
+  nameWithType: CanonicalHostRedirectOptions.RedirectFromHosts
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode
+  name: RedirectStatusCode
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_RedirectStatusCode
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode
+  nameWithType: CanonicalHostRedirectOptions.RedirectStatusCode
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode*
+  name: RedirectStatusCode
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_RedirectStatusCode_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode
+  nameWithType: CanonicalHostRedirectOptions.RedirectStatusCode
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware
+  name: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware
+  nameWithType: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions
+  name: HealthProbeFaviconAwareExtensions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions
+  nameWithType: HealthProbeFaviconAwareExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.UseHealthProbeFaviconAware(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  name: UseHealthProbeFaviconAware(IApplicationBuilder)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_HealthProbeFaviconAware_HealthProbeFaviconAwareExtensions_UseHealthProbeFaviconAware_Microsoft_AspNetCore_Builder_IApplicationBuilder_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.UseHealthProbeFaviconAware(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.UseHealthProbeFaviconAware(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  nameWithType: HealthProbeFaviconAwareExtensions.UseHealthProbeFaviconAware(IApplicationBuilder)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.UseHealthProbeFaviconAware*
+  name: UseHealthProbeFaviconAware
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_HealthProbeFaviconAware_HealthProbeFaviconAwareExtensions_UseHealthProbeFaviconAware_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.UseHealthProbeFaviconAware
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.UseHealthProbeFaviconAware
+  nameWithType: HealthProbeFaviconAwareExtensions.UseHealthProbeFaviconAware
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware
+  name: HealthProbeFaviconAwareMiddleware
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware
+  nameWithType: HealthProbeFaviconAwareMiddleware
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.#ctor(Microsoft.AspNetCore.Http.RequestDelegate)
+  name: HealthProbeFaviconAwareMiddleware(RequestDelegate)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_HealthProbeFaviconAware_HealthProbeFaviconAwareMiddleware__ctor_Microsoft_AspNetCore_Http_RequestDelegate_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.#ctor(Microsoft.AspNetCore.Http.RequestDelegate)
+  name.vb: New(RequestDelegate)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.HealthProbeFaviconAwareMiddleware(Microsoft.AspNetCore.Http.RequestDelegate)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.New(Microsoft.AspNetCore.Http.RequestDelegate)
+  nameWithType: HealthProbeFaviconAwareMiddleware.HealthProbeFaviconAwareMiddleware(RequestDelegate)
+  nameWithType.vb: HealthProbeFaviconAwareMiddleware.New(RequestDelegate)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.#ctor*
+  name: HealthProbeFaviconAwareMiddleware
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_HealthProbeFaviconAware_HealthProbeFaviconAwareMiddleware__ctor_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.#ctor
+  isSpec: "True"
+  name.vb: New
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.HealthProbeFaviconAwareMiddleware
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.New
+  nameWithType: HealthProbeFaviconAwareMiddleware.HealthProbeFaviconAwareMiddleware
+  nameWithType.vb: HealthProbeFaviconAwareMiddleware.New
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext)
+  name: InvokeAsync(HttpContext)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_HealthProbeFaviconAware_HealthProbeFaviconAwareMiddleware_InvokeAsync_Microsoft_AspNetCore_Http_HttpContext_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.InvokeAsync(Microsoft.AspNetCore.Http.HttpContext)
+  nameWithType: HealthProbeFaviconAwareMiddleware.InvokeAsync(HttpContext)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.InvokeAsync*
+  name: InvokeAsync
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_HealthProbeFaviconAware_HealthProbeFaviconAwareMiddleware_InvokeAsync_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.InvokeAsync
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareMiddleware.InvokeAsync
+  nameWithType: HealthProbeFaviconAwareMiddleware.InvokeAsync
 - uid: Eigenverft.WebLib.Infrastructure.Transformations
   name: Eigenverft.WebLib.Infrastructure.Transformations
   href: api/Eigenverft.WebLib.Infrastructure.Transformations.html
