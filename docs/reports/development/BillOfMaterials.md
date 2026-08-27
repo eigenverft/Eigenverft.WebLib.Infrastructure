@@ -1,4 +1,4 @@
-﻿## Bill of Materials Report for Projects: Eigenverft.WebLib.Infrastructure - 2026-08-26 UTC
+﻿## Bill of Materials Report for Projects: Eigenverft.WebLib.Infrastructure - 2026-08-27 UTC
 
 | ProjectName | Package | ResolvedVersion |
 |-------------|---------|-----------------|

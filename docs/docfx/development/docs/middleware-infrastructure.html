@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Middleware infrastructure | Eigenverft.WebLib.Infrastructure </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Middleware infrastructure | Eigenverft.WebLib.Infrastructure ">
+    
+    
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.json">
+      <meta property="docfx:tocrel" content="toc.json">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="Eigenverft.WebLib.Infrastructure">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+
+                <ul class="nav level1 navbar-nav">
+                      <li>
+                          <a href="../docs/introduction.html" title="Guides">Guides</a>
+                      </li>
+                      <li>
+                          <a href="../api/Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.html" title="API">API</a>
+                      </li>
+                </ul>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div>
+              <div class="sidefilter">
+                <form class="toc-filter">
+                  <span class="glyphicon glyphicon-filter filter-icon"></span>
+                  <input type="text" id="toc_filter_input" placeholder="Enter here to filter..." onkeypress="if(event.keyCode==13) {return false;}">
+                </form>
+              </div>
+              <div class="sidetoc">
+                <div class="toc" id="toc">
+
+                  <ul class="nav level1">
+                    <li class="">
+                      <a href="introduction.html" title="Introduction" class="">Introduction</a>
+                    </li>
+                    <li class="">
+                      <a href="getting-started.html" title="Getting started" class="">Getting started</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="middleware-infrastructure">Middleware infrastructure</h1>
+
+<p>WP3 extracts small, general ASP.NET Core middleware infrastructure from the legacy <code>Eigenverft.Routed.RequestFilters</code> design without shrinking or modifying that legacy package.</p>
+<h2 id="client-network-feature">Client network feature</h2>
+<p><code>UseClientNetworkFeature()</code> installs shared middleware that creates one typed <code>IClientNetworkFeature</code> per request and stores it in <code>HttpContext.Features</code>.</p>
+<p>The feature always exposes the normalized actual <code>HttpContext.Connection.RemoteIpAddress</code>. IPv4-mapped IPv6 addresses are normalized to IPv4. Existing standardized <code>Forwarded</code> <code>for=</code> values and <code>X-Forwarded-For</code> values are collected into one typed chain. Each entry preserves its source, raw token, normalized parsed IP when available, and malformed status.</p>
+<p>This layer deliberately makes no trust, legitimacy, proxy-authority, or request-behavior decision. Downstream filters/evaluators own those decisions.</p>
+<h2 id="shared-middleware-composition">Shared middleware composition</h2>
+<p><code>UseMiddlewareOnce&lt;T&gt;()</code> keeps the legacy idea but narrows its contract: it deduplicates convention middleware within normal linear pipelines and native non-rejoining <code>Map</code> branches using a type-bound marker in <code>IApplicationBuilder.Properties</code>. It intentionally does not attempt graph-wide deduplication for rejoining <code>UseWhen</code> graphs. The generic <code>UseMiddleware&lt;T&gt;()</code> overload is retained for trimming/AOT friendliness.</p>
+<p><code>EnsureServicesRegistered(...)</code> keeps the developer-experience goal that <code>UseFoo()</code> should explain a missing <code>AddFoo()</code>, but registration checks now use <code>IServiceProviderIsService</code>. Required services are not instantiated merely to probe registration. Open generic definitions are rejected explicitly because the default .NET probe treats open generic definitions as non-resolvable; callers should check a representative closed service or a dedicated marker.</p>
+<p><code>HttpContextFeatureExtensions</code> is a thin typed facade over <code>HttpContext.Features</code> only: <code>GetFeature&lt;T&gt;()</code>, <code>GetRequiredFeature&lt;T&gt;()</code>, <code>TryGetFeature&lt;T&gt;()</code>, <code>SetFeature&lt;T&gt;()</code>, <code>RemoveFeature&lt;T&gt;()</code>, plus parameterless and factory-based <code>GetOrCreateFeature&lt;T&gt;()</code> overloads.</p>
+<h2 id="c4-no-configuredoptionsmonitor-port">C4: no ConfiguredOptionsMonitor port</h2>
+<h3 id="legacy-behavior-and-consumers">Legacy behavior and consumers</h3>
+<p>Legacy <code>ConfiguredOptionsMonitor&lt;TOptions&gt;</code> wrapped an <code>IOptionsMonitor&lt;TOptions&gt;</code>, created a new <code>TOptions</code>, shallow-copied public writable properties by reflection, and then applied a <code>UseX(Action&lt;TOptions&gt;)</code> delegate. Many legacy RequestFilters middleware extensions passed that decorator directly to middleware so global/reloadable DI options could be overlaid at pipeline-composition time.</p>
+<p>That behavior is not a safe generic foundation:</p>
+<ul>
+<li>the clone is shallow, so mutable reference-valued properties remain shared with the global instance;</li>
+<li>reflection plus a <code>new()</code> constraint exists only to manufacture the copy;</li>
+<li><code>CurrentValue</code> and <code>Get(name)</code> return overlaid copies, while <code>OnChange</code> forwards the inner monitor's unmodified values;</li>
+<li>it creates a second options-composition mechanism after the application service provider has already been built.</li>
+</ul>
+<p>A workspace consumer review found no current WebLib <code>develop</code> consumer for this historical runtime-overlay model. The parallel WP1, WP4, WP5, and WP6 designs also explicitly do not require <code>UseX(Action&lt;TOptions&gt;)</code> local overrides.</p>
+<h3 id="current-net-pattern">Current .NET pattern</h3>
+<p>Current .NET options already provide reloadable <code>IOptionsMonitor&lt;TOptions&gt;</code>, named options, <code>IOptionsFactory&lt;TOptions&gt;</code>, configure/post-configure actions, and monitor caching/invalidation. When a common baseline must apply to both default and named variants, configure that baseline for all names (for example with <code>ConfigureAll</code>) and then add the named configuration. <code>ConfiguredOptionsDesignTests</code> verifies this baseline-plus-independent-variant pattern on both target frameworks at compile time and on the available runtime.</p>
+<p>Named options are <strong>not</strong> claimed to be a drop-in replacement for an arbitrary <code>UseX(Action&lt;TOptions&gt;)</code> supplied after DI has been built. A variant that is part of application configuration should be established during service registration. A genuinely pipeline-local immutable setting should be modeled explicitly by the concrete feature.</p>
+<h3 id="decision">Decision</h3>
+<p>WP3 therefore does <strong>not</strong> port <code>ConfiguredOptionsMonitor&lt;TOptions&gt;</code> and does not introduce a new generic local-options-overlay abstraction.</p>
+<p>If a future real middleware needs multiple configured variants, prefer a feature-specific service-registration API using named options. If a future feature genuinely needs a pipeline-local setting at <code>UseX(...)</code> time, model it explicitly for that feature. Reconsider shared abstraction only after multiple current consumers demonstrate the same requirement.</p>
+<p>Platform references used for the decision:</p>
+<ul>
+<li><a href="https://learn.microsoft.com/dotnet/core/extensions/options">Options pattern in .NET</a></li>
+<li><a href="https://learn.microsoft.com/aspnet/core/fundamentals/middleware/extensibility?view=aspnetcore-10.0">Factory-based middleware activation in ASP.NET Core</a></li>
+</ul>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-middleware-infrastructure/.github/workflows/.config/docfx/build/docs/middleware-infrastructure.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      <pre></pre>
+      
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>
