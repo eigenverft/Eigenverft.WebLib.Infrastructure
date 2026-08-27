@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
 using System.Security.Principal;
 using System.Threading.Tasks;
@@ -34,30 +33,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging
                 return;
             }
 
-            RequestTrafficCountingReadStream? requestCounter = null;
-            Stream? originalRequestBody = null;
-            RequestTrafficCountingResponseBodyFeature? responseCounter = null;
-            IHttpResponseBodyFeature? originalResponseBodyFeature = null;
-
-            RequestTrafficLoggingFields fields = state.Options.Fields;
-
-            if ((fields & RequestTrafficLoggingFields.RequestBody) != 0)
-            {
-                originalRequestBody = context.Request.Body;
-                requestCounter = new RequestTrafficCountingReadStream(originalRequestBody);
-                context.Request.Body = requestCounter;
-            }
-
-            if ((fields & RequestTrafficLoggingFields.ResponseBody) != 0)
-            {
-                originalResponseBodyFeature = context.Features.Get<IHttpResponseBodyFeature>();
-                if (originalResponseBodyFeature is not null)
-                {
-                    responseCounter = new RequestTrafficCountingResponseBodyFeature(originalResponseBodyFeature);
-                    context.Features.Set<IHttpResponseBodyFeature>(responseCounter);
-                }
-            }
-
             Exception? caughtException = null;
             try
             {
@@ -70,31 +45,14 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging
             }
             finally
             {
-                try
-                {
-                    CompleteTrafficRecord(context, state, caughtException, requestCounter, responseCounter);
-                }
-                finally
-                {
-                    if (originalResponseBodyFeature is not null)
-                    {
-                        context.Features.Set(originalResponseBodyFeature);
-                    }
-
-                    if (originalRequestBody is not null)
-                    {
-                        context.Request.Body = originalRequestBody;
-                    }
-                }
+                CompleteTrafficRecord(context, state, caughtException);
             }
         }
 
         private static void CompleteTrafficRecord(
             HttpContext context,
             RequestTrafficLoggingState state,
-            Exception? caughtException,
-            RequestTrafficCountingReadStream? requestCounter,
-            RequestTrafficCountingResponseBodyFeature? responseCounter)
+            Exception? caughtException)
         {
             RequestTrafficLoggingFields fields = state.Options.Fields;
             Exception? handledException = caughtException is null
@@ -153,12 +111,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging
 
             if ((fields & RequestTrafficLoggingFields.RequestBody) != 0)
             {
-                AddRequestBodyMetadata(context, state, requestCounter);
+                AddRequestBodyMetadata(context, state);
             }
 
             if ((fields & RequestTrafficLoggingFields.ResponseBody) != 0)
             {
-                AddResponseBodyMetadata(context, state, responseCounter);
+                AddResponseBodyMetadata(context, state);
             }
         }
 
@@ -170,7 +128,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging
             if (caughtException is not null)
             {
                 if (requestAborted &&
-                    (caughtException is OperationCanceledException || caughtException is IOException))
+                    (caughtException is OperationCanceledException || caughtException is System.IO.IOException))
                 {
                     return "Aborted";
                 }
@@ -210,70 +168,27 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging
                 feature.HasMalformedForwardedIpInformation);
         }
 
-        private static void AddRequestBodyMetadata(
-            HttpContext context,
-            RequestTrafficLoggingState state,
-            RequestTrafficCountingReadStream? counter)
+        private static void AddRequestBodyMetadata(HttpContext context, RequestTrafficLoggingState state)
         {
-            long bytesRead = counter?.BytesRead ?? 0L;
-            int limit = state.Options.RequestBodyLimit;
-            bool textCapture = IsFrameworkDefaultTextMediaType(context.Request.ContentType) && limit > 0;
-            long capturedBytes = textCapture ? Math.Min(bytesRead, limit) : 0L;
             long? totalBytes = context.Request.ContentLength;
-
-            if (totalBytes is null && counter?.ReachedEnd == true)
-            {
-                totalBytes = bytesRead;
-            }
-
-            state.LogContext.AddParameter("RequestBodyCapturedBytes", capturedBytes);
             state.LogContext.AddParameter("RequestBodyTotalBytes", totalBytes);
             state.LogContext.AddParameter(
                 "RequestBodyTruncated",
-                textCapture && bytesRead >= limit);
+                IsKnownBodyLargerThanCaptureLimit(totalBytes, state.Options.RequestBodyLimit));
         }
 
-        private static void AddResponseBodyMetadata(
-            HttpContext context,
-            RequestTrafficLoggingState state,
-            RequestTrafficCountingResponseBodyFeature? counter)
+        private static void AddResponseBodyMetadata(HttpContext context, RequestTrafficLoggingState state)
         {
-            long totalBytes = counter?.CountingStream.BytesWritten ?? 0L;
-            int limit = state.Options.ResponseBodyLimit;
-            bool textCapture = IsFrameworkDefaultTextMediaType(context.Response.ContentType) && limit > 0;
-            long capturedBytes = textCapture ? Math.Min(totalBytes, limit) : 0L;
-
-            state.LogContext.AddParameter("ResponseBodyCapturedBytes", capturedBytes);
+            long? totalBytes = context.Response.ContentLength;
             state.LogContext.AddParameter("ResponseBodyTotalBytes", totalBytes);
             state.LogContext.AddParameter(
                 "ResponseBodyTruncated",
-                textCapture && totalBytes > limit);
+                IsKnownBodyLargerThanCaptureLimit(totalBytes, state.Options.ResponseBodyLimit));
         }
 
-        private static bool IsFrameworkDefaultTextMediaType(string? contentType)
+        private static bool? IsKnownBodyLargerThanCaptureLimit(long? totalBytes, int limit)
         {
-            if (string.IsNullOrWhiteSpace(contentType))
-            {
-                return false;
-            }
-
-            int semicolon = contentType.IndexOf(';');
-            string mediaType = (semicolon >= 0 ? contentType.Substring(0, semicolon) : contentType).Trim();
-
-            if (mediaType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            if (mediaType.Equals("application/json", StringComparison.OrdinalIgnoreCase) ||
-                mediaType.Equals("application/xml", StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-
-            return mediaType.StartsWith("application/", StringComparison.OrdinalIgnoreCase) &&
-                (mediaType.EndsWith("+json", StringComparison.OrdinalIgnoreCase) ||
-                 mediaType.EndsWith("+xml", StringComparison.OrdinalIgnoreCase));
+            return totalBytes.HasValue ? totalBytes.Value > limit : null;
         }
     }
 }

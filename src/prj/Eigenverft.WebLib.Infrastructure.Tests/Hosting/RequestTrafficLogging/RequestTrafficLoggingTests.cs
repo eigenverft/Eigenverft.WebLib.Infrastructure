@@ -15,9 +15,12 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.RequestTrafficLogging;
 
@@ -345,7 +348,7 @@ public sealed class RequestTrafficLoggingTests
     }
 
     [TestMethod]
-    public async Task RequestBody_UsesFrameworkCaptureLimitAndMakesTruncationExplicit()
+    public async Task RequestBody_UsesFrameworkCaptureLimitAndKnownContentLengthMetadata()
     {
         using var host = new RequestTrafficLoggingTestHost(options =>
         {
@@ -367,13 +370,97 @@ public sealed class RequestTrafficLoggingTests
 
         CapturedLogRecord record = host.SingleTrafficRecord();
         Assert.AreEqual("abcd", record.GetProperty("RequestBody"));
-        Assert.AreEqual(4L, record.GetProperty("RequestBodyCapturedBytes"));
         Assert.AreEqual(8L, record.GetProperty("RequestBodyTotalBytes"));
         Assert.AreEqual(true, record.GetProperty("RequestBodyTruncated"));
+        Assert.IsFalse(record.TryGetProperty("RequestBodyCapturedBytes", out _));
     }
 
     [TestMethod]
-    public async Task ResponseBody_UsesFrameworkCaptureLimitAndMakesTruncationExplicit()
+    public async Task RequestBody_TruncationBoundaryUsesStrictGreaterThan()
+    {
+        foreach ((int size, bool expectedTruncated) in new[] { (3, false), (4, false), (5, true) })
+        {
+            using var host = new RequestTrafficLoggingTestHost(options =>
+            {
+                options.Fields |= RequestTrafficLoggingFields.RequestBody;
+                options.RequestBodyLimit = 4;
+            });
+            RequestDelegate pipeline = host.BuildPipeline(app => app.Run(async context =>
+            {
+                await context.Request.Body.CopyToAsync(Stream.Null);
+            }));
+            DefaultHttpContext context = host.CreateContext();
+            byte[] body = Encoding.UTF8.GetBytes(new string('x', size));
+            context.Request.Method = HttpMethods.Post;
+            context.Request.ContentType = "text/plain";
+            context.Request.ContentLength = body.Length;
+            context.Request.Body = new MemoryStream(body);
+
+            await pipeline(context);
+
+            CapturedLogRecord record = host.SingleTrafficRecord();
+            Assert.AreEqual((long)size, record.GetProperty("RequestBodyTotalBytes"));
+            Assert.AreEqual(expectedTruncated, record.GetProperty("RequestBodyTruncated"));
+        }
+    }
+
+    [TestMethod]
+    public async Task PartialRequestRead_DoesNotInventUnknownTotalBytes()
+    {
+        using var host = new RequestTrafficLoggingTestHost(options =>
+        {
+            options.Fields |= RequestTrafficLoggingFields.RequestBody;
+            options.RequestBodyLimit = 4;
+        });
+        RequestDelegate pipeline = host.BuildPipeline(app => app.Run(async context =>
+        {
+            var buffer = new byte[10];
+            _ = await context.Request.Body.ReadAsync(buffer);
+        }));
+        DefaultHttpContext context = host.CreateContext();
+        byte[] body = Encoding.UTF8.GetBytes(new string('x', 100));
+        context.Request.Method = HttpMethods.Post;
+        context.Request.ContentType = "text/plain";
+        context.Request.ContentLength = null;
+        context.Request.Body = new MemoryStream(body);
+
+        await pipeline(context);
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.IsNull(record.GetProperty("RequestBodyTotalBytes"));
+        Assert.IsNull(record.GetProperty("RequestBodyTruncated"));
+    }
+
+    [TestMethod]
+    public async Task SeekableRequestReRead_UsesContentLengthInsteadOfSummedReads()
+    {
+        using var host = new RequestTrafficLoggingTestHost(options =>
+        {
+            options.Fields |= RequestTrafficLoggingFields.RequestBody;
+            options.RequestBodyLimit = 200;
+        });
+        RequestDelegate pipeline = host.BuildPipeline(app => app.Run(async context =>
+        {
+            await context.Request.Body.CopyToAsync(Stream.Null);
+            context.Request.Body.Position = 0;
+            await context.Request.Body.CopyToAsync(Stream.Null);
+        }));
+        DefaultHttpContext context = host.CreateContext();
+        byte[] body = Encoding.UTF8.GetBytes(new string('x', 100));
+        context.Request.Method = HttpMethods.Post;
+        context.Request.ContentType = "text/plain";
+        context.Request.ContentLength = body.Length;
+        context.Request.Body = new MemoryStream(body);
+
+        await pipeline(context);
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual(100L, record.GetProperty("RequestBodyTotalBytes"));
+        Assert.AreEqual(false, record.GetProperty("RequestBodyTruncated"));
+    }
+
+    [TestMethod]
+    public async Task ResponseBody_UsesFrameworkCaptureLimitAndKnownContentLengthMetadata()
     {
         using var host = new RequestTrafficLoggingTestHost(options =>
         {
@@ -383,6 +470,7 @@ public sealed class RequestTrafficLoggingTests
         RequestDelegate pipeline = host.BuildPipeline(app => app.Run(async context =>
         {
             context.Response.ContentType = "text/plain; charset=utf-8";
+            context.Response.ContentLength = 8;
             await context.Response.WriteAsync("abcdefgh");
         }));
 
@@ -390,9 +478,57 @@ public sealed class RequestTrafficLoggingTests
 
         CapturedLogRecord record = host.SingleTrafficRecord();
         Assert.AreEqual("abcd", record.GetProperty("ResponseBody"));
-        Assert.AreEqual(4L, record.GetProperty("ResponseBodyCapturedBytes"));
         Assert.AreEqual(8L, record.GetProperty("ResponseBodyTotalBytes"));
         Assert.AreEqual(true, record.GetProperty("ResponseBodyTruncated"));
+        Assert.IsFalse(record.TryGetProperty("ResponseBodyCapturedBytes", out _));
+    }
+
+    [TestMethod]
+    public async Task ResponseBody_TruncationBoundaryUsesStrictGreaterThan()
+    {
+        foreach ((int size, bool expectedTruncated) in new[] { (3, false), (4, false), (5, true) })
+        {
+            using var host = new RequestTrafficLoggingTestHost(options =>
+            {
+                options.Fields |= RequestTrafficLoggingFields.ResponseBody;
+                options.ResponseBodyLimit = 4;
+            });
+            string body = new string('x', size);
+            RequestDelegate pipeline = host.BuildPipeline(app => app.Run(async context =>
+            {
+                context.Response.ContentType = "text/plain";
+                context.Response.ContentLength = size;
+                await context.Response.WriteAsync(body);
+            }));
+
+            await pipeline(host.CreateContext());
+
+            CapturedLogRecord record = host.SingleTrafficRecord();
+            Assert.AreEqual((long)size, record.GetProperty("ResponseBodyTotalBytes"));
+            Assert.AreEqual(expectedTruncated, record.GetProperty("ResponseBodyTruncated"));
+        }
+    }
+
+    [TestMethod]
+    public async Task ResponseBodyWithoutContentLength_DoesNotInventTotalBytes()
+    {
+        using var host = new RequestTrafficLoggingTestHost(options =>
+        {
+            options.Fields |= RequestTrafficLoggingFields.ResponseBody;
+            options.ResponseBodyLimit = 4;
+        });
+        RequestDelegate pipeline = host.BuildPipeline(app => app.Run(async context =>
+        {
+            context.Response.ContentType = "text/plain";
+            await context.Response.WriteAsync("abcdefgh");
+        }));
+
+        await pipeline(host.CreateContext());
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("abcd", record.GetProperty("ResponseBody"));
+        Assert.IsNull(record.GetProperty("ResponseBodyTotalBytes"));
+        Assert.IsNull(record.GetProperty("ResponseBodyTruncated"));
     }
 
     [TestMethod]
@@ -460,27 +596,91 @@ public sealed class RequestTrafficLoggingTests
     }
 
     [TestMethod]
-    public async Task LoggingDisabled_BypassesA4CaptureWrappersAndEmitsNoTrafficRecord()
+    public async Task FieldsNone_EmitsLifecycleEnvelopeWithoutOptionalHttpFields()
+    {
+        using var host = new RequestTrafficLoggingTestHost(options =>
+            options.Fields = RequestTrafficLoggingFields.None);
+        RequestDelegate pipeline = host.BuildPipeline(app => app.Run(context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status204NoContent;
+            return Task.CompletedTask;
+        }));
+
+        await pipeline(host.CreateContext());
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("RequestTraffic", record.GetProperty("Event"));
+        Assert.AreEqual("Completed", record.GetProperty("Outcome"));
+        Assert.IsFalse(record.TryGetProperty("Method", out _));
+        Assert.IsFalse(record.TryGetProperty("Path", out _));
+        Assert.IsFalse(record.TryGetProperty("RemoteIpAddress", out _));
+        Assert.IsFalse(record.TryGetProperty("StatusCode", out _));
+    }
+
+    [TestMethod]
+    public void ExistingHttpLoggingConfiguration_IsNormalizedToA4OwnershipContract()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddMetrics();
+        services.AddHttpLogging(options =>
+        {
+            options.CombineLogs = false;
+            options.LoggingFields = HttpLoggingFields.All;
+            options.RequestBodyLogLimit = 17;
+            options.ResponseBodyLogLimit = 19;
+            options.RequestHeaders.Clear();
+            options.RequestHeaders.Add("X-Existing-Request");
+            options.ResponseHeaders.Clear();
+            options.ResponseHeaders.Add("X-Existing-Response");
+        });
+        services.AddRequestTrafficLogging(options =>
+        {
+            options.RequestBodyLimit = 31;
+            options.ResponseBodyLimit = 37;
+            options.RequestHeaders.Add("X-A4-Request");
+            options.ResponseHeaders.Add("X-A4-Response");
+        });
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+        HttpLoggingOptions options = provider.GetRequiredService<IOptions<HttpLoggingOptions>>().Value;
+
+        Assert.IsTrue(options.CombineLogs);
+        Assert.AreEqual(HttpLoggingFields.None, options.LoggingFields);
+        Assert.AreEqual(31, options.RequestBodyLogLimit);
+        Assert.AreEqual(37, options.ResponseBodyLogLimit);
+        Assert.IsFalse(options.RequestHeaders.Contains("X-Existing-Request"));
+        Assert.IsFalse(options.ResponseHeaders.Contains("X-Existing-Response"));
+        Assert.IsTrue(options.RequestHeaders.Contains("User-Agent"));
+        Assert.IsTrue(options.RequestHeaders.Contains("X-A4-Request"));
+        Assert.IsTrue(options.ResponseHeaders.Contains("Content-Type"));
+        Assert.IsTrue(options.ResponseHeaders.Contains("X-A4-Response"));
+    }
+
+    [TestMethod]
+    public async Task LoggingDisabled_DoesNotWrapBodiesAndEmitsNoTrafficRecord()
     {
         using var host = new RequestTrafficLoggingTestHost(options =>
             options.Fields |= RequestTrafficLoggingFields.RequestBody | RequestTrafficLoggingFields.ResponseBody,
             minimumLevel: LogLevel.Warning);
-        bool sawRequestWrapper = false;
-        bool sawResponseWrapper = false;
+        Stream? observedRequestBody = null;
+        IHttpResponseBodyFeature? observedResponseBodyFeature = null;
         RequestDelegate pipeline = host.BuildPipeline(app => app.Run(context =>
         {
-            sawRequestWrapper = context.Request.Body is RequestTrafficCountingReadStream;
-            sawResponseWrapper = context.Features.Get<IHttpResponseBodyFeature>() is RequestTrafficCountingResponseBodyFeature;
+            observedRequestBody = context.Request.Body;
+            observedResponseBodyFeature = context.Features.Get<IHttpResponseBodyFeature>();
             return Task.CompletedTask;
         }));
         DefaultHttpContext context = host.CreateContext();
+        var originalRequestBody = new MemoryStream(Encoding.UTF8.GetBytes("payload"));
         context.Request.ContentType = "text/plain";
-        context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes("payload"));
+        context.Request.Body = originalRequestBody;
+        IHttpResponseBodyFeature? originalResponseBodyFeature = context.Features.Get<IHttpResponseBodyFeature>();
 
         await pipeline(context);
 
-        Assert.IsFalse(sawRequestWrapper);
-        Assert.IsFalse(sawResponseWrapper);
+        Assert.AreSame(originalRequestBody, observedRequestBody);
+        Assert.AreSame(originalResponseBodyFeature, observedResponseBodyFeature);
         foreach (CapturedLogRecord record in host.LoggerProvider.Records)
         {
             Assert.IsFalse(record.TryGetProperty("Event", out object? value) && Equals(value, "RequestTraffic"));

@@ -19,6 +19,13 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging
         /// <param name="services">The service collection to configure.</param>
         /// <param name="configure">Optional startup-time traffic logging configuration.</param>
         /// <returns>The original service collection.</returns>
+        /// <remarks>
+        /// Request traffic logging intentionally owns the global ASP.NET Core <see cref="HttpLoggingOptions"/>
+        /// used by this pipeline: it post-configures combined logging, the baseline logging fields, body limits,
+        /// and header allowlists so that the interceptor can select the final per-request capture. Existing
+        /// <c>AddHttpLogging(...)</c> configuration is therefore normalized to the A4 traffic-logging contract.
+        /// Configure the shared capture through <see cref="RequestTrafficLoggingOptions"/> when A4 is enabled.
+        /// </remarks>
         public static IServiceCollection AddRequestTrafficLogging(
             this IServiceCollection services,
             Action<RequestTrafficLoggingOptions>? configure = null)

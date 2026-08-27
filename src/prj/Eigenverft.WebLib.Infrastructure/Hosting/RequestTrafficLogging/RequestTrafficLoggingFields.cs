@@ -8,7 +8,10 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging
     [Flags]
     public enum RequestTrafficLoggingFields
     {
-        /// <summary>No request traffic fields are captured.</summary>
+        /// <summary>
+        /// Captures no optional HTTP field groups. The lifecycle envelope still emits one <c>RequestTraffic</c>
+        /// record containing at least <c>Event</c> and <c>Outcome</c> while information logging is enabled.
+        /// </summary>
         None = 0,
 
         /// <summary>Captures the inexpensive request/response lifecycle fields that form the core traffic record.</summary>
