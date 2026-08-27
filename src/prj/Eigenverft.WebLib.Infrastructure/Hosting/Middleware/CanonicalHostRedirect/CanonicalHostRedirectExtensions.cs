@@ -1,8 +1,11 @@
 using System;
 
+using Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect
 {
@@ -72,6 +75,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
         /// </summary>
         /// <remarks>
         /// Place forwarded-header middleware before this call when a reverse proxy supplies the external host or scheme.
+        /// The matching <c>AddCanonicalHostRedirect()</c> registration is required and is checked without activating services.
         /// </remarks>
         /// <param name="app">The application builder.</param>
         /// <returns>The same application builder.</returns>
@@ -81,6 +85,9 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
             {
                 throw new ArgumentNullException(nameof(app));
             }
+
+            app.ApplicationServices.EnsureServicesRegistered<IOptionsChangeTokenSource<CanonicalHostRedirectOptions>>(
+                "Call services.AddCanonicalHostRedirect() before app.UseCanonicalHostRedirect().");
 
             return app.UseMiddleware<CanonicalHostRedirectMiddleware>();
         }

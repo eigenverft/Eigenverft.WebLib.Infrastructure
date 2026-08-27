@@ -184,6 +184,21 @@ public sealed class CanonicalHostRedirectMiddlewareTests
     }
 
     [TestMethod]
+    public void UseCanonicalHostRedirectWithoutRegistrationReportsMatchingAddCall()
+    {
+        var services = new ServiceCollection();
+        services.AddOptions();
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+        var app = new ApplicationBuilder(provider);
+
+        InvalidOperationException exception = Assert.ThrowsExactly<InvalidOperationException>(() =>
+            app.UseCanonicalHostRedirect());
+
+        StringAssert.Contains(exception.Message, "AddCanonicalHostRedirect()", StringComparison.Ordinal);
+    }
+
+    [TestMethod]
     public async Task ForwardedHeadersAppliedFirstPreventAnInternalSchemeAndHostRedirect()
     {
         var services = new ServiceCollection();
