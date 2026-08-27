@@ -88,14 +88,18 @@ public sealed class StaticFileHostingTests
     }
 
     [TestMethod]
-    public async Task UsePwaHostDefaultServesDefaultFileAndWebAppMappingsWithinPreservedIsolatedPath()
+    public async Task NativeDefaultFilesAndTypedStaticFilesServeWebAppWithinPreservedIsolatedPath()
     {
         using var host = new PipelineTestHost();
         host.WriteFile("apps/index.html", "<main>PWA root</main>");
         host.WriteFile("apps/boot.dat", "boot-payload");
 
         IApplicationBuilder app = host.CreateApplicationBuilder();
-        app.MapIsolated("/apps", apps => apps.UsePwaHost());
+        app.MapIsolated("/apps", apps =>
+        {
+            apps.UseDefaultFiles();
+            apps.UseStaticFiles(AdditionalMappings.WebApp);
+        });
         app.MapRemaining(remaining => remaining.Run(context => context.Response.WriteAsync("shell")));
 
         RequestDelegate pipeline = app.Build();
@@ -112,7 +116,7 @@ public sealed class StaticFileHostingTests
     }
 
     [TestMethod]
-    public async Task MissingPwaFileReturns404WithoutFallingIntoRemainingPipeline()
+    public async Task MissingWebAppFileReturns404WithoutFallingIntoRemainingPipeline()
     {
         using var host = new PipelineTestHost();
         host.WriteFile("apps/index.html", "<main>PWA root</main>");
@@ -120,7 +124,11 @@ public sealed class StaticFileHostingTests
         bool remainingHit = false;
         IApplicationBuilder app = host.CreateApplicationBuilder();
 
-        app.MapIsolated("/apps", apps => apps.UsePwaHost());
+        app.MapIsolated("/apps", apps =>
+        {
+            apps.UseDefaultFiles();
+            apps.UseStaticFiles(AdditionalMappings.WebApp);
+        });
         app.MapRemaining(remaining =>
         {
             remaining.Run(context =>

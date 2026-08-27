@@ -304,7 +304,8 @@ using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
 
 app.MapIsolated("/apps", apps =>
 {
-    apps.UsePwaHost();
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
 });
 
 app.MapIsolated("/downloads", downloads =>
@@ -324,7 +325,8 @@ app.MapRemaining(shell =>
 hybrid pipeline/router builder.
 
 `MapIsolated` preserves the matched path segment, so `/apps/...` resolves against `wwwroot/apps/...` using
-normal ASP.NET Core static-file/file-server middleware. Missing files end with the native branch 404 and
+normal ASP.NET Core default-file/static-file middleware. The web-app case composes native `UseDefaultFiles()` with
+`UseStaticFiles(AdditionalMappings.WebApp)`; WebLib does not add a PWA-specific hosting primitive. Missing files end with the native branch 404 and
 do not fall through into the shell. Outer `UseStatusCodePagesWithReExecute(...)` handling is disabled for
 isolated requests so global re-execution cannot escape that ownership boundary.
 

@@ -358,7 +358,8 @@ using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
 
 app.MapIsolated("/apps", apps =>
 {
-    apps.UsePwaHost();
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
 });
 
 app.MapIsolated("/downloads", downloads =>
@@ -382,9 +383,10 @@ app.MapRemaining(shell =>
 hybrid pipeline/router builder.
 
 Because the isolated branch keeps the matched request path, `/apps/index.html` resolves naturally against
-`wwwroot/apps/index.html` and `/downloads/file.avif` against `wwwroot/downloads/file.avif`. `UsePwaHost(...)`
-uses ASP.NET Core file-server/default-file middleware. A missing file reaches the native end of the isolated
-branch and returns 404; it does not rejoin `MapRemaining`, Razor Components, or another shell fallback.
+`wwwroot/apps/index.html` and `/downloads/file.avif` against `wwwroot/downloads/file.avif`. The web-app branch
+uses native ASP.NET Core `UseDefaultFiles()` plus the typed `UseStaticFiles(AdditionalMappings.WebApp)` extension.
+A missing file reaches the native end of the isolated branch and returns 404; it does not rejoin `MapRemaining`,
+Razor Components, or another shell fallback.
 Outer status-code-page re-execution is also disabled for isolated requests so a global
 `UseStatusCodePagesWithReExecute(...)` cannot transfer ownership of that branch-owned 404 to the shell.
 

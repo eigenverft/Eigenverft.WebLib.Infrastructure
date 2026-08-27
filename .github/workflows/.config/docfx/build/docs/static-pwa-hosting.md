@@ -1,15 +1,13 @@
 # Isolated static and PWA hosting
 
 WebLib's static/PWA hosting APIs are intentionally small. They compose normal ASP.NET Core branch,
-static-file, file-server, default-file, and endpoint middleware instead of introducing a separate routing
-or mount system.
+static-file, default-file, and endpoint middleware instead of introducing a separate routing or mount system.
 
 The main pieces are:
 
 - `MapIsolated(path, ...)` for an exclusively owned URL subtree.
 - `MapRemaining(...)` for the shell pipeline that receives requests not claimed by an earlier isolated subtree.
 - `UseStaticFiles(AdditionalMappings...)` for normal ASP.NET Core static files with typed additive MIME mappings.
-- `UsePwaHost(...)` for file-server/default-file behavior plus the same additive mapping model.
 
 ## Pipeline ownership
 
@@ -27,7 +25,8 @@ using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
 
 app.MapIsolated("/apps", apps =>
 {
-    apps.UsePwaHost();
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
 });
 
 app.MapIsolated("/downloads", downloads =>
@@ -65,7 +64,8 @@ app.UseStatusCodePagesWithReExecute("/errors/{0}");
 
 app.MapIsolated("/apps", apps =>
 {
-    apps.UsePwaHost();
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
 });
 
 app.MapRemaining(shell =>
@@ -102,31 +102,30 @@ var mappings = AdditionalMappings.Combine(
 
 app.MapIsolated("/apps", apps =>
 {
-    apps.UsePwaHost(mappings);
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(mappings);
 });
 ```
 
 The group type is opaque by design. Consumers select semantic groups rather than mutating a public
 `FileExtensionContentTypeProvider` or maintaining a second copy of ASP.NET Core's mapping table.
 
-## `UsePwaHost`
+## Default files and web-app mappings
 
-`UsePwaHost` is a convenience over ASP.NET Core file-server middleware. It enables normal default-file
-behavior and static-file serving, and applies a typed mapping group. The parameterless form uses
-`AdditionalMappings.WebApp`.
+WebLib does not add a PWA-specific hosting convenience. Compose the native ASP.NET Core default-file middleware
+with the typed additive static-file extension when a web app needs `/index.html` behavior:
 
 ```csharp
 app.MapIsolated("/apps", apps =>
 {
-    apps.UsePwaHost();
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
 });
 ```
 
-For example, `wwwroot/apps/index.html` is served for `/apps/` through normal default-file behavior. The helper
-does not add endpoint clearing, route-value clearing, a custom terminal 404, or a SPA/Razor fallback.
-
-`UsePwaHost` can technically be used outside `MapIsolated`, but then it has normal ASP.NET Core middleware
-fallthrough semantics. Use it inside `MapIsolated` when the URL subtree must be exclusively owned.
+For example, `wwwroot/apps/index.html` is served for `/apps/` through normal ASP.NET Core default-file behavior.
+Missing files still end at the native isolated-branch 404. No endpoint clearing, route-value clearing, custom terminal
+404, SPA/Razor fallback, or PWA-specific hosting abstraction is added.
 
 ## Migration from legacy helpers
 
@@ -139,9 +138,9 @@ Use these replacements:
 - Replace `AddPwaAndBlazorMappings` with `AdditionalMappings.WebApp`. Only mappings still missing from the
   current ASP.NET Core target framework are carried forward.
 - Do not migrate `UseStaticFilesWithPwaAndBlazorContentTypes(...)` as a separate API. Use
-  `UseStaticFiles(AdditionalMappings.WebApp)` or `UsePwaHost(...)`.
-- Replace folder/branch-specific `UseNonAssetFiles` style hosting with `MapIsolated(path, ...)` plus normal
-  `UseStaticFiles(...)` or `UsePwaHost(...)` inside the branch.
+  `UseStaticFiles(AdditionalMappings.WebApp)`.
+- Replace folder/branch-specific `UseNonAssetFiles` style hosting with `MapIsolated(path, ...)` plus native
+  `UseDefaultFiles()` where needed and `UseStaticFiles(...)` inside the branch.
 - Put the Razor/Blazor/API shell under `MapRemaining(...)` when explicit remaining-pipeline ownership is useful.
 
 No endpoint clearing, route-value clearing, custom route system, or universal mount primitive is required.
