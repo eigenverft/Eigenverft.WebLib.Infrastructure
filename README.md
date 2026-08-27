@@ -20,6 +20,9 @@ configuration-value protection without duplicating host-independent infrastructu
 | Managed certificates | Load existing PFX files or create policy-controlled self-signed recovery certificates | `CertificateRecoveryMode` and NetLib certificate primitives |
 | Protected certificate mappings | Keep persisted PFX passwords out of clear-text configuration after provisioning | `AspNetDataProtectionConfigurationValueCodecs` and SwitchableJson |
 | Web host directories | Apply NetLib's executable-rooted layout to ASP.NET Core content root, web root, and `wwwroot` | `WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` |
+| Canonical redirects | Normalize apex/www/aliases and HTTPS in one redirect without leaking an incoming HTTP port into the HTTPS target | `AddCanonicalHostRedirect(...)` + `UseCanonicalHostRedirect()` |
+| Health probe | Short-circuit GET/HEAD `/health` before later filters and suppress probe-originated `/favicon.ico` noise | `UseHealthProbeFaviconAware()` |
+| HTML status responses | Write a small explicit HTML status response for middleware short-circuits using ASP.NET Core reason phrases | `WriteHtmlStatusResponseAsync(...)` |
 
 WebLib targets .NET 8 and .NET 10. Installing it also brings in
 `Eigenverft.NetLib.Infrastructure` as the shared foundation.
@@ -66,6 +69,64 @@ Its directory-layout overload derives the standard key-ring path and entry-assem
 only the application-specific purpose to the caller. The result is a normal
 `ConfigurationValueCodec` and can be used independently or at any position in
 `ConfigurationValueCodecs.Compose(...)`.
+
+## 🧰 Small request-pipeline helpers
+
+WebLib includes a few intentionally small ASP.NET Core helpers that are useful outside the larger
+RequestFilters stack.
+
+### Canonical host and HTTPS redirect
+
+The normal case needs one registration and one middleware call:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect;
+
+builder.Services.AddCanonicalHostRedirect(options =>
+    options.PrimaryApexHost = "example.com");
+
+WebApplication app = builder.Build();
+app.UseCanonicalHostRedirect();
+```
+
+The defaults canonicalize to `www`, require HTTPS, return `308 Permanent Redirect`, and target implicit
+HTTPS/443. Set `RedirectFromHosts`, `Canonicalization = CanonicalHostMode.ToApex`, or one
+`HttpsTargetPort` only when the deployment needs them. `AddCanonicalHostRedirect()` without a delegate
+binds the `CanonicalHostRedirect` configuration section.
+
+A redirect combines host and scheme normalization into one hop and preserves `PathBase`, path, and
+query. Incoming HTTP ports are never copied to HTTPS. When a reverse proxy supplies the external scheme
+or host, configure ASP.NET Core Forwarded Headers normally and call `UseForwardedHeaders()` before
+`UseCanonicalHostRedirect()`.
+
+### Health probe and favicon suppression
+
+`UseHealthProbeFaviconAware()` handles only GET and HEAD for `/health`, returns `200 OK` with `OK`
+for GET, and short-circuits the rest of the pipeline. A GET or HEAD for `/favicon.ico` returns
+`204 No Content` only when its `Referer` points to `/health`. Keep this middleware before filters that
+a health probe must bypass.
+
+### Explicit HTML status response
+
+For a middleware that intentionally terminates a request with an HTML response, use:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting;
+using Microsoft.AspNetCore.Http;
+
+await context.Response.WriteHtmlStatusResponseAsync(StatusCodes.Status403Forbidden);
+```
+
+The helper uses `ReasonPhrases.GetReasonPhrase(...)`; WebLib does not maintain its own HTTP status
+code description table. General application error handling remains the responsibility of ASP.NET
+Core Status Code Pages or Problem Details.
+
+### Host filtering remains framework-owned
+
+WebLib intentionally does not provide an `AddAllowedHosts` replacement. `WebApplication.CreateBuilder()`
+already wires ASP.NET Core host filtering to the live configuration object. Clearing
+`builder.Configuration.Sources` and adding replacement sources does not remove that wiring, so a
+rebuilt `AllowedHosts` value is still consumed by the built-in host-filtering options.
 
 ## 🌐 Kestrel and SNI
 

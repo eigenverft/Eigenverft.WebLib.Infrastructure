@@ -60,6 +60,20 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.yml\" sourcestartlinenumber=\"1\">Provides small response helpers for middleware short-circuits.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.yml",
       "output": {
         ".html": {
@@ -84,6 +98,104 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Kestrel",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.yml\" sourcestartlinenumber=\"1\">Determines how requests for the primary host group are canonicalized.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.yml\" sourcestartlinenumber=\"1\">Registers and activates canonical host redirect behavior.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.yml\" sourcestartlinenumber=\"1\">Configures canonical host and HTTPS redirects.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.yml\" sourcestartlinenumber=\"1\">Adds the favicon-aware health probe to an ASP.NET Core request pipeline.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting",
       "Summary": null
     },
     {
