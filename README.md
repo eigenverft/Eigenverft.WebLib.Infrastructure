@@ -57,6 +57,64 @@ app.MapGet("/", () => $"Web root: {webRoot}");
 app.Run();
 ```
 
+## 🔥 Optional self-HTTP startup warmup
+
+`AddSelfHttpWarmup(...)` can issue one pass of HTTP requests to the running application after startup
+has completed. This is useful when a deployment should pay first-use costs such as JIT compilation,
+dependency activation, TLS setup, and HTTP connection setup before normal traffic reaches selected
+endpoints.
+
+For code-based setup, passing the target URL is the normal path and opts in immediately:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup;
+
+builder.Services.AddSelfHttpWarmup("https://localhost:8443/health");
+```
+
+Multiple targets use the same API. The optional delegate is only for small feature-level tuning:
+
+```csharp
+using System;
+using Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup;
+
+builder.Services.AddSelfHttpWarmup(
+    new[]
+    {
+        "https://localhost:8443/health",
+        "https://localhost:8443/",
+    },
+    options =>
+    {
+        options.InitialDelay = TimeSpan.FromSeconds(1);
+        options.RequestTimeout = TimeSpan.FromSeconds(5);
+    });
+```
+
+The parameterless `AddSelfHttpWarmup()` overload is the configuration-binding path. It remains
+opt-in through `Enabled`; URL-based and code-based overloads enable warmup automatically. Values are
+bound from the `SelfHttpWarmup` section before code-based options are applied.
+
+```json
+{
+  "SelfHttpWarmup": {
+    "Enabled": true,
+    "InitialDelay": "00:00:01",
+    "RequestTimeout": "00:00:05",
+    "TargetUrls": [
+      "https://localhost:8443/health",
+      "https://localhost:8443/"
+    ]
+  }
+}
+```
+
+Targets run sequentially once after startup. Shutdown cancels both the post-start delay and any
+in-flight request. A request timeout or connection failure is logged and does not prevent later
+targets from being attempted. Redirects are not followed. Standard platform certificate validation
+remains enabled; self-HTTP warmup intentionally bypasses proxies so the request connects directly to
+the configured target.
+
 ## 🔐 ASP.NET Core Data Protection adapter
 
 `AspNetDataProtectionStringTransforms.DataProtection(...)` adapts an ASP.NET Core
