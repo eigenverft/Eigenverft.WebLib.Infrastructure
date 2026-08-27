@@ -152,12 +152,6 @@ references:
   commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode
   nameWithType: CanonicalHostMode
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.None
-  name: None
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostMode_None
-  commentId: F:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.None
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.None
-  nameWithType: CanonicalHostMode.None
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.ToApex
   name: ToApex
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostMode_ToApex
@@ -230,32 +224,6 @@ references:
   isSpec: "True"
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Canonicalization
   nameWithType: CanonicalHostRedirectOptions.Canonicalization
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled
-  name: Enabled
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_Enabled
-  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled
-  nameWithType: CanonicalHostRedirectOptions.Enabled
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled*
-  name: Enabled
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_Enabled_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled
-  isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.Enabled
-  nameWithType: CanonicalHostRedirectOptions.Enabled
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps
-  name: EnforceHttps
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_EnforceHttps
-  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps
-  nameWithType: CanonicalHostRedirectOptions.EnforceHttps
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps*
-  name: EnforceHttps
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_EnforceHttps_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps
-  isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.EnforceHttps
-  nameWithType: CanonicalHostRedirectOptions.EnforceHttps
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.HttpsTargetPort
   name: HttpsTargetPort
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_HttpsTargetPort
@@ -295,19 +263,6 @@ references:
   isSpec: "True"
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectFromHosts
   nameWithType: CanonicalHostRedirectOptions.RedirectFromHosts
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode
-  name: RedirectStatusCode
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_RedirectStatusCode
-  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode
-  nameWithType: CanonicalHostRedirectOptions.RedirectStatusCode
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode*
-  name: RedirectStatusCode
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions_RedirectStatusCode_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode
-  isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.RedirectStatusCode
-  nameWithType: CanonicalHostRedirectOptions.RedirectStatusCode
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware
   name: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.html
