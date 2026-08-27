@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 using Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup;
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -217,6 +218,92 @@ public sealed class SelfHttpWarmupTests
 
         Assert.IsFalse(services.Any(static descriptor => descriptor.ServiceType == typeof(IHostedService)));
         Assert.IsFalse(new SelfHttpWarmupOptions().Enabled);
+    }
+
+    [TestMethod]
+    public void SingleTargetOverloadEnablesWarmupWithSensibleDefaults()
+    {
+        var services = CreateConfiguredServiceCollection();
+        services.AddSelfHttpWarmup("https://localhost/health");
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+        SelfHttpWarmupOptions options = provider.GetRequiredService<IOptions<SelfHttpWarmupOptions>>().Value;
+
+        Assert.IsTrue(options.Enabled);
+        Assert.AreEqual(TimeSpan.Zero, options.InitialDelay);
+        Assert.AreEqual(TimeSpan.FromSeconds(5), options.RequestTimeout);
+        CollectionAssert.AreEqual(new[] { "https://localhost/health" }, options.TargetUrls);
+    }
+
+    [TestMethod]
+    public void MultipleTargetOverloadAllowsSmallFeatureLevelTuning()
+    {
+        var services = CreateConfiguredServiceCollection();
+        services.AddSelfHttpWarmup(
+            new[]
+            {
+                "https://localhost/health",
+                "https://localhost/",
+            },
+            options =>
+            {
+                options.InitialDelay = TimeSpan.FromSeconds(1);
+                options.RequestTimeout = TimeSpan.FromSeconds(2);
+            });
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+        SelfHttpWarmupOptions options = provider.GetRequiredService<IOptions<SelfHttpWarmupOptions>>().Value;
+
+        Assert.IsTrue(options.Enabled);
+        Assert.AreEqual(TimeSpan.FromSeconds(1), options.InitialDelay);
+        Assert.AreEqual(TimeSpan.FromSeconds(2), options.RequestTimeout);
+        CollectionAssert.AreEqual(
+            new[]
+            {
+                "https://localhost/health",
+                "https://localhost/",
+            },
+            options.TargetUrls);
+    }
+
+    [TestMethod]
+    public void OptionsDelegateEnablesWarmupWithoutExplicitEnabledFlag()
+    {
+        var services = CreateConfiguredServiceCollection();
+        services.AddSelfHttpWarmup(options =>
+        {
+            options.TargetUrls = ["https://localhost/health"];
+            options.RequestTimeout = TimeSpan.FromSeconds(3);
+        });
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+        SelfHttpWarmupOptions options = provider.GetRequiredService<IOptions<SelfHttpWarmupOptions>>().Value;
+
+        Assert.IsTrue(options.Enabled);
+        Assert.AreEqual(TimeSpan.FromSeconds(3), options.RequestTimeout);
+        CollectionAssert.AreEqual(new[] { "https://localhost/health" }, options.TargetUrls);
+    }
+
+    [TestMethod]
+    public void DirectTargetOverloadRejectsNonHttpTargets()
+    {
+        var services = CreateConfiguredServiceCollection();
+
+        Assert.ThrowsExactly<ArgumentException>(() => services.AddSelfHttpWarmup("file:///tmp/warmup"));
+    }
+
+    [TestMethod]
+    public void PublicOptionsDoNotExposeTransportFallbackTuning()
+    {
+        Assert.IsNull(typeof(SelfHttpWarmupOptions).GetProperty("ConnectTimeout"));
+        Assert.IsNull(typeof(SelfHttpWarmupOptions).GetProperty("UserAgent"));
+    }
+
+    private static ServiceCollection CreateConfiguredServiceCollection()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder().Build());
+        return services;
     }
 
     private static SelfHttpWarmupHostedService CreateService(

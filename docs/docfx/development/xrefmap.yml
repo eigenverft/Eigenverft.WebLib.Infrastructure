@@ -124,19 +124,6 @@ references:
   commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions
   nameWithType: SelfHttpWarmupOptions
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.ConnectTimeout
-  name: ConnectTimeout
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_SelfHttpWarmup_SelfHttpWarmupOptions_ConnectTimeout
-  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.ConnectTimeout
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.ConnectTimeout
-  nameWithType: SelfHttpWarmupOptions.ConnectTimeout
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.ConnectTimeout*
-  name: ConnectTimeout
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_SelfHttpWarmup_SelfHttpWarmupOptions_ConnectTimeout_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.ConnectTimeout
-  isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.ConnectTimeout
-  nameWithType: SelfHttpWarmupOptions.ConnectTimeout
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.Enabled
   name: Enabled
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_SelfHttpWarmup_SelfHttpWarmupOptions_Enabled
@@ -195,19 +182,6 @@ references:
   isSpec: "True"
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.TargetUrls
   nameWithType: SelfHttpWarmupOptions.TargetUrls
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.UserAgent
-  name: UserAgent
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_SelfHttpWarmup_SelfHttpWarmupOptions_UserAgent
-  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.UserAgent
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.UserAgent
-  nameWithType: SelfHttpWarmupOptions.UserAgent
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.UserAgent*
-  name: UserAgent
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_SelfHttpWarmup_SelfHttpWarmupOptions_UserAgent_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.UserAgent
-  isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.UserAgent
-  nameWithType: SelfHttpWarmupOptions.UserAgent
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions
   name: SelfHttpWarmupServiceCollectionExtensions
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.html
@@ -229,6 +203,24 @@ references:
   fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action(Of Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions))
   nameWithType: SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(IServiceCollection, Action<SelfHttpWarmupOptions>)
   nameWithType.vb: SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(IServiceCollection, Action(Of SelfHttpWarmupOptions))
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Collections.Generic.IEnumerable{System.String},System.Action{Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions})
+  name: AddSelfHttpWarmup(IServiceCollection, IEnumerable<string>, Action<SelfHttpWarmupOptions>?)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_SelfHttpWarmup_SelfHttpWarmupServiceCollectionExtensions_AddSelfHttpWarmup_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Collections_Generic_IEnumerable_System_String__System_Action_Eigenverft_WebLib_Infrastructure_Hosting_SelfHttpWarmup_SelfHttpWarmupOptions__
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Collections.Generic.IEnumerable{System.String},System.Action{Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions})
+  name.vb: AddSelfHttpWarmup(IServiceCollection, IEnumerable(Of String), Action(Of SelfHttpWarmupOptions))
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Collections.Generic.IEnumerable<string>, System.Action<Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions>?)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Collections.Generic.IEnumerable(Of String), System.Action(Of Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions))
+  nameWithType: SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(IServiceCollection, IEnumerable<string>, Action<SelfHttpWarmupOptions>?)
+  nameWithType.vb: SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(IServiceCollection, IEnumerable(Of String), Action(Of SelfHttpWarmupOptions))
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions})
+  name: AddSelfHttpWarmup(IServiceCollection, string, Action<SelfHttpWarmupOptions>?)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_SelfHttpWarmup_SelfHttpWarmupServiceCollectionExtensions_AddSelfHttpWarmup_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_String_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_SelfHttpWarmup_SelfHttpWarmupOptions__
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions})
+  name.vb: AddSelfHttpWarmup(IServiceCollection, String, Action(Of SelfHttpWarmupOptions))
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(Microsoft.Extensions.DependencyInjection.IServiceCollection, string, System.Action<Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions>?)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(Microsoft.Extensions.DependencyInjection.IServiceCollection, String, System.Action(Of Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions))
+  nameWithType: SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(IServiceCollection, string, Action<SelfHttpWarmupOptions>?)
+  nameWithType.vb: SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup(IServiceCollection, String, Action(Of SelfHttpWarmupOptions))
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.AddSelfHttpWarmup*
   name: AddSelfHttpWarmup
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_SelfHttpWarmup_SelfHttpWarmupServiceCollectionExtensions_AddSelfHttpWarmup_

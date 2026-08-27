@@ -12,6 +12,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup
 {
     internal sealed class SelfHttpWarmupConnector
     {
+        internal static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromSeconds(1);
+
         private readonly TimeSpan _connectTimeout;
         private readonly Func<string, CancellationToken, Task<IPAddress[]>> _resolveAddressesAsync;
 
@@ -21,7 +23,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup
         {
             _connectTimeout = connectTimeout > TimeSpan.Zero
                 ? connectTimeout
-                : TimeSpan.FromSeconds(1);
+                : DefaultConnectTimeout;
             _resolveAddressesAsync = resolveAddressesAsync ?? Dns.GetHostAddressesAsync;
         }
 

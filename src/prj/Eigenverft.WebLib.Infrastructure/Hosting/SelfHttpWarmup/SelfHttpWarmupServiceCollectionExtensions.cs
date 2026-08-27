@@ -1,10 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup
 {
@@ -21,7 +22,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup
         /// </summary>
         /// <remarks>
         /// Registration alone does not enable warmup. Set <see cref="SelfHttpWarmupOptions.Enabled"/>
-        /// to <see langword="true"/> and configure at least one target URL to opt in.
+        /// to <see langword="true"/> and configure at least one target URL to opt in through configuration.
         /// </remarks>
         public static IServiceCollection AddSelfHttpWarmup(this IServiceCollection services)
         {
@@ -40,23 +41,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup
                     client.DefaultRequestVersion = HttpVersion.Version20;
                     client.DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
                 })
-                .ConfigurePrimaryHttpMessageHandler(static serviceProvider =>
+                .ConfigurePrimaryHttpMessageHandler(static _ =>
                 {
-                    SelfHttpWarmupOptions options = serviceProvider
-                        .GetRequiredService<IOptions<SelfHttpWarmupOptions>>()
-                        .Value;
-
-                    TimeSpan connectTimeout = options.ConnectTimeout > TimeSpan.Zero
-                        ? options.ConnectTimeout
-                        : TimeSpan.FromSeconds(1);
-
-                    var connector = new SelfHttpWarmupConnector(connectTimeout);
+                    var connector = new SelfHttpWarmupConnector(SelfHttpWarmupConnector.DefaultConnectTimeout);
 
                     return new SocketsHttpHandler
                     {
                         AllowAutoRedirect = false,
                         ConnectTimeout = Timeout.InfiniteTimeSpan,
                         ConnectCallback = connector.ConnectAsync,
+                        UseProxy = false,
                     };
                 });
 
@@ -65,7 +59,63 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup
         }
 
         /// <summary>
-        /// Registers self-HTTP warmup, binds configuration, and applies code-based options afterwards.
+        /// Enables self-HTTP warmup for one absolute HTTP or HTTPS URL.
+        /// </summary>
+        public static IServiceCollection AddSelfHttpWarmup(
+            this IServiceCollection services,
+            string targetUrl,
+            Action<SelfHttpWarmupOptions>? configure = null)
+        {
+            ArgumentNullException.ThrowIfNull(targetUrl);
+
+            return services.AddSelfHttpWarmup(
+                new[] { targetUrl },
+                configure);
+        }
+
+        /// <summary>
+        /// Enables self-HTTP warmup for one or more absolute HTTP or HTTPS URLs.
+        /// </summary>
+        public static IServiceCollection AddSelfHttpWarmup(
+            this IServiceCollection services,
+            IEnumerable<string> targetUrls,
+            Action<SelfHttpWarmupOptions>? configure = null)
+        {
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(targetUrls);
+
+            string[] targets = targetUrls
+                .Select(static target => target?.Trim() ?? string.Empty)
+                .ToArray();
+
+            if (targets.Length == 0)
+            {
+                throw new ArgumentException("At least one self-HTTP warmup target URL is required.", nameof(targetUrls));
+            }
+
+            for (int index = 0; index < targets.Length; index++)
+            {
+                if (!IsAbsoluteHttpTarget(targets[index]))
+                {
+                    throw new ArgumentException(
+                        $"Self-HTTP warmup target at index {index} must be an absolute HTTP or HTTPS URL.",
+                        nameof(targetUrls));
+                }
+            }
+
+            services.AddSelfHttpWarmup();
+            services.Configure<SelfHttpWarmupOptions>(options =>
+            {
+                options.Enabled = true;
+                options.TargetUrls = targets;
+                configure?.Invoke(options);
+            });
+
+            return services;
+        }
+
+        /// <summary>
+        /// Enables self-HTTP warmup and applies code-based options after configuration binding.
         /// </summary>
         public static IServiceCollection AddSelfHttpWarmup(
             this IServiceCollection services,
@@ -75,8 +125,20 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup
             ArgumentNullException.ThrowIfNull(configure);
 
             services.AddSelfHttpWarmup();
-            services.Configure(configure);
+            services.Configure<SelfHttpWarmupOptions>(options =>
+            {
+                options.Enabled = true;
+                configure(options);
+            });
+
             return services;
+        }
+
+        private static bool IsAbsoluteHttpTarget(string target)
+        {
+            return Uri.TryCreate(target, UriKind.Absolute, out Uri? uri) &&
+                   (string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase));
         }
     }
 }

@@ -12,6 +12,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup
 {
     internal sealed class SelfHttpWarmupHostedService : BackgroundService
     {
+        private const string UserAgent = "Eigenverft.WebLib.Infrastructure/SelfHttpWarmup";
+
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly IHostApplicationLifetime _applicationLifetime;
         private readonly ILogger<SelfHttpWarmupHostedService> _logger;
@@ -97,10 +99,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup
                     timeoutCancellation.CancelAfter(requestTimeout);
 
                     using var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                    if (!string.IsNullOrWhiteSpace(options.UserAgent))
-                    {
-                        request.Headers.TryAddWithoutValidation("User-Agent", options.UserAgent);
-                    }
+                    request.Headers.TryAddWithoutValidation("User-Agent", UserAgent);
 
                     using HttpResponseMessage response = await client.SendAsync(
                         request,
