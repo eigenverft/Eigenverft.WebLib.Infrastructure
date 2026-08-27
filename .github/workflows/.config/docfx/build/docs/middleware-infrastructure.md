@@ -6,6 +6,8 @@ WP3 extracts small, general ASP.NET Core middleware infrastructure from the lega
 
 `UseClientNetworkFeature()` installs shared middleware that creates one typed `IClientNetworkFeature` per request and stores it in `HttpContext.Features`.
 
+Call `UseClientNetworkFeature()` before middleware such as `UseForwardedHeaders()` that rewrites `HttpContext.Connection.RemoteIpAddress`. The client-network feature captures the remote address as it exists at its position in the pipeline, so this ordering is required when `RemoteIpAddress` must represent the actual network peer.
+
 The feature always exposes the normalized actual `HttpContext.Connection.RemoteIpAddress`. IPv4-mapped IPv6 addresses are normalized to IPv4. Existing standardized `Forwarded` `for=` values and `X-Forwarded-For` values are collected into one typed chain. Each entry preserves its source, raw token, normalized parsed IP when available, and malformed status.
 
 This layer deliberately makes no trust, legitimacy, proxy-authority, or request-behavior decision. Downstream filters/evaluators own those decisions.
