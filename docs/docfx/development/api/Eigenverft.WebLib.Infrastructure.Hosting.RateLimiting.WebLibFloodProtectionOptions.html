@@ -198,119 +198,19 @@ concurrency limiter can be enabled as an additional whole-application guard.
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_AutoReplenishment.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.AutoReplenishment%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_BurstSize.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.BurstSize%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L45">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L22">View Source</a>
   </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_AutoReplenishment_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.AutoReplenishment*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_AutoReplenishment" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.AutoReplenishment">AutoReplenishment</h4>
-  <div class="markdown level1 summary"><p>Gets or sets whether token buckets replenish automatically.</p>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_BurstSize_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.BurstSize*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_BurstSize" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.BurstSize">BurstSize</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the maximum burst capacity for one client-IP partition.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public bool AutoReplenishment { get; set; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_AutoReplenishment_remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>Leave enabled for normal use. Disabling automatic replenishment makes each partition a finite token budget
-because this convenience layer does not expose a manual replenishment handle.</p>
-</div>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_EmitRetryAfterHeader.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.EmitRetryAfterHeader%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L65">View Source</a>
-  </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_EmitRetryAfterHeader_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.EmitRetryAfterHeader*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_EmitRetryAfterHeader" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.EmitRetryAfterHeader">EmitRetryAfterHeader</h4>
-  <div class="markdown level1 summary"><p>Gets or sets whether WebLib writes a <code>Retry-After</code> header when the rejected framework lease provides retry metadata.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public bool EmitRetryAfterHeader { get; set; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyPermitLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyPermitLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L74">View Source</a>
-  </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyPermitLimit_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyPermitLimit*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyPermitLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyPermitLimit">GlobalConcurrencyPermitLimit</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the optional whole-application concurrency permit limit.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public int? GlobalConcurrencyPermitLimit { get; set; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>?</td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyPermitLimit_remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p><a href="https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/null">null</a> disables the global concurrency limiter, which is the default.</p>
-</div>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyQueueLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyQueueLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L77">View Source</a>
-  </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyQueueLimit_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyQueueLimit*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyQueueLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyQueueLimit">GlobalConcurrencyQueueLimit</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the queue limit for the optional global concurrency limiter.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public int GlobalConcurrencyQueueLimit { get; set; }</code></pre>
+    <pre><code class="lang-csharp hljs">public int BurstSize { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-condensed">
@@ -327,21 +227,24 @@ because this convenience layer does not expose a manual replenishment handle.</p
       </tr>
     </tbody>
   </table>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_BurstSize_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The default of 40 permits short bursts above the sustained request rate.</p>
+</div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyQueueProcessingOrder.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyQueueProcessingOrder%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L80">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L44">View Source</a>
   </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyQueueProcessingOrder_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyQueueProcessingOrder*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyQueueProcessingOrder" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyQueueProcessingOrder">GlobalConcurrencyQueueProcessingOrder</h4>
-  <div class="markdown level1 summary"><p>Gets or sets how queued requests are ordered by the optional global concurrency limiter.</p>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyLimit_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyLimit*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyLimit">GlobalConcurrencyLimit</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the optional whole-application concurrency limit.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public QueueProcessingOrder GlobalConcurrencyQueueProcessingOrder { get; set; }</code></pre>
+    <pre><code class="lang-csharp hljs">public int? GlobalConcurrencyLimit { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-condensed">
@@ -353,48 +256,21 @@ because this convenience layer does not expose a manual replenishment handle.</p
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.ratelimiting.queueprocessingorder">QueueProcessingOrder</a></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a>?</td>
         <td></td>
       </tr>
     </tbody>
   </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_LogRejectedRequests.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.LogRejectedRequests%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L68">View Source</a>
-  </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_LogRejectedRequests_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.LogRejectedRequests*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_LogRejectedRequests" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.LogRejectedRequests">LogRejectedRequests</h4>
-  <div class="markdown level1 summary"><p>Gets or sets whether rejected requests are logged at warning level.</p>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyLimit_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p><a href="https://learn.microsoft.com/dotnet/csharp/language-reference/keywords/null">null</a> disables the global concurrency limiter, which is the default. The global limiter does
+not add another queue; the bounded per-IP queue remains the only request queue configured by this convenience layer.</p>
 </div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public bool LogRejectedRequests { get; set; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
     <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_MissingClientIpBehavior.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.MissingClientIpBehavior%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L57">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L37">View Source</a>
   </span>
   <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_MissingClientIpBehavior_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.MissingClientIpBehavior*"></a>
   <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_MissingClientIpBehavior" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.MissingClientIpBehavior">MissingClientIpBehavior</h4>
@@ -425,11 +301,11 @@ because this convenience layer does not expose a manual replenishment handle.</p
     <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_QueueLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L51">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L34">View Source</a>
   </span>
   <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_QueueLimit_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueLimit*"></a>
   <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_QueueLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueLimit">QueueLimit</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the maximum queued permit count per client-IP partition after its immediately available tokens are exhausted.</p>
+  <div class="markdown level1 summary"><p>Gets or sets the maximum queued request count per client-IP partition after its immediately available tokens are exhausted.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
@@ -452,54 +328,24 @@ because this convenience layer does not expose a manual replenishment handle.</p
     </tbody>
   </table>
   <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_QueueLimit_remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>When the queue is full, the framework rejects the request instead of adding unbounded waiting work.</p>
+  <div class="markdown level1 remarks"><p>Queued requests are processed oldest-first. When the queue is full, the framework rejects the request instead of
+adding unbounded waiting work.</p>
 </div>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_QueueProcessingOrder.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueProcessingOrder%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_RequestsPerSecond.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RequestsPerSecond%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L54">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L25">View Source</a>
   </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_QueueProcessingOrder_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueProcessingOrder*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_QueueProcessingOrder" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueProcessingOrder">QueueProcessingOrder</h4>
-  <div class="markdown level1 summary"><p>Gets or sets how queued requests are ordered for each client-IP token bucket.</p>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_RequestsPerSecond_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RequestsPerSecond*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_RequestsPerSecond" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RequestsPerSecond">RequestsPerSecond</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the sustained token replenishment rate per client-IP partition, in requests per second.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public QueueProcessingOrder QueueProcessingOrder { get; set; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.threading.ratelimiting.queueprocessingorder">QueueProcessingOrder</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_RejectionStatusCode.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RejectionStatusCode%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L60">View Source</a>
-  </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_RejectionStatusCode_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RejectionStatusCode*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_RejectionStatusCode" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RejectionStatusCode">RejectionStatusCode</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the HTTP status code returned when the ASP.NET Core rate-limiting middleware rejects a request.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public int RejectionStatusCode { get; set; }</code></pre>
+    <pre><code class="lang-csharp hljs">public int RequestsPerSecond { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-condensed">
@@ -516,105 +362,6 @@ because this convenience layer does not expose a manual replenishment handle.</p
       </tr>
     </tbody>
   </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_ReplenishmentPeriod.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.ReplenishmentPeriod%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L36">View Source</a>
-  </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_ReplenishmentPeriod_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.ReplenishmentPeriod*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_ReplenishmentPeriod" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.ReplenishmentPeriod">ReplenishmentPeriod</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the token replenishment period.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public TimeSpan ReplenishmentPeriod { get; set; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.timespan">TimeSpan</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_TokenLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.TokenLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L27">View Source</a>
-  </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_TokenLimit_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.TokenLimit*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_TokenLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.TokenLimit">TokenLimit</h4>
-  <div class="markdown level1 summary"><p>Gets or sets the maximum number of tokens that may accumulate for one client-IP partition.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public int TokenLimit { get; set; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_TokenLimit_remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>The default of 40 permits short bursts above the sustained replenishment rate.</p>
-</div>
-  <span class="small pull-right mobile-hide">
-    <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_TokensPerPeriod.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.TokensPerPeriod%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
-  </span>
-  <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L33">View Source</a>
-  </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_TokensPerPeriod_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.TokensPerPeriod*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_TokensPerPeriod" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.TokensPerPeriod">TokensPerPeriod</h4>
-  <div class="markdown level1 summary"><p>Gets or sets how many tokens are added to each client-IP partition per replenishment period.</p>
-</div>
-  <div class="markdown level1 conceptual"></div>
-  <h5 class="declaration">Declaration</h5>
-  <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public int TokensPerPeriod { get; set; }</code></pre>
-  </div>
-  <h5 class="propertyValue">Property Value</h5>
-  <table class="table table-bordered table-condensed">
-    <thead>
-      <tr>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
-        <td></td>
-      </tr>
-    </tbody>
-  </table>
-  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_TokensPerPeriod_remarks">Remarks</h5>
-  <div class="markdown level1 remarks"><p>With the default one-second period, the default sustained rate is approximately 10 requests/second.</p>
-</div>
 
 </article>
           </div>
@@ -627,7 +374,7 @@ because this convenience layer does not expose a manual replenishment handle.</p
                     <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-flood-protection/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L21" class="contribution-link">View Source</a>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-flood-protection/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L18" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>
