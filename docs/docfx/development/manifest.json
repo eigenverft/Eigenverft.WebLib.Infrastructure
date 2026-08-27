@@ -88,6 +88,48 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.yml\" sourcestartlinenumber=\"1\">Configures optional HTTP requests sent to the application after ASP.NET Core has fully started.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.yml\" sourcestartlinenumber=\"1\">Registers optional self-HTTP startup warmup for ASP.NET Core applications.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.yml",
       "output": {
         ".html": {
