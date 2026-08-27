@@ -60,6 +60,48 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Features.HttpContextFeatureExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Features.HttpContextFeatureExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Features.HttpContextFeatureExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Features.HttpContextFeatureExtensions.yml\" sourcestartlinenumber=\"1\">Provides typed convenience access to <xref href=\"Microsoft.AspNetCore.Http.HttpContext.Features\" data-throw-if-not-resolved=\"false\"></xref>.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Features.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Features.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Features",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.yml\" sourcestartlinenumber=\"1\">Provides small response helpers for middleware short-circuits.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.yml",
       "output": {
         ".html": {
@@ -84,6 +126,412 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Kestrel",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.yml\" sourcestartlinenumber=\"1\">Determines how requests for the primary host group are canonicalized.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.yml\" sourcestartlinenumber=\"1\">Registers and activates canonical host redirect behavior.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.yml\" sourcestartlinenumber=\"1\">Configures canonical host and HTTPS redirects.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.yml\" sourcestartlinenumber=\"1\">Represents one forwarded-IP token without assigning trust or legitimacy to it.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpSource.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpSource.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpSource",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpSource.yml\" sourcestartlinenumber=\"1\">Identifies the request header family from which forwarded IP information was observed.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkApplicationBuilderExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkApplicationBuilderExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkApplicationBuilderExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkApplicationBuilderExtensions.yml\" sourcestartlinenumber=\"1\">Adds the shared client-network feature middleware to an ASP.NET Core pipeline.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkMiddleware.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkMiddleware.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkMiddleware",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkMiddleware.yml\" sourcestartlinenumber=\"1\">Collects normalized client-network facts into an <xref href=\"Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.IClientNetworkFeature\" data-throw-if-not-resolved=\"false\"></xref> for the current request.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.IClientNetworkFeature.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.IClientNetworkFeature.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.IClientNetworkFeature",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.IClientNetworkFeature.yml\" sourcestartlinenumber=\"1\">Exposes normalized client-network facts collected for the current request.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.yml\" sourcestartlinenumber=\"1\">Adds the favicon-aware health probe to an ASP.NET Core request pipeline.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.yml\" sourcestartlinenumber=\"1\">Provides small middleware-composition helpers.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ServiceProviderRegistrationExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ServiceProviderRegistrationExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ServiceProviderRegistrationExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ServiceProviderRegistrationExtensions.yml\" sourcestartlinenumber=\"1\">Provides developer-facing validation that required middleware services were registered.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.yml\" sourcestartlinenumber=\"1\">Provides thin semantic wrappers for non-rejoining ASP.NET Core pipeline branches.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Pipeline",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.yml\" sourcestartlinenumber=\"1\">Defines how the per-IP limiter behaves when no client IP is available on the connection.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.yml\" sourcestartlinenumber=\"1\">Configures the WebLib convenience layer over ASP.NET Core rate limiting for generic request flood protection.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.yml\" sourcestartlinenumber=\"1\">Provides service-registration helpers for WebLib flood protection.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.yml\" sourcestartlinenumber=\"1\">Configures optional HTTP requests sent to the application after startup.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.yml\" sourcestartlinenumber=\"1\">Registers optional self-HTTP startup warmup for ASP.NET Core applications.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.yml\" sourcestartlinenumber=\"1\">Provides predefined groups of MIME mappings that backfill extensions missing from the target framework's\nASP.NET Core static-file defaults.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings.yml\" sourcestartlinenumber=\"1\">Represents an opaque, typed group of MIME mappings that can be added to ASP.NET Core static-file defaults.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.yml\" sourcestartlinenumber=\"1\">Adds typed, additive static-file mappings over ASP.NET Core defaults.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting",
       "Summary": null
     },
     {
