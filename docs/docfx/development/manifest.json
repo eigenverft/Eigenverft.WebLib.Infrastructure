@@ -98,7 +98,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions",
-      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.yml\" sourcestartlinenumber=\"1\">Configures optional HTTP requests sent to the application after ASP.NET Core has fully started.</p>\n"
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.yml\" sourcestartlinenumber=\"1\">Configures optional HTTP requests sent to the application after startup.</p>\n"
     },
     {
       "type": "ManagedReference",
