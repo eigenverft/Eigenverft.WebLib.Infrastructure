@@ -5,11 +5,11 @@
   <head>
     <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-      <title>Namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout | Eigenverft.WebLib.Infrastructure </title>
+      <title>Enum CanonicalHostMode | Eigenverft.WebLib.Infrastructure </title>
       <meta name="viewport" content="width=device-width">
-      <meta name="title" content="Namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout | Eigenverft.WebLib.Infrastructure ">
+      <meta name="title" content="Enum CanonicalHostMode | Eigenverft.WebLib.Infrastructure ">
     
-    
+    <meta name="description" content="Determines how requests for the primary host group are canonicalized.">
       <link rel="shortcut icon" href="../favicon.ico">
       <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="../styles/docfx.css">
@@ -100,9 +100,9 @@
                           </li>
                         </ul>
                     </li>
-                    <li class="active">
+                    <li class="">
                       <span class="expand-stub"></span>
-                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.html" title="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="active">Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</a>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.html" title="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="">Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</a>
 
                         <ul class="nav level2">
                           <li class="">
@@ -135,8 +135,8 @@
                       <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect" class="">Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect</a>
 
                         <ul class="nav level2">
-                          <li class="">
-                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html" title="CanonicalHostMode" class="">CanonicalHostMode</a>
+                          <li class="active">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html" title="CanonicalHostMode" class="active">CanonicalHostMode</a>
                           </li>
                           <li class="">
                             <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.html" title="CanonicalHostRedirectExtensions" class="">CanonicalHostRedirectExtensions</a>
@@ -264,20 +264,43 @@
         </div>
         <div class="article row grid-right">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout">
+            <article class="content wrap" id="_content" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode">
 
-  <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_DirectoryLayout" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="text-break">Namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</h1>
-  <div class="markdown level0 summary"></div>
+
+
+
+  <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostMode" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode" class="text-break">Enum CanonicalHostMode</h1>
+  <div class="markdown level0 summary"><p>Determines how requests for the primary host group are canonicalized.</p>
+</div>
   <div class="markdown level0 conceptual"></div>
-  <div class="markdown level0 remarks"></div>
-    <h3 id="classes">
-Classes
+  <h6><strong>Namespace</strong>: <a class="xref" href="Eigenverft.html">Eigenverft</a>.<a class="xref" href="Eigenverft.WebLib.html">WebLib</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.html">Infrastructure</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.html">Hosting</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.html">Middleware</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.html">CanonicalHostRedirect</a></h6>
+  <h6><strong>Assembly</strong>: Eigenverft.WebLib.Infrastructure.dll</h6>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostMode_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public enum CanonicalHostMode</code></pre>
+  </div>
+  <h3 id="fields">Fields
 </h3>
-      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html">WebApplicationBuilderFactory</a></h4>
-      <section><p>Creates ASP.NET Core builders that use the shared NetLib application directory layout.</p>
-</section>
-
-
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    <thead>
+    </thead></thead><tbody>
+      <tr>
+        <td id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostMode_ToApex">ToApex</td>
+        <td><p>Uses the configured apex host, for example <code>example.com</code>.</p>
+</td>
+      </tr>
+      <tr>
+        <td id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostMode_ToWww">ToWww</td>
+        <td><p>Uses the <code>www.</code> form of the configured apex host, for example <code>www.example.com</code>.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
 </article>
           </div>
 
@@ -285,6 +308,12 @@ Classes
             <div class="sideaffix">
               <div class="contribution">
                 <ul class="nav">
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostMode.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/CanonicalHostRedirect/CanonicalHostRedirectOptions.cs/#L8" class="contribution-link">View Source</a>
+                  </li>
                 </ul>
               </div>
               <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">

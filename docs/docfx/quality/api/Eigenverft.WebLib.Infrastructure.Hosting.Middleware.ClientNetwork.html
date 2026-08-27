@@ -5,9 +5,9 @@
   <head>
     <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-      <title>Namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout | Eigenverft.WebLib.Infrastructure </title>
+      <title>Namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork | Eigenverft.WebLib.Infrastructure </title>
       <meta name="viewport" content="width=device-width">
-      <meta name="title" content="Namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout | Eigenverft.WebLib.Infrastructure ">
+      <meta name="title" content="Namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork | Eigenverft.WebLib.Infrastructure ">
     
     
       <link rel="shortcut icon" href="../favicon.ico">
@@ -100,9 +100,9 @@
                           </li>
                         </ul>
                     </li>
-                    <li class="active">
+                    <li class="">
                       <span class="expand-stub"></span>
-                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.html" title="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="active">Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</a>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.html" title="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="">Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</a>
 
                         <ul class="nav level2">
                           <li class="">
@@ -146,9 +146,9 @@
                           </li>
                         </ul>
                     </li>
-                    <li class="">
+                    <li class="active">
                       <span class="expand-stub"></span>
-                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork" class="">Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork</a>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork" class="active">Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork</a>
 
                         <ul class="nav level2">
                           <li class="">
@@ -264,17 +264,35 @@
         </div>
         <div class="article row grid-right">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout">
+            <article class="content wrap" id="_content" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork">
 
-  <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_DirectoryLayout" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="text-break">Namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</h1>
+  <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork" class="text-break">Namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork</h1>
   <div class="markdown level0 summary"></div>
   <div class="markdown level0 conceptual"></div>
   <div class="markdown level0 remarks"></div>
     <h3 id="classes">
 Classes
 </h3>
-      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html">WebApplicationBuilderFactory</a></h4>
-      <section><p>Creates ASP.NET Core builders that use the shared NetLib application directory layout.</p>
+      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.html">ClientForwardedIpAddress</a></h4>
+      <section><p>Represents one forwarded-IP token without assigning trust or legitimacy to it.</p>
+</section>
+      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkApplicationBuilderExtensions.html">ClientNetworkApplicationBuilderExtensions</a></h4>
+      <section><p>Adds the shared client-network feature middleware to an ASP.NET Core pipeline.</p>
+</section>
+      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkMiddleware.html">ClientNetworkMiddleware</a></h4>
+      <section><p>Collects normalized client-network facts into an <a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.IClientNetworkFeature.html">IClientNetworkFeature</a> for the current request.</p>
+</section>
+    <h3 id="interfaces">
+Interfaces
+</h3>
+      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.IClientNetworkFeature.html">IClientNetworkFeature</a></h4>
+      <section><p>Exposes normalized client-network facts collected for the current request.</p>
+</section>
+    <h3 id="enums">
+Enums
+</h3>
+      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpSource.html">ClientForwardedIpSource</a></h4>
+      <section><p>Identifies the request header family from which forwarded IP information was observed.</p>
 </section>
 
 
