@@ -2,3 +2,5 @@
   href: introduction.md
 - name: Getting started
   href: getting-started.md
+- name: Isolated static and PWA hosting
+  href: static-pwa-hosting.md

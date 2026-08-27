@@ -345,6 +345,57 @@ Earlier copies of this helper used a single `SanNames` array. When migrating, sp
 the `Eigenverft.WebLib.Infrastructure.Hosting.Kestrel` namespace instead of an application-local
 or `Eigenverft.Routed.RequestFilters` implementation.
 
+## 📁 Isolated static and PWA hosting
+
+WebLib provides thin pipeline partitioning and static-file conveniences without introducing a separate
+routing or mount system. `MapIsolated(...)` delegates to native ASP.NET Core `Map`, preserves the matched
+path segment, and owns the matching URL subtree. `MapRemaining(...)` makes the shell pipeline explicit
+after all isolated subtrees.
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Pipeline;
+using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
+
+app.MapIsolated("/apps", apps =>
+{
+    apps.UsePwaHost(AdditionalMappings.WebApp);
+});
+
+app.MapIsolated("/downloads", downloads =>
+{
+    downloads.UseStaticFiles(AdditionalMappings.Media);
+});
+
+app.MapRemaining(shell =>
+{
+    shell.UseRouting();
+    shell.UseEndpoints(endpoints =>
+    {
+        // Configure the remaining Razor/Blazor/API endpoints here.
+        endpoints.MapRazorComponents<App>();
+    });
+});
+```
+
+Because the isolated branch keeps the matched request path, `/apps/index.html` resolves naturally against
+`wwwroot/apps/index.html` and `/downloads/file.avif` against `wwwroot/downloads/file.avif`. `UsePwaHost(...)`
+uses ASP.NET Core file-server/default-file middleware. A missing file reaches the native end of the isolated
+branch and returns 404; it does not rejoin `MapRemaining`, Razor Components, or another shell fallback.
+Outer status-code-page re-execution is also disabled for isolated requests so a global
+`UseStatusCodePagesWithReExecute(...)` cannot transfer ownership of that branch-owned 404 to the shell.
+
+Static-file mappings remain additive to the target framework defaults:
+
+- `AdditionalMappings.WebApp` adds only `.br` and `.dat` as `application/octet-stream`; `.webmanifest` and
+  `.wasm` already come from the ASP.NET Core defaults on both supported target frameworks.
+- `AdditionalMappings.Media` adds `.avif` as `image/avif` on `net8.0`; it is intentionally a no-op on
+  `net10.0`, where ASP.NET Core already provides that mapping.
+- `AdditionalMappings.Combine(...)` composes typed groups when one branch needs more than one set.
+
+The `FileExtensionContentTypeProvider` remains an internal implementation detail. There is no separate
+PWA/Blazor-specific `UseStaticFilesWithPwaAndBlazorContentTypes(...)` API and no universal mount primitive.
+Use `MapIsolated` + normal ASP.NET Core middleware for owned subtrees, then `MapRemaining` for the shell.
+
 ## 🎯 Target frameworks
 
 The package ships dedicated assets for:

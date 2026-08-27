@@ -292,6 +292,44 @@ When migrating from the earlier helper, replace `SanNames` with the typed
 `AdditionalSelfSignedCertificateIpAddresses` properties and use the
 `Eigenverft.WebLib.Infrastructure.Hosting.Kestrel` namespace.
 
+## 📁 Isolated static and PWA hosting
+
+Use `MapIsolated(...)` for URL subtrees that must be exclusively owned by a static/PWA branch and
+`MapRemaining(...)` for the remaining shell pipeline. Both are thin wrappers over native non-rejoining
+ASP.NET Core branch semantics; no separate routing or mount system is introduced.
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Pipeline;
+using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
+
+app.MapIsolated("/apps", apps =>
+{
+    apps.UsePwaHost(AdditionalMappings.WebApp);
+});
+
+app.MapIsolated("/downloads", downloads =>
+{
+    downloads.UseStaticFiles(AdditionalMappings.Media);
+});
+
+app.MapRemaining(shell =>
+{
+    shell.UseRouting();
+    shell.UseEndpoints(endpoints => endpoints.MapRazorComponents<App>());
+});
+```
+
+`MapIsolated` preserves the matched path segment, so `/apps/...` resolves against `wwwroot/apps/...` using
+normal ASP.NET Core static-file/file-server middleware. Missing files end with the native branch 404 and
+do not fall through into the shell. Outer `UseStatusCodePagesWithReExecute(...)` handling is disabled for
+isolated requests so global re-execution cannot escape that ownership boundary.
+
+Mappings are strictly additive to ASP.NET Core defaults: `AdditionalMappings.WebApp` backfills only `.br`
+and `.dat`; `AdditionalMappings.Media` backfills `.avif` only on `net8.0` and is a no-op on `net10.0` where
+that mapping is already built in. `AdditionalMappings.Combine(...)` composes typed groups. The underlying
+`FileExtensionContentTypeProvider` remains internal, and there is no separate legacy-style
+`UseStaticFilesWithPwaAndBlazorContentTypes(...)` API.
+
 ## 🎯 Target frameworks
 
 The package ships dedicated assets for:
