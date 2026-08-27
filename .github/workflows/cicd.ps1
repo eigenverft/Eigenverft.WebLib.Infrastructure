@@ -138,6 +138,7 @@ $ChannelLatestRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.V
 $BuildRootPath = Get-Path -Paths @("$OutputRootPath","build")
 $BuildBinPath = Get-Path -Paths @("$BuildRootPath","bin")
 $BuildObjPath = Get-Path -Paths @("$BuildRootPath","obj")
+$TestObjPath = Get-Path -Paths @("$BuildRootPath","testobj")
 
 $PackRootPath = Get-Path -Paths @("$OutputRootPath","pack")
 $PublishRootPath = Get-Path -Paths @("$OutputRootPath","publish")
@@ -193,6 +194,7 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
         New-Directory -Paths @($BuildRootPath)
         $BuildBinDirectory = New-Directory -Paths @($BuildBinPath,$SolutionFileInfo.BaseName,$ProjectFileInfo.BaseName,$BranchVersionRelativePath)
         $BuildObjDirectory = New-Directory -Paths @($BuildObjPath,$SolutionFileInfo.BaseName,$ProjectFileInfo.BaseName,$BranchVersionRelativePath)
+        $TestObjDirectory = New-Directory -Paths @($TestObjPath,$SolutionFileInfo.BaseName,$ProjectFileInfo.BaseName,$BranchVersionRelativePath)
 
         $PackDirectory = New-Directory -Paths @($PackRootPath,$SolutionFileInfo.BaseName,$ProjectFileInfo.BaseName,$ChannelVersionRelativePath)
         $PublishDirectory = New-Directory -Paths @($PublishRootPath,$SolutionFileInfo.BaseName,$ProjectFileInfo.BaseName,$ChannelVersionRelativePath)
@@ -258,6 +260,7 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
                     }
                 }
             } elseif ($LASTEXITCODE -eq 0) {
+                $TargetFrameworks = @($TargetFramework)
                 if ($TargetFramework -in @('net20', 'net35', 'net40', 'net403', 'net45', 'net451', 'net452', 'net46', 'net461', 'net462', 'net47', 'net471', 'net472', 'net48', 'net481'))
                 {
                    $IsSDKWithFramework = $true
@@ -336,7 +339,11 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
 
         if ($IsTestProject -eq $true)
         {
-            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("test", "$($ProjectFileInfo.FullName)", "-c", "Release","-p:""Stage=test""")  -CommonArguments $DotnetCommonParameters -CaptureOutput $false
+            foreach ($TestTargetFramework in $TargetFrameworks)
+            {
+                $TestCommonParameters = $DotnetCommonParameters -replace '^-p:IntermediateOutputPath=.*$', "-p:IntermediateOutputPath=$($TestObjDirectory)/$($TestTargetFramework)/"
+                Invoke-ProcessTyped -Executable "dotnet" -Arguments @("test", "$($ProjectFileInfo.FullName)", "-c", "Release", "-f", "$TestTargetFramework", '-p:Stage=test' ) -CommonArguments $TestCommonParameters -CaptureOutput $false
+            }
         }
 
         if ($IsPackable -eq $true)
