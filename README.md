@@ -358,7 +358,7 @@ using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
 
 app.MapIsolated("/apps", apps =>
 {
-    apps.UsePwaHost(AdditionalMappings.WebApp);
+    apps.UsePwaHost();
 });
 
 app.MapIsolated("/downloads", downloads =>
@@ -376,6 +376,10 @@ app.MapRemaining(shell =>
     });
 });
 ```
+
+`MapRemaining` deliberately exposes a normal `IApplicationBuilder`; endpoint APIs such as `MapStaticAssets()` and
+`MapRazorComponents<T>()` therefore stay inside native `UseEndpoints(...)` rather than requiring a WebLib-specific
+hybrid pipeline/router builder.
 
 Because the isolated branch keeps the matched request path, `/apps/index.html` resolves naturally against
 `wwwroot/apps/index.html` and `/downloads/file.avif` against `wwwroot/downloads/file.avif`. `UsePwaHost(...)`

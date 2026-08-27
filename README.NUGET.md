@@ -304,7 +304,7 @@ using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
 
 app.MapIsolated("/apps", apps =>
 {
-    apps.UsePwaHost(AdditionalMappings.WebApp);
+    apps.UsePwaHost();
 });
 
 app.MapIsolated("/downloads", downloads =>
@@ -318,6 +318,10 @@ app.MapRemaining(shell =>
     shell.UseEndpoints(endpoints => endpoints.MapRazorComponents<App>());
 });
 ```
+
+`MapRemaining` deliberately exposes a normal `IApplicationBuilder`; endpoint APIs such as `MapStaticAssets()` and
+`MapRazorComponents<T>()` therefore stay inside native `UseEndpoints(...)` rather than requiring a WebLib-specific
+hybrid pipeline/router builder.
 
 `MapIsolated` preserves the matched path segment, so `/apps/...` resolves against `wwwroot/apps/...` using
 normal ASP.NET Core static-file/file-server middleware. Missing files end with the native branch 404 and

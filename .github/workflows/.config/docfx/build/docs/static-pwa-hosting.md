@@ -27,7 +27,7 @@ using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
 
 app.MapIsolated("/apps", apps =>
 {
-    apps.UsePwaHost(AdditionalMappings.WebApp);
+    apps.UsePwaHost();
 });
 
 app.MapIsolated("/downloads", downloads =>
@@ -44,6 +44,10 @@ app.MapRemaining(shell =>
     });
 });
 ```
+
+`MapRemaining` deliberately exposes a normal `IApplicationBuilder`. Endpoint APIs such as `MapStaticAssets()` and
+`MapRazorComponents<T>()` therefore stay inside native `UseEndpoints(...)`; WebLib does not add a hybrid
+pipeline/router builder just to flatten that syntax.
 
 Declare all isolated branches before `MapRemaining`. `MapRemaining` is terminal for the rest of the application,
 so middleware registered after it is intentionally unreachable.

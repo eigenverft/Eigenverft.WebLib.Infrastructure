@@ -33,7 +33,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles
 
         /// <summary>
         /// Hosts a PWA/static web app with ASP.NET Core file-server and default-file behavior plus
-        /// <see cref="AdditionalMappings.WebApp"/>.
+        /// <see cref="AdditionalMappings.WebApp"/>. This is the recommended common-case overload.
         /// </summary>
         /// <remarks>
         /// Use this inside <c>MapIsolated</c> when the URL subtree must own misses. The native isolated branch then

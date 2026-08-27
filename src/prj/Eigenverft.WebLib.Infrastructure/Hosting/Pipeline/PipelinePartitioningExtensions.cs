@@ -62,6 +62,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Pipeline
         /// <remarks>
         /// This uses native non-rejoining <c>MapWhen</c> branch semantics with an always-true predicate. Declare it after
         /// all <see cref="MapIsolated(IApplicationBuilder, PathString, Action{IApplicationBuilder})"/> branches.
+        /// The callback intentionally remains a normal <see cref="IApplicationBuilder"/>. Configure endpoint routing with
+        /// <c>UseRouting()</c> and <c>UseEndpoints(...)</c> rather than introducing a WebLib-specific hybrid pipeline/router builder.
         /// </remarks>
         /// <param name="app">The application builder.</param>
         /// <param name="configuration">The remaining shell pipeline.</param>

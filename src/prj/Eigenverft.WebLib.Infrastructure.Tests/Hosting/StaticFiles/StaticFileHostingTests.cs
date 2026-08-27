@@ -88,20 +88,27 @@ public sealed class StaticFileHostingTests
     }
 
     [TestMethod]
-    public async Task UsePwaHostServesDefaultFileWithinPreservedIsolatedPath()
+    public async Task UsePwaHostDefaultServesDefaultFileAndWebAppMappingsWithinPreservedIsolatedPath()
     {
         using var host = new PipelineTestHost();
         host.WriteFile("apps/index.html", "<main>PWA root</main>");
+        host.WriteFile("apps/boot.dat", "boot-payload");
 
         IApplicationBuilder app = host.CreateApplicationBuilder();
-        app.MapIsolated("/apps", apps => apps.UsePwaHost(AdditionalMappings.WebApp));
+        app.MapIsolated("/apps", apps => apps.UsePwaHost());
         app.MapRemaining(remaining => remaining.Run(context => context.Response.WriteAsync("shell")));
 
-        PipelineTestResponse response = await host.ExecuteAsync(app.Build(), "/apps/");
+        RequestDelegate pipeline = app.Build();
 
-        Assert.AreEqual(StatusCodes.Status200OK, response.StatusCode);
-        Assert.IsTrue(response.ContentType?.StartsWith("text/html") == true);
-        StringAssert.Contains(response.Body, "PWA root");
+        PipelineTestResponse root = await host.ExecuteAsync(pipeline, "/apps/");
+        Assert.AreEqual(StatusCodes.Status200OK, root.StatusCode);
+        Assert.IsTrue(root.ContentType?.StartsWith("text/html") == true);
+        StringAssert.Contains(root.Body, "PWA root");
+
+        PipelineTestResponse mapped = await host.ExecuteAsync(pipeline, "/apps/boot.dat");
+        Assert.AreEqual(StatusCodes.Status200OK, mapped.StatusCode);
+        Assert.AreEqual("application/octet-stream", mapped.ContentType);
+        StringAssert.Contains(mapped.Body, "boot-payload");
     }
 
     [TestMethod]
