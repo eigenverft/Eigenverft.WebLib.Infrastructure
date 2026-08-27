@@ -52,6 +52,63 @@ content/web roots and the semantic `"Web"` directory entry. Directory creation,
 validation, writable probes, standard directory keys, and DI registration are
 provided by NetLib.
 
+## 🔥 Optional self-HTTP startup warmup
+
+`AddSelfHttpWarmup(...)` can issue one pass of HTTP requests to the running application after
+`IHostApplicationLifetime.ApplicationStarted` has fired. This is useful when a deployment should pay
+first-use costs such as JIT compilation, dependency activation, TLS setup, and HTTP connection setup
+before normal traffic reaches selected endpoints.
+
+The feature is deliberately opt-in. Registration alone does not enable it; `Enabled` defaults to
+`false`, and no self-request is sent unless at least one absolute HTTP/HTTPS target is configured.
+
+```csharp
+using System;
+using Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup;
+
+builder.Services.AddSelfHttpWarmup(options =>
+{
+    options.Enabled = true;
+    options.InitialDelay = TimeSpan.FromSeconds(1);
+    options.RequestTimeout = TimeSpan.FromSeconds(5);
+    options.ConnectTimeout = TimeSpan.FromSeconds(1);
+    options.TargetUrls =
+    [
+        "https://localhost:8443/health",
+        "https://localhost:8443/",
+    ];
+});
+```
+
+The same values can be bound from the `SelfHttpWarmup` configuration section. Code-based options
+passed to `AddSelfHttpWarmup(...)` are applied after configuration binding.
+
+```json
+{
+  "SelfHttpWarmup": {
+    "Enabled": true,
+    "InitialDelay": "00:00:01",
+    "RequestTimeout": "00:00:05",
+    "ConnectTimeout": "00:00:01",
+    "TargetUrls": [
+      "https://localhost:8443/health",
+      "https://localhost:8443/"
+    ]
+  }
+}
+```
+
+Targets run sequentially once after startup. Shutdown cancels both the post-start delay and any
+in-flight request. A request timeout or connection failure is logged and does not prevent later
+targets from being attempted. Redirects are not followed, while normal platform certificate
+validation and proxy behavior remain intact.
+
+The connection fallback is intentionally an internal transport detail rather than a separate public
+feature. For each destination host WebLib resolves all usable IP addresses, prefers IPv4 as the
+legacy warmup did, and falls back through the remaining addresses with a bounded per-address connect
+timeout. The request timeout remains the overall bound for DNS, connect, TLS, and response-header
+work.
+
 ## 🔐 ASP.NET Core Data Protection adapter
 
 `AspNetDataProtectionStringTransforms` adapts an ASP.NET Core
