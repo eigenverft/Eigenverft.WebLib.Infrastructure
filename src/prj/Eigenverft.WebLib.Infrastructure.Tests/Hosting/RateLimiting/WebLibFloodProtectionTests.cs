@@ -21,18 +21,11 @@ public sealed class WebLibFloodProtectionTests
     {
         var options = new WebLibFloodProtectionOptions();
 
-        Assert.AreEqual(40, options.TokenLimit);
-        Assert.AreEqual(10, options.TokensPerPeriod);
-        Assert.AreEqual(TimeSpan.FromSeconds(1), options.ReplenishmentPeriod);
-        Assert.IsTrue(options.AutoReplenishment);
+        Assert.AreEqual(40, options.BurstSize);
+        Assert.AreEqual(10, options.RequestsPerSecond);
         Assert.AreEqual(20, options.QueueLimit);
-        Assert.AreEqual(QueueProcessingOrder.OldestFirst, options.QueueProcessingOrder);
         Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.MissingClientIpBehavior);
-        Assert.AreEqual(StatusCodes.Status429TooManyRequests, options.RejectionStatusCode);
-        Assert.IsTrue(options.EmitRetryAfterHeader);
-        Assert.IsTrue(options.LogRejectedRequests);
-        Assert.IsNull(options.GlobalConcurrencyPermitLimit);
-        Assert.AreEqual(0, options.GlobalConcurrencyQueueLimit);
+        Assert.IsNull(options.GlobalConcurrencyLimit);
     }
 
     [TestMethod]
@@ -55,9 +48,9 @@ public sealed class WebLibFloodProtectionTests
     }
 
     [TestMethod]
-    public void RegistrationUsesConfiguredRejectionStatusCode()
+    public void RegistrationUses429RejectionStatusCode()
     {
-        using ServiceProvider provider = BuildProvider(options => options.RejectionStatusCode = StatusCodes.Status429TooManyRequests);
+        using ServiceProvider provider = BuildProvider();
         RateLimiterOptions frameworkOptions = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value;
 
         Assert.AreEqual(StatusCodes.Status429TooManyRequests, frameworkOptions.RejectionStatusCode);
@@ -136,16 +129,38 @@ public sealed class WebLibFloodProtectionTests
     }
 
     [TestMethod]
+    public void MissingClientIpBypassStillUsesGlobalConcurrencyLimiter()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            ConfigureSingleTokenNoQueue(options);
+            options.MissingClientIpBehavior = MissingClientIpBehavior.BypassPerIpLimit;
+            options.GlobalConcurrencyLimit = 1;
+        });
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+
+        var first = new DefaultHttpContext();
+        var second = new DefaultHttpContext();
+
+        RateLimitLease firstLease = limiter.AttemptAcquire(first, permitCount: 1);
+        using RateLimitLease blockedByGlobalLimit = limiter.AttemptAcquire(second, permitCount: 1);
+
+        Assert.IsTrue(firstLease.IsAcquired);
+        Assert.IsFalse(blockedByGlobalLimit.IsAcquired);
+
+        firstLease.Dispose();
+        using RateLimitLease afterRelease = limiter.AttemptAcquire(second, permitCount: 1);
+        Assert.IsTrue(afterRelease.IsAcquired);
+    }
+
+    [TestMethod]
     public async Task QueueLimitBoundsQueuedWorkForOneClient()
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.TokenLimit = 1;
-            options.TokensPerPeriod = 1;
-            options.ReplenishmentPeriod = TimeSpan.FromHours(1);
-            options.AutoReplenishment = false;
+            options.BurstSize = 1;
+            options.RequestsPerSecond = 1;
             options.QueueLimit = 1;
-            options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
         });
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
         var context = CreateContext("203.0.113.20");
@@ -177,16 +192,15 @@ public sealed class WebLibFloodProtectionTests
     }
 
     [TestMethod]
-    public void TokenBucketRejectionProvidesFrameworkRetryAfterMetadata()
+    public async Task TokenBucketRejectionEmitsFrameworkRetryAfterMetadataAsHeader()
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.TokenLimit = 1;
-            options.TokensPerPeriod = 1;
-            options.ReplenishmentPeriod = TimeSpan.FromSeconds(30);
-            options.AutoReplenishment = true;
+            options.BurstSize = 1;
+            options.RequestsPerSecond = 1;
             options.QueueLimit = 0;
         });
+        RateLimiterOptions frameworkOptions = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value;
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
         var context = CreateContext("203.0.113.21");
 
@@ -197,6 +211,13 @@ public sealed class WebLibFloodProtectionTests
         Assert.IsFalse(rejected.IsAcquired);
         Assert.IsTrue(rejected.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter));
         Assert.IsGreaterThan(TimeSpan.Zero, retryAfter);
+
+        Assert.IsNotNull(frameworkOptions.OnRejected);
+        await frameworkOptions.OnRejected(
+            new OnRejectedContext { HttpContext = context, Lease = rejected },
+            CancellationToken.None);
+
+        Assert.IsTrue(context.Response.Headers.ContainsKey("Retry-After"));
     }
 
     [TestMethod]
@@ -204,12 +225,10 @@ public sealed class WebLibFloodProtectionTests
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.TokenLimit = 100;
-            options.TokensPerPeriod = 100;
-            options.AutoReplenishment = false;
+            options.BurstSize = 100;
+            options.RequestsPerSecond = 100;
             options.QueueLimit = 0;
-            options.GlobalConcurrencyPermitLimit = 1;
-            options.GlobalConcurrencyQueueLimit = 0;
+            options.GlobalConcurrencyLimit = 1;
         });
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
         var first = CreateContext("192.0.2.31");
@@ -240,7 +259,7 @@ public sealed class WebLibFloodProtectionTests
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddWebLibFloodProtection(configure);
+        services.AddFloodProtection(configure);
         return services.BuildServiceProvider(validateScopes: true);
     }
 
@@ -259,10 +278,8 @@ public sealed class WebLibFloodProtectionTests
 
     private static void ConfigureSingleTokenNoQueue(WebLibFloodProtectionOptions options)
     {
-        options.TokenLimit = 1;
-        options.TokensPerPeriod = 1;
-        options.ReplenishmentPeriod = TimeSpan.FromHours(1);
-        options.AutoReplenishment = false;
+        options.BurstSize = 1;
+        options.RequestsPerSecond = 1;
         options.QueueLimit = 0;
     }
 }

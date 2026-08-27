@@ -7,20 +7,15 @@ WebLib provides a small registration and options layer over the ASP.NET Core rat
 ```csharp
 using Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting;
 
-builder.Services.AddWebLibFloodProtection(options =>
-{
-    options.TokenLimit = 40;
-    options.TokensPerPeriod = 10;
-    options.ReplenishmentPeriod = TimeSpan.FromSeconds(1);
-    options.QueueLimit = 20;
-    options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-});
+builder.Services.AddFloodProtection();
 
-// If a trusted reverse proxy supplies the client address, configure and run
-// Forwarded Headers before rate limiting so Connection.RemoteIpAddress is correct.
+// If a trusted reverse proxy supplies the client address, run Forwarded Headers first
+// so Connection.RemoteIpAddress contains the trusted client IP.
 app.UseForwardedHeaders();
 app.UseRateLimiter();
 ```
+
+`AddFloodProtection()` configures the global ASP.NET Core limiter. `UseRateLimiter()` stays explicit because it is the native middleware that performs the actual request limiting.
 
 The primary limiter is a `TokenBucketRateLimiter` partitioned by the normalized value of `HttpContext.Connection.RemoteIpAddress`. IPv4-mapped IPv6 addresses are normalized to IPv4, and IPv6 scope IDs are excluded from the partition identity. WebLib does not independently trust or parse forwarding headers; proxy trust remains the application's responsibility.
 
@@ -28,52 +23,58 @@ Requests without a client IP use one shared partition by default. `MissingClient
 
 ## Defaults and tuning
 
-The convenience defaults are startup values, not universal security limits:
+The defaults are only practical startup values, not universal security limits. Load-test and tune them for each consumer: endpoint cost, proxy topology, expected NAT concentration, legitimate burst behavior, and deployment capacity all matter.
 
 | Setting | Default | Meaning |
 |---|---:|---|
-| `TokenLimit` | `40` | Maximum accumulated tokens per client-IP partition; allows a short burst. |
-| `TokensPerPeriod` | `10` | Tokens restored each replenishment period. |
-| `ReplenishmentPeriod` | `1 second` | Default sustained rate is therefore approximately 10 requests/second per IP. |
-| `QueueLimit` | `20` | At most 20 queued permits per IP after immediate tokens are exhausted. |
-| `QueueProcessingOrder` | `OldestFirst` | Older queued requests are served first. |
-| `MissingClientIpBehavior` | `SharedPartition` | Missing-IP traffic shares one token bucket instead of bypassing protection. |
-| `RejectionStatusCode` | `429` | Returned by the ASP.NET Core middleware when the limiter rejects. |
-| Global concurrency | disabled | No whole-application concurrency cap unless explicitly configured. |
+| `BurstSize` | `40` | Maximum accumulated tokens per client-IP partition. |
+| `RequestsPerSecond` | `10` | Tokens replenished each second per client-IP partition. |
+| `QueueLimit` | `20` | Maximum queued requests per client-IP partition after immediate tokens are exhausted. |
+| `GlobalConcurrencyLimit` | disabled | Optional cap for total in-flight requests across all client IPs. |
 
-Load-test and tune these values for each consumer. Traffic shape, endpoint cost, proxy topology, expected NAT concentration, and legitimate burst behavior all affect suitable limits.
+Queued requests are processed `OldestFirst`. Token buckets replenish automatically once per second. Those framework mechanics are intentionally not exposed as first-class WebLib options.
 
-The options can also be configured through the normal .NET options pipeline before or after the WebLib registration, for example:
+A typical tuned setup remains one registration call:
+
+```csharp
+builder.Services.AddFloodProtection(options =>
+{
+    options.BurstSize = 60;
+    options.RequestsPerSecond = 20;
+    options.QueueLimit = 10;
+    options.GlobalConcurrencyLimit = 200;
+});
+```
+
+The options can also be configured through the normal .NET options pipeline, for example:
 
 ```csharp
 builder.Services.Configure<WebLibFloodProtectionOptions>(
     builder.Configuration.GetSection("WebLib:FloodProtection"));
-builder.Services.AddWebLibFloodProtection();
+builder.Services.AddFloodProtection();
 ```
 
-## Rejection and observability
+## Rejection, Retry-After, and observability
 
-When the token bucket can estimate when another permit will become available, the framework exposes `MetadataName.RetryAfter`. WebLib copies that metadata to a `Retry-After` response header when available; it does not invent a retry time for limiters that cannot estimate one, such as a pure concurrency rejection.
+Rejected requests use HTTP `429 Too Many Requests`. When the token bucket provides `MetadataName.RetryAfter`, WebLib copies the framework-provided delay to the standard `Retry-After` response header. It does not invent a retry duration for limiters that cannot estimate one, such as a pure concurrency rejection.
 
-Rejected requests are logged at warning level by default with the normalized client partition and any framework-provided retry delay. This can be disabled through `LogRejectedRequests`. The native ASP.NET Core rate-limiting middleware remains in use, so its normal diagnostics and metrics are preserved rather than replaced by a custom middleware implementation.
+The native ASP.NET Core rate-limiting middleware remains in use, so its built-in rate-limiting metrics and diagnostics stay available. WebLib does not add a second limiter engine or a separate metrics subsystem.
 
 ## Optional global concurrency guard
 
-Set `GlobalConcurrencyPermitLimit` to add a `ConcurrencyLimiter` after the per-IP token bucket:
+Set `GlobalConcurrencyLimit` to add a `ConcurrencyLimiter` after the per-IP token bucket:
 
 ```csharp
-builder.Services.AddWebLibFloodProtection(options =>
+builder.Services.AddFloodProtection(options =>
 {
-    options.GlobalConcurrencyPermitLimit = 200;
-    options.GlobalConcurrencyQueueLimit = 20;
-    options.GlobalConcurrencyQueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    options.GlobalConcurrencyLimit = 200;
 });
 ```
 
-The per-IP token bucket remains the primary flood-control mechanism. The concurrency limiter is an optional second guard for total in-flight work across all client IPs.
+The global concurrency limiter uses no additional queue. The bounded per-IP queue remains the only queue configured by this convenience layer, which keeps total backlog behavior easy to reason about.
 
 ## Legacy replacement scope
 
 `RequestRateSmoothing` is replaced by the framework token-bucket model described above. Its custom rolling buckets, hysteresis state, client cleanup loop, and delay steps are intentionally not ported.
 
-`RequestDelayThrottling` is dropped rather than reimplemented. Its only distinct behavior was per-client counting followed by artificial delay and stale-client cleanup; it did not provide a separate protection case that needs to survive. Bounded framework queueing plus rejection when the queue is full replaces that delay-only shaping model.
+`RequestDelayThrottling` is dropped rather than reimplemented. Its delay-only shaping behavior is replaced by bounded framework queueing plus rejection when the queue is full.

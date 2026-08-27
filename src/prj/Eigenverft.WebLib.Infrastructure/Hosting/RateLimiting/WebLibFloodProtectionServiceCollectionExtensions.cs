@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
@@ -28,7 +27,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
         /// middleware with <c>app.UseRateLimiter()</c>. Client IPs are read from <c>HttpContext.Connection.RemoteIpAddress</c>,
         /// so trusted forwarded-header processing must run before rate limiting when a reverse proxy supplies the real client IP.
         /// </remarks>
-        public static IServiceCollection AddWebLibFloodProtection(
+        public static IServiceCollection AddFloodProtection(
             this IServiceCollection services,
             Action<WebLibFloodProtectionOptions>? configure = null)
         {
@@ -41,16 +40,11 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
             }
 
             optionsBuilder
-                .Validate(static options => options.TokenLimit > 0, "TokenLimit must be greater than zero.")
-                .Validate(static options => options.TokensPerPeriod > 0, "TokensPerPeriod must be greater than zero.")
-                .Validate(static options => options.ReplenishmentPeriod > TimeSpan.Zero, "ReplenishmentPeriod must be greater than zero.")
+                .Validate(static options => options.BurstSize > 0, "BurstSize must be greater than zero.")
+                .Validate(static options => options.RequestsPerSecond > 0, "RequestsPerSecond must be greater than zero.")
                 .Validate(static options => options.QueueLimit >= 0, "QueueLimit cannot be negative.")
-                .Validate(static options => Enum.IsDefined(typeof(QueueProcessingOrder), options.QueueProcessingOrder), "QueueProcessingOrder is invalid.")
                 .Validate(static options => Enum.IsDefined(typeof(MissingClientIpBehavior), options.MissingClientIpBehavior), "MissingClientIpBehavior is invalid.")
-                .Validate(static options => options.RejectionStatusCode >= 100 && options.RejectionStatusCode <= 599, "RejectionStatusCode must be a valid HTTP status code.")
-                .Validate(static options => options.GlobalConcurrencyPermitLimit is null || options.GlobalConcurrencyPermitLimit > 0, "GlobalConcurrencyPermitLimit must be null or greater than zero.")
-                .Validate(static options => options.GlobalConcurrencyQueueLimit >= 0, "GlobalConcurrencyQueueLimit cannot be negative.")
-                .Validate(static options => Enum.IsDefined(typeof(QueueProcessingOrder), options.GlobalConcurrencyQueueProcessingOrder), "GlobalConcurrencyQueueProcessingOrder is invalid.")
+                .Validate(static options => options.GlobalConcurrencyLimit is null || options.GlobalConcurrencyLimit > 0, "GlobalConcurrencyLimit must be null or greater than zero.")
                 .ValidateOnStart();
 
             services.AddRateLimiter(static _ => { });
@@ -64,7 +58,6 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
     internal sealed class WebLibFloodProtectionRateLimiterOptionsSetup : IConfigureOptions<RateLimiterOptions>
     {
         private const string RetryAfterHeaderName = "Retry-After";
-        private const string LoggerCategory = "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.FloodProtection";
 
         private readonly IOptions<WebLibFloodProtectionOptions> _options;
 
@@ -78,17 +71,26 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
             ArgumentNullException.ThrowIfNull(rateLimiterOptions);
 
             WebLibFloodProtectionOptions options = _options.Value;
-            PartitionedRateLimiter<HttpContext> perIpLimiter = CreatePerIpLimiter(options);
+            PartitionedRateLimiter<HttpContext> floodLimiter = CreateFloodLimiter(options);
 
-            rateLimiterOptions.RejectionStatusCode = options.RejectionStatusCode;
-            rateLimiterOptions.GlobalLimiter = options.GlobalConcurrencyPermitLimit is int globalPermitLimit
+            rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            rateLimiterOptions.GlobalLimiter = rateLimiterOptions.GlobalLimiter is null
+                ? floodLimiter
+                : PartitionedRateLimiter.CreateChained(rateLimiterOptions.GlobalLimiter, floodLimiter);
+
+            Func<OnRejectedContext, CancellationToken, ValueTask>? previousOnRejected = rateLimiterOptions.OnRejected;
+            rateLimiterOptions.OnRejected = (context, cancellationToken) =>
+                OnRejectedAsync(context, cancellationToken, previousOnRejected);
+        }
+
+        private static PartitionedRateLimiter<HttpContext> CreateFloodLimiter(WebLibFloodProtectionOptions options)
+        {
+            PartitionedRateLimiter<HttpContext> perIpLimiter = CreatePerIpLimiter(options);
+            return options.GlobalConcurrencyLimit is int globalConcurrencyLimit
                 ? PartitionedRateLimiter.CreateChained(
                     perIpLimiter,
-                    CreateGlobalConcurrencyLimiter(options, globalPermitLimit))
+                    CreateGlobalConcurrencyLimiter(globalConcurrencyLimit))
                 : perIpLimiter;
-
-            rateLimiterOptions.OnRejected = (context, cancellationToken) =>
-                OnRejectedAsync(context, cancellationToken, options);
         }
 
         private static PartitionedRateLimiter<HttpContext> CreatePerIpLimiter(WebLibFloodProtectionOptions options)
@@ -106,19 +108,17 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
                     partitionKey,
                     _ => new TokenBucketRateLimiterOptions
                     {
-                        TokenLimit = options.TokenLimit,
-                        TokensPerPeriod = options.TokensPerPeriod,
-                        ReplenishmentPeriod = options.ReplenishmentPeriod,
-                        AutoReplenishment = options.AutoReplenishment,
+                        TokenLimit = options.BurstSize,
+                        TokensPerPeriod = options.RequestsPerSecond,
+                        ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+                        AutoReplenishment = true,
                         QueueLimit = options.QueueLimit,
-                        QueueProcessingOrder = options.QueueProcessingOrder,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                     });
             }, StringComparer.Ordinal);
         }
 
-        private static PartitionedRateLimiter<HttpContext> CreateGlobalConcurrencyLimiter(
-            WebLibFloodProtectionOptions options,
-            int permitLimit)
+        private static PartitionedRateLimiter<HttpContext> CreateGlobalConcurrencyLimiter(int permitLimit)
         {
             return PartitionedRateLimiter.Create<HttpContext, string>(
                 _ => RateLimitPartition.GetConcurrencyLimiter(
@@ -126,48 +126,31 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
                     _ => new ConcurrencyLimiterOptions
                     {
                         PermitLimit = permitLimit,
-                        QueueLimit = options.GlobalConcurrencyQueueLimit,
-                        QueueProcessingOrder = options.GlobalConcurrencyQueueProcessingOrder,
+                        QueueLimit = 0,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                     }),
                 StringComparer.Ordinal);
         }
 
-        private static ValueTask OnRejectedAsync(
+        private static async ValueTask OnRejectedAsync(
             OnRejectedContext context,
             CancellationToken cancellationToken,
-            WebLibFloodProtectionOptions options)
+            Func<OnRejectedContext, CancellationToken, ValueTask>? previousOnRejected)
         {
-            _ = cancellationToken;
-
-            string? retryAfterSeconds = null;
-            if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter) && retryAfter > TimeSpan.Zero)
+            if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter) &&
+                retryAfter > TimeSpan.Zero &&
+                !context.HttpContext.Response.HasStarted &&
+                !context.HttpContext.Response.Headers.ContainsKey(RetryAfterHeaderName))
             {
-                retryAfterSeconds = Math.Max(1D, Math.Ceiling(retryAfter.TotalSeconds))
+                string retryAfterSeconds = Math.Max(1D, Math.Ceiling(retryAfter.TotalSeconds))
                     .ToString("0", CultureInfo.InvariantCulture);
-
-                if (options.EmitRetryAfterHeader &&
-                    !context.HttpContext.Response.HasStarted &&
-                    !context.HttpContext.Response.Headers.ContainsKey(RetryAfterHeaderName))
-                {
-                    context.HttpContext.Response.Headers[RetryAfterHeaderName] = retryAfterSeconds;
-                }
+                context.HttpContext.Response.Headers[RetryAfterHeaderName] = retryAfterSeconds;
             }
 
-            if (options.LogRejectedRequests)
+            if (previousOnRejected is not null)
             {
-                ILoggerFactory? loggerFactory = context.HttpContext.RequestServices.GetService<ILoggerFactory>();
-                ILogger? logger = loggerFactory?.CreateLogger(LoggerCategory);
-                logger?.LogWarning(
-                    "Request rejected by WebLib flood protection. ClientPartition={ClientPartition} StatusCode={StatusCode} RetryAfterSeconds={RetryAfterSeconds}",
-                    ClientIpPartitionKey.Resolve(context.HttpContext) ??
-                        (options.MissingClientIpBehavior == MissingClientIpBehavior.BypassPerIpLimit
-                            ? ClientIpPartitionKey.MissingBypassPartition
-                            : ClientIpPartitionKey.MissingSharedPartition),
-                    options.RejectionStatusCode,
-                    retryAfterSeconds);
+                await previousOnRejected(context, cancellationToken).ConfigureAwait(false);
             }
-
-            return ValueTask.CompletedTask;
         }
     }
 }
