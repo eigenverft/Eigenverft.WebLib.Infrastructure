@@ -26,7 +26,7 @@
     <PackageProjectUrl>https://github.com/eigenverft/$(AssemblyName)</PackageProjectUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageIcon>eigenverft-logo-v7-harbor-square_128_128.png</PackageIcon>
+    <PackageIcon>evt-logo_on_all_standard_128x128.png</PackageIcon>
     <PackageReleaseNotes>Adds small ASP.NET Core request-pipeline helpers for canonical host/HTTPS redirects, fixed health-probe short-circuiting, ReasonPhrases-backed HTML status responses, typed HttpContext/client-network features, deduplicated middleware composition, and non-activating service-registration checks. Uses Eigenverft.NetLib.Infrastructure 1.0.20264.61091 and keeps Kestrel/SNI certificate mappings on classic PFX loading by default without automatic recovery.</PackageReleaseNotes>
     <Description>ASP.NET Core infrastructure helpers including web-host directory setup, request-pipeline middleware, typed request features, Data Protection transforms, and Kestrel/SNI configuration.</Description>
     <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;middleware;kestrel;sni;data-protection;security;eigenverft</PackageTags>
@@ -36,7 +36,7 @@
   <ItemGroup>
     <None Include="../../../README.NUGET.md" Pack="true" PackagePath="README.md" />
     <None Include="../../../LICENSE" Pack="true" PackagePath="/" Link="LICENSE" />
-    <None Include="AddPackageFiles/eigenverft-logo-v7-harbor-square_128_128.png" Pack="true" PackagePath="/" />
+    <None Include="AddPackageFiles/evt-logo_on_all_standard_128x128.png" Pack="true" PackagePath="/" />
   </ItemGroup>
 
   <ItemGroup>
