@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Class RequestTrafficLoggingOptions | Eigenverft.WebLib.Infrastructure </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Class RequestTrafficLoggingOptions | Eigenverft.WebLib.Infrastructure ">
+    
+    <meta name="description" content="Configures WebLib request traffic logging while delegating HTTP capture mechanics to ASP.NET Core HTTP Logging.">
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.json">
+      <meta property="docfx:tocrel" content="toc.json">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="Eigenverft.WebLib.Infrastructure">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+
+                <ul class="nav level1 navbar-nav">
+                      <li>
+                          <a href="../docs/introduction.html" title="Guides">Guides</a>
+                      </li>
+                      <li>
+                          <a href="../api/Eigenverft.WebLib.Infrastructure.Hosting.html" title="API">API</a>
+                      </li>
+                </ul>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div>
+              <div class="sidefilter">
+                <form class="toc-filter">
+                  <span class="glyphicon glyphicon-filter filter-icon"></span>
+                  <input type="text" id="toc_filter_input" placeholder="Enter here to filter..." onkeypress="if(event.keyCode==13) {return false;}">
+                </form>
+              </div>
+              <div class="sidetoc">
+                <div class="toc" id="toc">
+
+                  <ul class="nav level1">
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.html" title="Eigenverft.WebLib.Infrastructure.Hosting" class="">Eigenverft.WebLib.Infrastructure.Hosting</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.html" title="HttpResponseExtensions" class="">HttpResponseExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values" class="">Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Configuration.Values.AspNetDataProtectionConfigurationValueCodecs.html" title="AspNetDataProtectionConfigurationValueCodecs" class="">AspNetDataProtectionConfigurationValueCodecs</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.html" title="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="">Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html" title="WebApplicationBuilderFactory" class="">WebApplicationBuilderFactory</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Features.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Features" class="">Eigenverft.WebLib.Infrastructure.Hosting.Features</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Features.HttpContextFeatureExtensions.html" title="HttpContextFeatureExtensions" class="">HttpContextFeatureExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel" class="">Eigenverft.WebLib.Infrastructure.Hosting.Kestrel</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.ConfigureWebHostBuilderExtensions.html" title="ConfigureWebHostBuilderExtensions" class="">ConfigureWebHostBuilderExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect" class="">Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostMode.html" title="CanonicalHostMode" class="">CanonicalHostMode</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.html" title="CanonicalHostRedirectExtensions" class="">CanonicalHostRedirectExtensions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html" title="CanonicalHostRedirectOptions" class="">CanonicalHostRedirectOptions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork" class="">Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.html" title="ClientForwardedIpAddress" class="">ClientForwardedIpAddress</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpSource.html" title="ClientForwardedIpSource" class="">ClientForwardedIpSource</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkApplicationBuilderExtensions.html" title="ClientNetworkApplicationBuilderExtensions" class="">ClientNetworkApplicationBuilderExtensions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientNetworkMiddleware.html" title="ClientNetworkMiddleware" class="">ClientNetworkMiddleware</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.IClientNetworkFeature.html" title="IClientNetworkFeature" class="">IClientNetworkFeature</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware" class="">Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.HealthProbeFaviconAware.HealthProbeFaviconAwareExtensions.html" title="HealthProbeFaviconAwareExtensions" class="">HealthProbeFaviconAwareExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure" class="">Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.html" title="ApplicationBuilderMiddlewareExtensions" class="">ApplicationBuilderMiddlewareExtensions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ServiceProviderRegistrationExtensions.html" title="ServiceProviderRegistrationExtensions" class="">ServiceProviderRegistrationExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Pipeline" class="">Eigenverft.WebLib.Infrastructure.Hosting.Pipeline</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Pipeline.PipelinePartitioningExtensions.html" title="PipelinePartitioningExtensions" class="">PipelinePartitioningExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.html" title="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting" class="">Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.html" title="MissingClientIpBehavior" class="">MissingClientIpBehavior</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html" title="WebLibFloodProtectionOptions" class="">WebLibFloodProtectionOptions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html" title="WebLibFloodProtectionServiceCollectionExtensions" class="">WebLibFloodProtectionServiceCollectionExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.html" title="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging" class="">Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingApplicationBuilderExtensions.html" title="RequestTrafficLoggingApplicationBuilderExtensions" class="">RequestTrafficLoggingApplicationBuilderExtensions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingFields.html" title="RequestTrafficLoggingFields" class="">RequestTrafficLoggingFields</a>
+                          </li>
+                          <li class="active">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.html" title="RequestTrafficLoggingOptions" class="active">RequestTrafficLoggingOptions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingServiceCollectionExtensions.html" title="RequestTrafficLoggingServiceCollectionExtensions" class="">RequestTrafficLoggingServiceCollectionExtensions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode.html" title="SensitiveValueMode" class="">SensitiveValueMode</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.html" title="Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup" class="">Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.html" title="SelfHttpWarmupOptions" class="">SelfHttpWarmupOptions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupServiceCollectionExtensions.html" title="SelfHttpWarmupServiceCollectionExtensions" class="">SelfHttpWarmupServiceCollectionExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.html" title="Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles" class="">Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.AdditionalMappings.html" title="AdditionalMappings" class="">AdditionalMappings</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileAdditionalMappings.html" title="StaticFileAdditionalMappings" class="">StaticFileAdditionalMappings</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles.StaticFileApplicationBuilderExtensions.html" title="StaticFileApplicationBuilderExtensions" class="">StaticFileApplicationBuilderExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Transformations.html" title="Eigenverft.WebLib.Infrastructure.Transformations" class="">Eigenverft.WebLib.Infrastructure.Transformations</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Transformations.AspNetDataProtectionStringTransforms.html" title="AspNetDataProtectionStringTransforms" class="">AspNetDataProtectionStringTransforms</a>
+                          </li>
+                        </ul>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions">
+
+
+
+  <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions" class="text-break">Class RequestTrafficLoggingOptions</h1>
+  <div class="markdown level0 summary"><p>Configures WebLib request traffic logging while delegating HTTP capture mechanics to ASP.NET Core HTTP Logging.</p>
+</div>
+  <div class="markdown level0 conceptual"></div>
+  <div class="inheritance">
+    <h5>Inheritance</h5>
+    <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
+    <div class="level1"><span class="xref">RequestTrafficLoggingOptions</span></div>
+  </div>
+  <div class="inheritedMembers">
+    <h5>Inherited Members</h5>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object)">object.Equals(object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.equals#system-object-equals(system-object-system-object)">object.Equals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gethashcode">object.GetHashCode()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.gettype">object.GetType()</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.referenceequals">object.ReferenceEquals(object, object)</a>
+    </div>
+    <div>
+      <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
+    </div>
+  </div>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Eigenverft.html">Eigenverft</a>.<a class="xref" href="Eigenverft.WebLib.html">WebLib</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.html">Infrastructure</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.html">Hosting</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.html">RequestTrafficLogging</a></h6>
+  <h6><strong>Assembly</strong>: Eigenverft.WebLib.Infrastructure.dll</h6>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public sealed class RequestTrafficLoggingOptions</code></pre>
+  </div>
+  <h3 id="fields">Fields
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_DefaultBodyLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.DefaultBodyLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L11">View Source</a>
+  </span>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_DefaultBodyLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.DefaultBodyLimit">DefaultBodyLimit</h4>
+  <div class="markdown level1 summary"><p>The default maximum number of body bytes retained by framework HTTP Logging.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public const int DefaultBodyLimit = 4096</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="properties">Properties
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_Fields.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.Fields%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L16">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_Fields_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.Fields*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_Fields" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.Fields">Fields</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the enabled traffic-record field groups.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public RequestTrafficLoggingFields Fields { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingFields.html">RequestTrafficLoggingFields</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestBodyLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestBodyLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L31">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestBodyLimit_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestBodyLimit*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestBodyLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestBodyLimit">RequestBodyLimit</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the maximum request-body bytes retained by framework HTTP Logging.
+When request-body metadata is enabled, <code>RequestBodyTotalBytes</code> uses the request
+<code>Content-Length</code> when known and otherwise remains unknown; <code>RequestBodyTruncated</code>
+is only classified when that total is known.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int RequestBodyLimit { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestHeaders.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestHeaders%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L45">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestHeaders_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestHeaders*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestHeaders" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestHeaders">RequestHeaders</h4>
+  <div class="markdown level1 summary"><p>Gets request header names whose values may be included when request-header capture is enabled.
+Other request header names remain visible with redacted values.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ISet&lt;string&gt; RequestHeaders { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.iset-1">ISet</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseBodyLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseBodyLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L39">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseBodyLimit_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseBodyLimit*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseBodyLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseBodyLimit">ResponseBodyLimit</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the maximum response-body bytes retained by framework HTTP Logging.
+When response-body metadata is enabled, <code>ResponseBodyTotalBytes</code> uses the response
+<code>Content-Length</code> when known and otherwise remains unknown; <code>ResponseBodyTruncated</code>
+is only classified when that total is known.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public int ResponseBodyLimit { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseHeaders.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseHeaders%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L58">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseHeaders_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseHeaders*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseHeaders" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseHeaders">ResponseHeaders</h4>
+  <div class="markdown level1 summary"><p>Gets response header names whose values may be included when response-header capture is enabled.
+Other response header names remain visible with redacted values.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ISet&lt;string&gt; ResponseHeaders { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.iset-1">ISet</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveHeaders.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveHeaders%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L70">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveHeaders_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveHeaders*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveHeaders" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveHeaders">SensitiveHeaders</h4>
+  <div class="markdown level1 summary"><p>Gets header names treated as sensitive by the selected <a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveValueMode">SensitiveValueMode</a>.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ISet&lt;string&gt; SensitiveHeaders { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.iset-1">ISet</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveValueMode.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveValueMode%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L23">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveValueMode_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveValueMode*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveValueMode" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveValueMode">SensitiveValueMode</h4>
+  <div class="markdown level1 summary"><p>Gets or sets how configured sensitive header values are represented.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public SensitiveValueMode SensitiveValueMode { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode.html">SensitiveValueMode</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L8" class="contribution-link">View Source</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      <pre></pre>
+      
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>

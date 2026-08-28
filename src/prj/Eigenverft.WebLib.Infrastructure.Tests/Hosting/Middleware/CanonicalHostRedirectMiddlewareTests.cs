@@ -199,6 +199,118 @@ public sealed class CanonicalHostRedirectMiddlewareTests
     }
 
     [TestMethod]
+    public async Task MapBranchesCanUseIndependentCanonicalRedirectOverrides()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new System.Collections.Generic.Dictionary<string, string?>
+        {
+            ["CanonicalHostRedirect:PrimaryApexHost"] = "example.com",
+        });
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddCanonicalHostRedirect(options =>
+        {
+            options.Canonicalization = CanonicalHostMode.ToWww;
+        });
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+        var app = new ApplicationBuilder(provider);
+
+        app.Map("/internal", branch =>
+        {
+            branch.UseCanonicalHostRedirect(options =>
+            {
+                options.Canonicalization = CanonicalHostMode.ToApex;
+            });
+
+            branch.Run(context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                return Task.CompletedTask;
+            });
+        });
+
+        app.Map("/public", branch =>
+        {
+            branch.UseCanonicalHostRedirect();
+            branch.Run(context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                return Task.CompletedTask;
+            });
+        });
+
+        RequestDelegate pipeline = app.Build();
+
+        var internalContext = new DefaultHttpContext();
+        internalContext.RequestServices = provider;
+        internalContext.Request.Scheme = "https";
+        internalContext.Request.Host = new HostString("example.com");
+        internalContext.Request.Path = "/internal";
+        await pipeline(internalContext);
+
+        Assert.AreEqual(StatusCodes.Status204NoContent, internalContext.Response.StatusCode);
+        Assert.IsFalse(internalContext.Response.Headers.ContainsKey("Location"));
+
+        var publicContext = new DefaultHttpContext();
+        publicContext.RequestServices = provider;
+        publicContext.Request.Scheme = "https";
+        publicContext.Request.Host = new HostString("example.com");
+        publicContext.Request.Path = "/public";
+        await pipeline(publicContext);
+
+        Assert.AreEqual(StatusCodes.Status308PermanentRedirect, publicContext.Response.StatusCode);
+        Assert.AreEqual(
+            "https://www.example.com/public",
+            publicContext.Response.Headers.Location.ToString());
+    }
+
+    [TestMethod]
+    public async Task LocalCanonicalRedirectOverrideKeepsConfiguredBaselineValues()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new System.Collections.Generic.Dictionary<string, string?>
+        {
+            ["CanonicalHostRedirect:PrimaryApexHost"] = "example.com",
+            ["CanonicalHostRedirect:RedirectFromHosts:0"] = "legacy.example.com",
+        });
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IConfiguration>(configuration);
+        services.AddCanonicalHostRedirect(options =>
+        {
+            options.Canonicalization = CanonicalHostMode.ToWww;
+        });
+
+        using ServiceProvider provider = services.BuildServiceProvider();
+        var app = new ApplicationBuilder(provider);
+        app.UseCanonicalHostRedirect(options =>
+        {
+            options.HttpsTargetPort = 8443;
+        });
+
+        RequestDelegate pipeline = app.Build();
+        var context = new DefaultHttpContext();
+        context.RequestServices = provider;
+        context.Request.Scheme = "http";
+        context.Request.Host = new HostString("legacy.example.com");
+
+        await pipeline(context);
+
+        Assert.AreEqual(StatusCodes.Status308PermanentRedirect, context.Response.StatusCode);
+        Assert.AreEqual(
+            "https://www.example.com:8443/",
+            context.Response.Headers.Location.ToString());
+
+        CanonicalHostRedirectOptions global = provider
+            .GetRequiredService<IOptionsMonitor<CanonicalHostRedirectOptions>>()
+            .CurrentValue;
+        Assert.IsNull(global.HttpsTargetPort);
+        CollectionAssert.AreEqual(new[] { "legacy.example.com" }, global.RedirectFromHosts);
+    }
+
+    [TestMethod]
     public async Task ForwardedHeadersAppliedFirstPreventAnInternalSchemeAndHostRedirect()
     {
         var services = new ServiceCollection();

@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -36,6 +37,20 @@ public sealed class ClientNetworkMiddlewareTests
     }
 
     [TestMethod]
+    public async Task NativeIpv6ActualAddressRemainsIpv6()
+    {
+        IPAddress address = IPAddress.Parse("2001:db8::1234");
+        var context = new DefaultHttpContext();
+        context.Connection.RemoteIpAddress = address;
+
+        await InvokeAsync(context);
+
+        IClientNetworkFeature feature = context.GetRequiredFeature<IClientNetworkFeature>();
+        Assert.AreSame(address, feature.RemoteIpAddress);
+        Assert.AreEqual(IPAddress.Parse("2001:db8::1234"), feature.RemoteIpAddress);
+    }
+
+    [TestMethod]
     public async Task ScopedIpv6ActualAddressKeepsItsScopeId()
     {
         var address = new IPAddress(IPAddress.Parse("fe80::1").GetAddressBytes(), 12);
@@ -45,7 +60,7 @@ public sealed class ClientNetworkMiddlewareTests
         await InvokeAsync(context);
 
         IClientNetworkFeature feature = context.GetRequiredFeature<IClientNetworkFeature>();
-        Assert.AreEqual(address, feature.RemoteIpAddress);
+        Assert.AreSame(address, feature.RemoteIpAddress);
         Assert.AreEqual(12L, feature.RemoteIpAddress.ScopeId);
     }
 
@@ -77,6 +92,21 @@ public sealed class ClientNetworkMiddlewareTests
     }
 
     [TestMethod]
+    public async Task ForwardedIpv4MappedIpv6UsesSharedNormalizationContract()
+    {
+        DefaultHttpContext context = CreateContext("10.0.0.5");
+        context.Request.Headers["Forwarded"] = "for=\"[::ffff:198.51.100.9]:4711\"";
+
+        await InvokeAsync(context);
+
+        IClientNetworkFeature feature = context.GetRequiredFeature<IClientNetworkFeature>();
+        Assert.AreEqual(1, feature.ForwardedIpChain.Count);
+        Assert.AreEqual(ClientForwardedIpSource.Forwarded, feature.ForwardedIpChain[0].Source);
+        Assert.AreEqual(IPAddress.Parse("198.51.100.9"), feature.ForwardedIpChain[0].Address);
+        Assert.IsFalse(feature.ForwardedIpChain[0].IsMalformed);
+    }
+
+    [TestMethod]
     public async Task MalformedForwardedInformationIsRetainedAndFlaggedInsteadOfRejected()
     {
         DefaultHttpContext context = CreateContext("10.0.0.5");
@@ -98,6 +128,19 @@ public sealed class ClientNetworkMiddlewareTests
 
         Assert.IsFalse(feature.ForwardedIpChain[3].IsMalformed);
         Assert.AreEqual(IPAddress.Parse("192.0.2.2"), feature.ForwardedIpChain[3].Address);
+    }
+
+    [TestMethod]
+    public void MissingActualRemoteIpAddressKeepsExistingFailureBehavior()
+    {
+        var context = new DefaultHttpContext();
+
+        InvalidOperationException exception = Assert.ThrowsExactly<InvalidOperationException>(
+            () => InvokeAsync(context));
+
+        Assert.AreEqual(
+            "The client-network feature requires HttpContext.Connection.RemoteIpAddress to contain an IPv4 or IPv6 address.",
+            exception.Message);
     }
 
     private static DefaultHttpContext CreateContext(string remoteIpAddress)

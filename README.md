@@ -20,6 +20,9 @@ configuration-value protection without duplicating host-independent infrastructu
 | Managed certificates | Load existing PFX files or create policy-controlled self-signed recovery certificates | `CertificateRecoveryMode` and NetLib certificate primitives |
 | Protected certificate mappings | Keep persisted PFX passwords out of clear-text configuration after provisioning | `AspNetDataProtectionConfigurationValueCodecs` and SwitchableJson |
 | Web host directories | Apply NetLib's executable-rooted layout to ASP.NET Core content root, web root, and `wwwroot` | `WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` |
+| Canonical redirects | Normalize apex/www/aliases and HTTPS in one redirect without leaking an incoming HTTP port into the HTTPS target | `AddCanonicalHostRedirect(...)` + `UseCanonicalHostRedirect()` |
+| Health probe | Short-circuit GET/HEAD `/health` before later filters and suppress probe-originated `/favicon.ico` noise | `UseHealthProbeFaviconAware()` |
+| HTML status responses | Write a small explicit HTML status response for middleware short-circuits using ASP.NET Core reason phrases | `WriteHtmlStatusResponseAsync(...)` |
 
 WebLib targets .NET 8 and .NET 10. Installing it also brings in
 `Eigenverft.NetLib.Infrastructure` as the shared foundation.
@@ -54,6 +57,64 @@ app.MapGet("/", () => $"Web root: {webRoot}");
 app.Run();
 ```
 
+## 🔥 Optional self-HTTP startup warmup
+
+`AddSelfHttpWarmup(...)` can issue one pass of HTTP requests to the running application after startup
+has completed. This is useful when a deployment should pay first-use costs such as JIT compilation,
+dependency activation, TLS setup, and HTTP connection setup before normal traffic reaches selected
+endpoints.
+
+For code-based setup, passing the target URL is the normal path and opts in immediately:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup;
+
+builder.Services.AddSelfHttpWarmup("https://localhost:8443/health");
+```
+
+Multiple targets use the same API. The optional delegate is only for small feature-level tuning:
+
+```csharp
+using System;
+using Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup;
+
+builder.Services.AddSelfHttpWarmup(
+    new[]
+    {
+        "https://localhost:8443/health",
+        "https://localhost:8443/",
+    },
+    options =>
+    {
+        options.InitialDelay = TimeSpan.FromSeconds(1);
+        options.RequestTimeout = TimeSpan.FromSeconds(5);
+    });
+```
+
+The parameterless `AddSelfHttpWarmup()` overload is the configuration-binding path. It remains
+opt-in through `Enabled`; URL-based and code-based overloads enable warmup automatically. Values are
+bound from the `SelfHttpWarmup` section before code-based options are applied.
+
+```json
+{
+  "SelfHttpWarmup": {
+    "Enabled": true,
+    "InitialDelay": "00:00:01",
+    "RequestTimeout": "00:00:05",
+    "TargetUrls": [
+      "https://localhost:8443/health",
+      "https://localhost:8443/"
+    ]
+  }
+}
+```
+
+Targets run sequentially once after startup. Shutdown cancels both the post-start delay and any
+in-flight request. A request timeout or connection failure is logged and does not prevent later
+targets from being attempted. Redirects are not followed. Standard platform certificate validation
+remains enabled; self-HTTP warmup intentionally bypasses proxies so the request connects directly to
+the configured target.
+
 ## 🔐 ASP.NET Core Data Protection adapter
 
 `AspNetDataProtectionStringTransforms.DataProtection(...)` adapts an ASP.NET Core
@@ -67,6 +128,115 @@ only the application-specific purpose to the caller. The result is a normal
 `ConfigurationValueCodec` and can be used independently or at any position in
 `ConfigurationValueCodecs.Compose(...)`.
 
+## 🧰 Small request-pipeline helpers
+
+WebLib includes a few intentionally small ASP.NET Core helpers that are useful outside the larger
+RequestFilters stack.
+
+### Canonical host and HTTPS redirect
+
+The normal case needs one registration and one middleware call:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect;
+
+builder.Services.AddCanonicalHostRedirect(options =>
+    options.PrimaryApexHost = "example.com");
+
+WebApplication app = builder.Build();
+app.UseCanonicalHostRedirect();
+```
+
+The defaults canonicalize to `www`, require HTTPS, return `308 Permanent Redirect`, and target implicit
+HTTPS/443. Set `RedirectFromHosts`, `Canonicalization = CanonicalHostMode.ToApex`, or one
+`HttpsTargetPort` only when the deployment needs them. `AddCanonicalHostRedirect()` without a delegate
+binds the `CanonicalHostRedirect` configuration section.
+
+Configure shared defaults during registration and override only the values that differ for one middleware use:
+
+```csharp
+builder.Services.AddCanonicalHostRedirect(options =>
+    options.PrimaryApexHost = "example.com");
+
+WebApplication app = builder.Build();
+
+app.UseCanonicalHostRedirect(options =>
+{
+    options.HttpsTargetPort = 8443;
+});
+```
+
+That second delegate affects only this concrete middleware use. Another `UseCanonicalHostRedirect()` call keeps the shared baseline. Configuration reloads rebuild the current baseline first and then reapply the local override.
+
+A redirect combines host and scheme normalization into one hop and preserves `PathBase`, path, and
+query. Incoming HTTP ports are never copied to HTTPS. When a reverse proxy supplies the external scheme
+or host, configure ASP.NET Core Forwarded Headers normally and call `UseForwardedHeaders()` before
+`UseCanonicalHostRedirect()`.
+
+### Health probe and favicon suppression
+
+`UseHealthProbeFaviconAware()` handles only GET and HEAD for `/health`, returns `200 OK` with `OK`
+for GET, and short-circuits the rest of the pipeline. A GET or HEAD for `/favicon.ico` returns
+`204 No Content` only when its `Referer` points to `/health`. Keep this middleware before filters that
+a health probe must bypass.
+
+### Explicit HTML status response
+
+For a middleware that intentionally terminates a request with an HTML response, use:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting;
+using Microsoft.AspNetCore.Http;
+
+await context.Response.WriteHtmlStatusResponseAsync(StatusCodes.Status403Forbidden);
+```
+
+The helper uses `ReasonPhrases.GetReasonPhrase(...)`; WebLib does not maintain its own HTTP status
+code description table. General application error handling remains the responsibility of ASP.NET
+Core Status Code Pages or Problem Details.
+
+### Host filtering remains framework-owned
+
+WebLib intentionally does not provide an `AddAllowedHosts` replacement. `WebApplication.CreateBuilder()`
+already wires ASP.NET Core host filtering to the live configuration object. Clearing
+`builder.Configuration.Sources` and adding replacement sources does not remove that wiring, so a
+rebuilt `AllowedHosts` value is still consumed by the built-in host-filtering options.
+
+### Flood protection
+
+For a small framework-based HTTP flood guard, register WebLib's per-client-IP token bucket and activate ASP.NET Core rate limiting:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting;
+
+builder.Services.AddFloodProtection(options =>
+{
+    options.BurstSize = 40;
+    options.RequestsPerSecond = 10;
+    options.QueueLimit = 20;
+    // options.GlobalConcurrencyLimit = 500;
+});
+
+WebApplication app = builder.Build();
+app.UseRateLimiter();
+```
+
+The per-IP limiter allows short bursts, paces sustained traffic through a bounded oldest-first queue, and returns `429 Too Many Requests` when that queue is full. `GlobalConcurrencyLimit` is an optional whole-application guard. The defaults are starting values, not universal capacity limits; tune them under realistic load. If a trusted reverse proxy supplies the client IP, run Forwarded Headers before rate limiting.
+
+### Request traffic logging
+
+Request traffic logging builds on ASP.NET Core HTTP Logging but keeps one combined, structured traffic event per request with explicit completion semantics:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging;
+
+builder.Services.AddRequestTrafficLogging();
+
+WebApplication app = builder.Build();
+app.UseRequestTrafficLogging();
+```
+
+The completion layer distinguishes completed, aborted, and faulted requests while framework HTTP Logging owns request/response capture. Sensitive header values are redacted by default, and body capture is bounded. Register `UseRequestTrafficLogging()` before exception-handling middleware when handled exceptions should still be classified as faulted with their final handled response status.
 ## 🌐 Kestrel and SNI
 
 `ConfigureKestrelSniFromConfiguration(...)` is the top-level entry point for
@@ -344,6 +514,63 @@ Earlier copies of this helper used a single `SanNames` array. When migrating, sp
 `AdditionalSelfSignedCertificateIpAddresses`, choose a recovery mode where necessary, and use
 the `Eigenverft.WebLib.Infrastructure.Hosting.Kestrel` namespace instead of an application-local
 or `Eigenverft.Routed.RequestFilters` implementation.
+
+## 📁 Isolated static and PWA hosting
+
+WebLib provides thin pipeline partitioning and static-file conveniences without introducing a separate
+routing or mount system. `MapIsolated(...)` delegates to native ASP.NET Core `Map`, preserves the matched
+path segment, and owns the matching URL subtree. `MapRemaining(...)` makes the shell pipeline explicit
+after all isolated subtrees.
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Pipeline;
+using Eigenverft.WebLib.Infrastructure.Hosting.StaticFiles;
+
+app.MapIsolated("/apps", apps =>
+{
+    apps.UseDefaultFiles();
+    apps.UseStaticFiles(AdditionalMappings.WebApp);
+});
+
+app.MapIsolated("/downloads", downloads =>
+{
+    downloads.UseStaticFiles(AdditionalMappings.Media);
+});
+
+app.MapRemaining(shell =>
+{
+    shell.UseRouting();
+    shell.UseEndpoints(endpoints =>
+    {
+        // Configure the remaining Razor/Blazor/API endpoints here.
+        endpoints.MapRazorComponents<App>();
+    });
+});
+```
+
+`MapRemaining` deliberately exposes a normal `IApplicationBuilder`; endpoint APIs such as `MapStaticAssets()` and
+`MapRazorComponents<T>()` therefore stay inside native `UseEndpoints(...)` rather than requiring a WebLib-specific
+hybrid pipeline/router builder.
+
+Because the isolated branch keeps the matched request path, `/apps/index.html` resolves naturally against
+`wwwroot/apps/index.html` and `/downloads/file.avif` against `wwwroot/downloads/file.avif`. The web-app branch
+uses native ASP.NET Core `UseDefaultFiles()` plus the typed `UseStaticFiles(AdditionalMappings.WebApp)` extension.
+A missing file reaches the native end of the isolated branch and returns 404; it does not rejoin `MapRemaining`,
+Razor Components, or another shell fallback.
+Outer status-code-page re-execution is also disabled for isolated requests so a global
+`UseStatusCodePagesWithReExecute(...)` cannot transfer ownership of that branch-owned 404 to the shell.
+
+Static-file mappings remain additive to the target framework defaults:
+
+- `AdditionalMappings.WebApp` adds only `.br` and `.dat` as `application/octet-stream`; `.webmanifest` and
+  `.wasm` already come from the ASP.NET Core defaults on both supported target frameworks.
+- `AdditionalMappings.Media` adds `.avif` as `image/avif` on `net8.0`; it is intentionally a no-op on
+  `net10.0`, where ASP.NET Core already provides that mapping.
+- `AdditionalMappings.Combine(...)` composes typed groups when one branch needs more than one set.
+
+The `FileExtensionContentTypeProvider` remains an internal implementation detail. There is no separate
+PWA/Blazor-specific `UseStaticFilesWithPwaAndBlazorContentTypes(...)` API and no universal mount primitive.
+Use `MapIsolated` + normal ASP.NET Core middleware for owned subtrees, then `MapRemaining` for the shell.
 
 ## 🎯 Target frameworks
 

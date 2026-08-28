@@ -1,11 +1,11 @@
 [
   {
     "PackageId": "Eigenverft.NetLib.Infrastructure",
-    "PackageVersion": "1.0.20264.58155-qa",
+    "PackageVersion": "1.0.20264.61091",
     "PackageProjectUrl": "https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure",
     "Copyright": "Copyright (c) 2026 Eigenverft",
     "Authors": "Eigenverft",
-    "Description": "Reusable .NET infrastructure primitives for Generic Host, executable-rooted directory layouts, reversible string transforms, machine binding, X.509 certificates, and bootstrap logging.",
+    "Description": "Reusable .NET infrastructure primitives for Generic Host, configuration binding, IP/CIDR networking, executable-rooted directory layouts, reversible string transforms, machine binding, X.509 certificates, and bootstrap logging.",
     "License": "MIT",
     "LicenseUrl": "https://licenses.nuget.org/MIT",
     "LicenseInformationOrigin": 0
