@@ -118,7 +118,7 @@
 <li>the library owns monitor behavior that the framework already provides.</li>
 </ul>
 <h3 id="framework-based-composition">Framework-based composition</h3>
-<p>WebLib keeps the feature-specific consumer API but rebuilds each local variant through the standard registered options components. An internal helper creates a framework <code>OptionsFactory&lt;TOptions&gt;</code> from the registered configure, post-configure, and validation services, appends the use-site delegate as the final post-configure step, and places that factory behind a separate framework <code>OptionsMonitor&lt;TOptions&gt;</code> with its own cache and the registered change-token sources.</p>
+<p>WebLib keeps the feature-specific consumer API but rebuilds each local variant through the standard registered options components. Reusable middleware libraries can call <code>ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor&lt;TOptions&gt;</code> from their own <code>UseX(options =&gt; ...)</code> overloads; ordinary applications normally use the feature-specific middleware API instead. The public method delegates to an internal implementation that creates a framework <code>OptionsFactory&lt;TOptions&gt;</code> from the registered configure, post-configure, and validation services, appends the use-site delegate as the final post-configure step, and places that factory behind a separate framework <code>OptionsMonitor&lt;TOptions&gt;</code> with its own cache and the registered change-token sources.</p>
 <p>The resulting order is:</p>
 <pre><code class="lang-text">code defaults
 → registered Configure steps (including configuration binding)
@@ -128,11 +128,9 @@
 → registered validation
 </code></pre>
 <p>Because <code>OptionsFactory&lt;TOptions&gt;</code> constructs a fresh options instance before replaying that pipeline, a use-site override does not need reflection cloning. Configuration helpers such as NetLib collection-replacement binding remain responsible for how code defaults and configuration form the baseline; the local override simply runs after that baseline has been rebuilt.</p>
-<p>The separate <code>OptionsMonitor&lt;TOptions&gt;</code> preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. Other middleware uses have separate monitors/caches and therefore remain unaffected.</p>
+<p>The separate <code>OptionsMonitor&lt;TOptions&gt;</code> preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. <code>OnChange</code> subscribers receive that rebuilt value after the local override has been reapplied. The application's registered/global options monitor is never mutated, and other middleware uses have separate monitors/caches and therefore remain unaffected.</p>
 <h3 id="mutable-reference-values">Mutable reference values</h3>
 <p>Fresh factory-created options isolate normal code-default collections, arrays, dictionaries, nested mutable objects, and values rebuilt by configuration binding. One explicit boundary remains: if consumer-owned configure/post-configure code deliberately assigns the same mutable object instance (for example a captured singleton list) to every newly created options instance, WebLib does not deep-clone that shared object. Avoid deliberately shared mutable instances when use-site mutation is required.</p>
-<h3 id="named-options-versus-local-composition">Named options versus local composition</h3>
-<p>Named options remain the better fit for durable variants such as <code>Internal</code>, <code>Public</code>, or <code>Admin</code> that are part of service registration and are useful by name elsewhere. A use-site overload is the clearer fit when the application already has one shared baseline and exactly one middleware placement needs two local differences after <code>Build()</code>.</p>
 <h3 id="canonical-host-redirect-example">Canonical host redirect example</h3>
 <p>Configure the shared baseline during service registration and override only the values that differ at one middleware placement:</p>
 <pre><code class="lang-csharp">builder.Services.AddCanonicalHostRedirect(options =&gt;
