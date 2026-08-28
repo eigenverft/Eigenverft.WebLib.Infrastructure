@@ -173,6 +173,23 @@ query. Incoming HTTP ports are never copied to HTTPS. When a reverse proxy suppl
 or host, configure ASP.NET Core Forwarded Headers normally and call `UseForwardedHeaders()` before
 `UseCanonicalHostRedirect()`.
 
+### Public use-site options monitor
+
+Reusable middleware libraries can expose a local `UseX(Action<TOptions>)` override without replacing ASP.NET Core's options architecture. Build an isolated monitor from the concrete application pipeline:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure;
+using Microsoft.Extensions.Options;
+
+IOptionsMonitor<MyOptions> localOptions =
+    app.CreateUseSiteOptionsMonitor<MyOptions>(options =>
+    {
+        options.Mode = "local";
+    });
+```
+
+The monitor starts from normal registered options configuration and configuration binding, runs registered `PostConfigure` steps, applies the local use-site override afterwards, and then runs registered validation. It uses the registered change-token sources, so configuration reload rebuilds the current baseline and reapplies the same local override; `OnChange` receives that rebuilt locally overridden value. The monitor has its own cache and fresh options instances, so local mutable changes do not alter the application's global options monitor.
+
 ### Health probe and favicon suppression
 
 `UseHealthProbeFaviconAware()` handles only GET and HEAD for `/health`, returns `200 OK` with `OK`

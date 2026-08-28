@@ -50,7 +50,7 @@ code defaults
 
 Because `OptionsFactory<TOptions>` constructs a fresh options instance before replaying that pipeline, a use-site override does not need reflection cloning. Configuration helpers such as NetLib collection-replacement binding remain responsible for how code defaults and configuration form the baseline; the local override simply runs after that baseline has been rebuilt.
 
-The separate `OptionsMonitor<TOptions>` preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. Other middleware uses have separate monitors/caches and therefore remain unaffected.
+The separate `OptionsMonitor<TOptions>` preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. `OnChange` subscribers receive that rebuilt value after the local override has been reapplied. The application's registered/global options monitor is never mutated, and other middleware uses have separate monitors/caches and therefore remain unaffected.
 
 ### Mutable reference values
 
