@@ -333,10 +333,89 @@
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions_CreateUseSiteOptionsMonitor__1_Microsoft_AspNetCore_Builder_IApplicationBuilder_System_Action___0__.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor%60%601(Microsoft.AspNetCore.Builder.IApplicationBuilder%2CSystem.Action%7B%60%600%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/Infrastructure/ApplicationBuilderMiddlewareExtensions.cs/#L58">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions_CreateUseSiteOptionsMonitor_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions_CreateUseSiteOptionsMonitor__1_Microsoft_AspNetCore_Builder_IApplicationBuilder_System_Action___0__" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor``1(Microsoft.AspNetCore.Builder.IApplicationBuilder,System.Action{``0})">CreateUseSiteOptionsMonitor&lt;TOptions&gt;(IApplicationBuilder, Action&lt;TOptions&gt;)</h4>
+  <div class="markdown level1 summary"><p>Creates an isolated options monitor for one middleware use by rebuilding the registered options baseline
+and applying the supplied local override afterwards.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static IOptionsMonitor&lt;TOptions&gt; CreateUseSiteOptionsMonitor&lt;TOptions&gt;(this IApplicationBuilder app, Action&lt;TOptions&gt; configure) where TOptions : class</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.builder.iapplicationbuilder">IApplicationBuilder</a></td>
+        <td><span class="parametername">app</span></td>
+        <td><p>The application builder for the concrete middleware use.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.action-1">Action</a>&lt;TOptions&gt;</td>
+        <td><span class="parametername">configure</span></td>
+        <td><p>The local override to apply only to this options monitor.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/microsoft.extensions.options.ioptionsmonitor-1">IOptionsMonitor</a>&lt;TOptions&gt;</td>
+        <td><p>An isolated, reload-aware options monitor.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="typeParameters">Type Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="parametername">TOptions</span></td>
+        <td><p>The options type.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions_CreateUseSiteOptionsMonitor__1_Microsoft_AspNetCore_Builder_IApplicationBuilder_System_Action___0___remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Global options are not modified and separate middleware uses remain independent. Registered configure and
+post-configure steps build the baseline before <code class="paramref">configure</code> runs, and registered validation
+runs afterwards. Configuration reloads rebuild from the current registered baseline and then reapply the
+same local override.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
     <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions_UseMiddlewareOnce__1_Microsoft_AspNetCore_Builder_IApplicationBuilder_.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.UseMiddlewareOnce%60%601(Microsoft.AspNetCore.Builder.IApplicationBuilder)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/Infrastructure/ApplicationBuilderMiddlewareExtensions.cs/#L23">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/Infrastructure/ApplicationBuilderMiddlewareExtensions.cs/#L24">View Source</a>
   </span>
   <a id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions_UseMiddlewareOnce_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.UseMiddlewareOnce*"></a>
   <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions_UseMiddlewareOnce__1_Microsoft_AspNetCore_Builder_IApplicationBuilder_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.UseMiddlewareOnce``1(Microsoft.AspNetCore.Builder.IApplicationBuilder)">UseMiddlewareOnce&lt;TMiddleware&gt;(IApplicationBuilder)</h4>
@@ -411,7 +490,7 @@ to that branch. This helper intentionally does not attempt graph-wide deduplicat
                     <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/Infrastructure/ApplicationBuilderMiddlewareExtensions.cs/#L11" class="contribution-link">View Source</a>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/Infrastructure/ApplicationBuilderMiddlewareExtensions.cs/#L12" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>
