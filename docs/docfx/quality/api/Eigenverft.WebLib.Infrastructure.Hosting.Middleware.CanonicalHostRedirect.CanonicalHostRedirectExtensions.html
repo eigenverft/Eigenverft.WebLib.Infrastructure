@@ -492,6 +492,68 @@
   <div class="markdown level1 remarks"><p>Place forwarded-header middleware before this call when a reverse proxy supplies the external host or scheme.
 The matching <code>AddCanonicalHostRedirect()</code> registration is required and is checked without activating services.</p>
 </div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectExtensions_UseCanonicalHostRedirect_Microsoft_AspNetCore_Builder_IApplicationBuilder_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions__.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.UseCanonicalHostRedirect(Microsoft.AspNetCore.Builder.IApplicationBuilder%2CSystem.Action%7BEigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions%7D)%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/CanonicalHostRedirect/CanonicalHostRedirectExtensions.cs/#L107">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectExtensions_UseCanonicalHostRedirect_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.UseCanonicalHostRedirect*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectExtensions_UseCanonicalHostRedirect_Microsoft_AspNetCore_Builder_IApplicationBuilder_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions__" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectExtensions.UseCanonicalHostRedirect(Microsoft.AspNetCore.Builder.IApplicationBuilder,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions})">UseCanonicalHostRedirect(IApplicationBuilder, Action&lt;CanonicalHostRedirectOptions&gt;)</h4>
+  <div class="markdown level1 summary"><p>Adds the canonical host redirect middleware and overrides only the values that differ for this middleware use.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public static IApplicationBuilder UseCanonicalHostRedirect(this IApplicationBuilder app, Action&lt;CanonicalHostRedirectOptions&gt; configure)</code></pre>
+  </div>
+  <h5 class="parameters">Parameters</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.builder.iapplicationbuilder">IApplicationBuilder</a></td>
+        <td><span class="parametername">app</span></td>
+        <td><p>The application builder.</p>
+</td>
+      </tr>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.action-1">Action</a>&lt;<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedirect.CanonicalHostRedirectOptions.html">CanonicalHostRedirectOptions</a>&gt;</td>
+        <td><span class="parametername">configure</span></td>
+        <td><p>Values to override for this middleware use.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 class="returns">Returns</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/microsoft.aspnetcore.builder.iapplicationbuilder">IApplicationBuilder</a></td>
+        <td><p>The same application builder.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectExtensions_UseCanonicalHostRedirect_Microsoft_AspNetCore_Builder_IApplicationBuilder_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_Middleware_CanonicalHostRedirect_CanonicalHostRedirectOptions___remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>Shared defaults still come from <code>AddCanonicalHostRedirect()</code>, configuration binding, and registered code configuration.
+This delegate is applied last for this concrete middleware use, after registered post-configuration and before validation.
+Other <code>UseCanonicalHostRedirect()</code> calls are unaffected. Configuration reloads rebuild this local variant from the
+updated shared options pipeline and then reapply the local override.</p>
+</div>
 
 </article>
           </div>
