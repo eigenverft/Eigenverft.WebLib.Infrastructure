@@ -610,6 +610,22 @@ references:
   commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions
   nameWithType: ApplicationBuilderMiddlewareExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor*
+  name: CreateUseSiteOptionsMonitor
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions_CreateUseSiteOptionsMonitor_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor
+  nameWithType: ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor``1(Microsoft.AspNetCore.Builder.IApplicationBuilder,System.Action{``0})
+  name: CreateUseSiteOptionsMonitor<TOptions>(IApplicationBuilder, Action<TOptions>)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions_CreateUseSiteOptionsMonitor__1_Microsoft_AspNetCore_Builder_IApplicationBuilder_System_Action___0__
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor``1(Microsoft.AspNetCore.Builder.IApplicationBuilder,System.Action{``0})
+  name.vb: CreateUseSiteOptionsMonitor(Of TOptions)(IApplicationBuilder, Action(Of TOptions))
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor<TOptions>(Microsoft.AspNetCore.Builder.IApplicationBuilder, System.Action<TOptions>)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor(Of TOptions)(Microsoft.AspNetCore.Builder.IApplicationBuilder, System.Action(Of TOptions))
+  nameWithType: ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor<TOptions>(IApplicationBuilder, Action<TOptions>)
+  nameWithType.vb: ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor(Of TOptions)(IApplicationBuilder, Action(Of TOptions))
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.UseMiddlewareOnce*
   name: UseMiddlewareOnce
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.ApplicationBuilderMiddlewareExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Middleware_Infrastructure_ApplicationBuilderMiddlewareExtensions_UseMiddlewareOnce_
