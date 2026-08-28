@@ -5,7 +5,7 @@ THIRD-PARTY LICENSE NOTICES - Eigenverft.WebLib.Infrastructure
 This project includes third-party libraries under open-source licenses.
 
 --------------------------------------------
-Package: Eigenverft.NetLib.Infrastructure (v1.0.20264.55823)
+Package: Eigenverft.NetLib.Infrastructure (v1.0.20264.61091)
 License: MIT
 License URL: https://licenses.nuget.org/MIT
 Authors: Eigenverft

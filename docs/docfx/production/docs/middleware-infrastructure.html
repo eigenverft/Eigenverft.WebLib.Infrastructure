@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<!--[if IE]><![endif]-->
+<html>
+
+  <head>
+    <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+      <title>Middleware infrastructure | Eigenverft.WebLib.Infrastructure </title>
+      <meta name="viewport" content="width=device-width">
+      <meta name="title" content="Middleware infrastructure | Eigenverft.WebLib.Infrastructure ">
+    
+    
+      <link rel="shortcut icon" href="../favicon.ico">
+      <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
+      <link rel="stylesheet" href="../styles/docfx.css">
+      <link rel="stylesheet" href="../styles/main.css">
+      <meta property="docfx:navrel" content="../toc.json">
+      <meta property="docfx:tocrel" content="toc.json">
+    
+    
+    
+  </head>
+  <body data-spy="scroll" data-target="#affix" data-offset="120">
+    <div id="wrapper">
+      <header>
+
+        <nav id="autocollapse" class="navbar navbar-inverse ng-scope" role="navigation">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+
+              <a class="navbar-brand" href="../index.html">
+                <img id="logo" class="svg" src="../logo.svg" alt="Eigenverft.WebLib.Infrastructure">
+              </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <form class="navbar-form navbar-right" role="search" id="search">
+                <div class="form-group">
+                  <input type="text" class="form-control" id="search-query" placeholder="Search" autocomplete="off">
+                </div>
+              </form>
+
+                <ul class="nav level1 navbar-nav">
+                      <li>
+                          <a href="../docs/introduction.html" title="Guides">Guides</a>
+                      </li>
+                      <li>
+                          <a href="../api/Eigenverft.WebLib.Infrastructure.Hosting.html" title="API">API</a>
+                      </li>
+                </ul>
+            </div>
+          </div>
+        </nav>
+
+        <div class="subnav navbar navbar-default">
+          <div class="container hide-when-search" id="breadcrumb">
+            <ul class="breadcrumb">
+              <li></li>
+            </ul>
+          </div>
+        </div>
+      </header>
+      <div role="main" class="container body-content hide-when-search">
+        <div class="sidenav hide-when-search">
+          <a class="btn toc-toggle collapse" data-toggle="collapse" href="#sidetoggle" aria-expanded="false" aria-controls="sidetoggle">Show / Hide Table of Contents</a>
+          <div class="sidetoggle collapse" id="sidetoggle">
+            <div>
+              <div class="sidefilter">
+                <form class="toc-filter">
+                  <span class="glyphicon glyphicon-filter filter-icon"></span>
+                  <input type="text" id="toc_filter_input" placeholder="Enter here to filter..." onkeypress="if(event.keyCode==13) {return false;}">
+                </form>
+              </div>
+              <div class="sidetoc">
+                <div class="toc" id="toc">
+
+                  <ul class="nav level1">
+                    <li class="">
+                      <a href="introduction.html" title="Introduction" class="">Introduction</a>
+                    </li>
+                    <li class="">
+                      <a href="getting-started.html" title="Getting started" class="">Getting started</a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="article row grid-right">
+          <div class="col-md-10">
+            <article class="content wrap" id="_content" data-uid="">
+<h1 id="middleware-infrastructure">Middleware infrastructure</h1>
+
+<p>WP3 extracts small, general ASP.NET Core middleware infrastructure from the legacy <code>Eigenverft.Routed.RequestFilters</code> design without shrinking or modifying that legacy package.</p>
+<h2 id="client-network-feature">Client network feature</h2>
+<p><code>UseClientNetworkFeature()</code> installs shared middleware that creates one typed <code>IClientNetworkFeature</code> per request and stores it in <code>HttpContext.Features</code>.</p>
+<p>Call <code>UseClientNetworkFeature()</code> before middleware such as <code>UseForwardedHeaders()</code> that rewrites <code>HttpContext.Connection.RemoteIpAddress</code>. The client-network feature captures the remote address as it exists at its position in the pipeline, so this ordering is required when <code>RemoteIpAddress</code> must represent the actual network peer.</p>
+<p>The feature always exposes the normalized actual <code>HttpContext.Connection.RemoteIpAddress</code>. IPv4-mapped IPv6 addresses are normalized to IPv4. Existing standardized <code>Forwarded</code> <code>for=</code> values and <code>X-Forwarded-For</code> values are collected into one typed chain. Each entry preserves its source, raw token, normalized parsed IP when available, and malformed status.</p>
+<p>This layer deliberately makes no trust, legitimacy, proxy-authority, or request-behavior decision. Downstream filters/evaluators own those decisions.</p>
+<h2 id="shared-middleware-composition">Shared middleware composition</h2>
+<p><code>UseMiddlewareOnce&lt;T&gt;()</code> keeps the legacy idea but narrows its contract: it deduplicates convention middleware within normal linear pipelines and native non-rejoining <code>Map</code> branches using a type-bound marker in <code>IApplicationBuilder.Properties</code>. It intentionally does not attempt graph-wide deduplication for rejoining <code>UseWhen</code> graphs. The generic <code>UseMiddleware&lt;T&gt;()</code> overload is retained for trimming/AOT friendliness.</p>
+<p><code>EnsureServicesRegistered(...)</code> keeps the developer-experience goal that <code>UseFoo()</code> should explain a missing <code>AddFoo()</code>, but registration checks now use <code>IServiceProviderIsService</code>. Required services are not instantiated merely to probe registration. Open generic definitions are rejected explicitly because the default .NET probe treats open generic definitions as non-resolvable; callers should check a representative closed service or a dedicated marker.</p>
+<p><code>HttpContextFeatureExtensions</code> is a thin typed facade over <code>HttpContext.Features</code> only: <code>GetFeature&lt;T&gt;()</code>, <code>GetRequiredFeature&lt;T&gt;()</code>, <code>TryGetFeature&lt;T&gt;()</code>, <code>SetFeature&lt;T&gt;()</code>, <code>RemoveFeature&lt;T&gt;()</code>, plus parameterless and factory-based <code>GetOrCreateFeature&lt;T&gt;()</code> overloads.</p>
+<h2 id="c4-use-site-options-overrides-without-the-legacy-monitor">C4: use-site options overrides without the legacy monitor</h2>
+<h3 id="legacy-behavior-and-problems">Legacy behavior and problems</h3>
+<p>Legacy <code>ConfiguredOptionsMonitor&lt;TOptions&gt;</code> wrapped an <code>IOptionsMonitor&lt;TOptions&gt;</code>, created a new <code>TOptions</code>, shallow-copied public writable properties by reflection, and then applied a <code>UseX(Action&lt;TOptions&gt;)</code> delegate. RequestFilters middleware extensions passed that decorator directly to middleware so a concrete pipeline use could keep the normal reloadable baseline and override only the values that differed there.</p>
+<p>The consumer idea remains useful, but that implementation is not a safe foundation:</p>
+<ul>
+<li>the reflection copy is shallow, so mutable reference-valued properties can remain shared with the global instance;</li>
+<li>reflection plus a <code>new()</code> constraint exists only to manufacture that copy;</li>
+<li><code>CurrentValue</code> and <code>Get(name)</code> return overlaid copies, while <code>OnChange</code> forwards the inner monitor's unmodified values;</li>
+<li>the library owns monitor behavior that the framework already provides.</li>
+</ul>
+<h3 id="framework-based-composition">Framework-based composition</h3>
+<p>WebLib keeps the feature-specific consumer API but rebuilds each local variant through the standard registered options components. Reusable middleware libraries can call <code>ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor&lt;TOptions&gt;</code> from their own <code>UseX(options =&gt; ...)</code> overloads; ordinary applications normally use the feature-specific middleware API instead. The public method delegates to an internal implementation that creates a framework <code>OptionsFactory&lt;TOptions&gt;</code> from the registered configure, post-configure, and validation services, appends the use-site delegate as the final post-configure step, and places that factory behind a separate framework <code>OptionsMonitor&lt;TOptions&gt;</code> with its own cache and the registered change-token sources.</p>
+<p>The resulting order is:</p>
+<pre><code class="lang-text">code defaults
+→ registered Configure steps (including configuration binding)
+→ later AddX code configuration
+→ registered PostConfigure steps
+→ local UseX(options =&gt; ...) override
+→ registered validation
+</code></pre>
+<p>Because <code>OptionsFactory&lt;TOptions&gt;</code> constructs a fresh options instance before replaying that pipeline, a use-site override does not need reflection cloning. Configuration helpers such as NetLib collection-replacement binding remain responsible for how code defaults and configuration form the baseline; the local override simply runs after that baseline has been rebuilt.</p>
+<p>The separate <code>OptionsMonitor&lt;TOptions&gt;</code> preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. <code>OnChange</code> subscribers receive that rebuilt value after the local override has been reapplied. The application's registered/global options monitor is never mutated, and other middleware uses have separate monitors/caches and therefore remain unaffected.</p>
+<h3 id="mutable-reference-values">Mutable reference values</h3>
+<p>Fresh factory-created options isolate normal code-default collections, arrays, dictionaries, nested mutable objects, and values rebuilt by configuration binding. One explicit boundary remains: if consumer-owned configure/post-configure code deliberately assigns the same mutable object instance (for example a captured singleton list) to every newly created options instance, WebLib does not deep-clone that shared object. Avoid deliberately shared mutable instances when use-site mutation is required.</p>
+<h3 id="canonical-host-redirect-example">Canonical host redirect example</h3>
+<p>Configure the shared baseline during service registration and override only the values that differ at one middleware placement:</p>
+<pre><code class="lang-csharp">builder.Services.AddCanonicalHostRedirect(options =&gt;
+{
+    options.PrimaryApexHost = &quot;example.com&quot;;
+});
+
+var app = builder.Build();
+
+app.UseCanonicalHostRedirect(options =&gt;
+{
+    options.HttpsTargetPort = 8443;
+});
+</code></pre>
+<p>The <code>HttpsTargetPort</code> override belongs only to this concrete middleware use. A different <code>UseCanonicalHostRedirect()</code> call still uses the shared baseline.</p>
+<p>Platform references:</p>
+<ul>
+<li><a href="https://learn.microsoft.com/dotnet/core/extensions/options">Options pattern in .NET</a></li>
+<li><a href="https://learn.microsoft.com/dotnet/api/microsoft.extensions.options.optionsfactory-1">OptionsFactory<toptions></toptions></a></li>
+<li><a href="https://learn.microsoft.com/dotnet/api/microsoft.extensions.options.optionsmonitor-1">OptionsMonitor<toptions></toptions></a></li>
+</ul>
+
+</article>
+          </div>
+
+          <div class="hidden-sm col-md-2" role="complementary">
+            <div class="sideaffix">
+              <div class="contribution">
+                <ul class="nav">
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/.github/workflows/.config/docfx/build/docs/middleware-infrastructure.md/#L1" class="contribution-link">Edit this page</a>
+                  </li>
+                </ul>
+              </div>
+              <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
+                <h5>In this article</h5>
+                <div></div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="grad-bottom"></div>
+        <div class="footer">
+          <div class="container">
+            <span class="pull-right">
+              <a href="#top">Back to top</a>
+            </span>
+      <pre></pre>
+      
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script type="text/javascript" src="../styles/docfx.vendor.min.js"></script>
+    <script type="text/javascript" src="../styles/docfx.js"></script>
+    <script type="text/javascript" src="../styles/main.js"></script>
+  </body>
+</html>
