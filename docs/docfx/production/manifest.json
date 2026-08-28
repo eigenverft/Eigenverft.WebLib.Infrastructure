@@ -424,6 +424,90 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingApplicationBuilderExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingApplicationBuilderExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingApplicationBuilderExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingApplicationBuilderExtensions.yml\" sourcestartlinenumber=\"1\">Provides pipeline activation for WebLib request traffic logging.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingFields.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingFields.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingFields",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingFields.yml\" sourcestartlinenumber=\"1\">Selects groups of fields captured by request traffic logging.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.yml\" sourcestartlinenumber=\"1\">Configures WebLib request traffic logging while delegating HTTP capture mechanics to ASP.NET Core HTTP Logging.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingServiceCollectionExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingServiceCollectionExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingServiceCollectionExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingServiceCollectionExtensions.yml\" sourcestartlinenumber=\"1\">Provides service-registration helpers for WebLib request traffic logging.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode.yml\" sourcestartlinenumber=\"1\">Controls how configured sensitive header values are represented in a traffic record.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.SelfHttpWarmup.SelfHttpWarmupOptions.yml",
       "output": {
         ".html": {
@@ -588,6 +672,16 @@
       "output": {
         ".html": {
           "relative_path": "docs/introduction.html"
+        }
+      },
+      "version": ""
+    },
+    {
+      "type": "Conceptual",
+      "source_relative_path": "docs/middleware-infrastructure.md",
+      "output": {
+        ".html": {
+          "relative_path": "docs/middleware-infrastructure.html"
         }
       },
       "version": ""

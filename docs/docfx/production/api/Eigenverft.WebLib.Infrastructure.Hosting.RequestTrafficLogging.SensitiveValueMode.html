@@ -5,11 +5,11 @@
   <head>
     <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-      <title>Namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout | Eigenverft.WebLib.Infrastructure </title>
+      <title>Enum SensitiveValueMode | Eigenverft.WebLib.Infrastructure </title>
       <meta name="viewport" content="width=device-width">
-      <meta name="title" content="Namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout | Eigenverft.WebLib.Infrastructure ">
+      <meta name="title" content="Enum SensitiveValueMode | Eigenverft.WebLib.Infrastructure ">
     
-    
+    <meta name="description" content="Controls how configured sensitive header values are represented in a traffic record.">
       <link rel="shortcut icon" href="../favicon.ico">
       <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="../styles/docfx.css">
@@ -100,9 +100,9 @@
                           </li>
                         </ul>
                     </li>
-                    <li class="active">
+                    <li class="">
                       <span class="expand-stub"></span>
-                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.html" title="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="active">Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</a>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.html" title="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="">Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</a>
 
                         <ul class="nav level2">
                           <li class="">
@@ -234,8 +234,8 @@
                           <li class="">
                             <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingServiceCollectionExtensions.html" title="RequestTrafficLoggingServiceCollectionExtensions" class="">RequestTrafficLoggingServiceCollectionExtensions</a>
                           </li>
-                          <li class="">
-                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode.html" title="SensitiveValueMode" class="">SensitiveValueMode</a>
+                          <li class="active">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode.html" title="SensitiveValueMode" class="active">SensitiveValueMode</a>
                           </li>
                         </ul>
                     </li>
@@ -286,20 +286,48 @@
         </div>
         <div class="article row grid-right">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout">
+            <article class="content wrap" id="_content" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode">
 
-  <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_DirectoryLayout" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout" class="text-break">Namespace Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout</h1>
-  <div class="markdown level0 summary"></div>
+
+
+
+  <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_SensitiveValueMode" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode" class="text-break">Enum SensitiveValueMode</h1>
+  <div class="markdown level0 summary"><p>Controls how configured sensitive header values are represented in a traffic record.</p>
+</div>
   <div class="markdown level0 conceptual"></div>
-  <div class="markdown level0 remarks"></div>
-    <h3 id="classes">
-Classes
+  <h6><strong>Namespace</strong>: <a class="xref" href="Eigenverft.html">Eigenverft</a>.<a class="xref" href="Eigenverft.WebLib.html">WebLib</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.html">Infrastructure</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.html">Hosting</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.html">RequestTrafficLogging</a></h6>
+  <h6><strong>Assembly</strong>: Eigenverft.WebLib.Infrastructure.dll</h6>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_SensitiveValueMode_syntax">Syntax</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public enum SensitiveValueMode</code></pre>
+  </div>
+  <h3 id="fields">Fields
 </h3>
-      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.DirectoryLayout.WebApplicationBuilderFactory.html">WebApplicationBuilderFactory</a></h4>
-      <section><p>Creates ASP.NET Core builders that use the shared NetLib application directory layout.</p>
-</section>
-
-
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    <thead>
+    </thead></thead><tbody>
+      <tr>
+        <td id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_SensitiveValueMode_Hash">Hash</td>
+        <td><p>Keep the value redacted and add a SHA-256 fingerprint for forensic equality comparisons.</p>
+</td>
+      </tr>
+      <tr>
+        <td id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_SensitiveValueMode_Include">Include</td>
+        <td><p>Include the complete header value. This can expose replayable credentials and should be used deliberately.</p>
+</td>
+      </tr>
+      <tr>
+        <td id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_SensitiveValueMode_Redact">Redact</td>
+        <td><p>Keep the header name visible while replacing its value with the framework redaction marker.</p>
+</td>
+      </tr>
+    </tbody>
+  </table>
 </article>
           </div>
 
@@ -307,6 +335,12 @@ Classes
             <div class="sideaffix">
               <div class="contribution">
                 <ul class="nav">
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/main/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_SensitiveValueMode.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/SensitiveValueMode.cs/#L6" class="contribution-link">View Source</a>
+                  </li>
                 </ul>
               </div>
               <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
