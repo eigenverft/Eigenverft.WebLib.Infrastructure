@@ -200,6 +200,41 @@ already wires ASP.NET Core host filtering to the live configuration object. Clea
 `builder.Configuration.Sources` and adding replacement sources does not remove that wiring, so a
 rebuilt `AllowedHosts` value is still consumed by the built-in host-filtering options.
 
+### Flood protection
+
+For a small framework-based HTTP flood guard, register WebLib's per-client-IP token bucket and activate ASP.NET Core rate limiting:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting;
+
+builder.Services.AddFloodProtection(options =>
+{
+    options.BurstSize = 40;
+    options.RequestsPerSecond = 10;
+    options.QueueLimit = 20;
+    // options.GlobalConcurrencyLimit = 500;
+});
+
+WebApplication app = builder.Build();
+app.UseRateLimiter();
+```
+
+The per-IP limiter allows short bursts, paces sustained traffic through a bounded oldest-first queue, and returns `429 Too Many Requests` when that queue is full. `GlobalConcurrencyLimit` is an optional whole-application guard. The defaults are starting values, not universal capacity limits; tune them under realistic load. If a trusted reverse proxy supplies the client IP, run Forwarded Headers before rate limiting.
+
+### Request traffic logging
+
+Request traffic logging builds on ASP.NET Core HTTP Logging but keeps one combined, structured traffic event per request with explicit completion semantics:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging;
+
+builder.Services.AddRequestTrafficLogging();
+
+WebApplication app = builder.Build();
+app.UseRequestTrafficLogging();
+```
+
+The completion layer distinguishes completed, aborted, and faulted requests while framework HTTP Logging owns request/response capture. Sensitive header values are redacted by default, and body capture is bounded. Register `UseRequestTrafficLogging()` before exception-handling middleware when handled exceptions should still be classified as faulted with their final handled response status.
 ## 🌐 Kestrel and SNI
 
 `ConfigureKestrelSniFromConfiguration(...)` is the package's top-level server setup. It configures
