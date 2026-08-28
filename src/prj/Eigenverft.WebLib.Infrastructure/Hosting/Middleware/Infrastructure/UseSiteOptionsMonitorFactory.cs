@@ -21,8 +21,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure
         /// <param name="app">Application builder for the concrete middleware use.</param>
         /// <param name="configure">Local final override for this middleware use.</param>
         /// <returns>An isolated reload-aware options monitor.</returns>
-        internal static IOptionsMonitor<TOptions> CreateUseSiteOptionsMonitor<TOptions>(
-            this IApplicationBuilder app,
+        internal static IOptionsMonitor<TOptions> Create<TOptions>(
+            IApplicationBuilder app,
             Action<TOptions> configure)
             where TOptions : class
         {

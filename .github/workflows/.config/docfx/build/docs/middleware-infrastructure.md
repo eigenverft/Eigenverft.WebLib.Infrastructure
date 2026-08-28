@@ -35,7 +35,7 @@ The consumer idea remains useful, but that implementation is not a safe foundati
 
 ### Framework-based composition
 
-WebLib keeps the feature-specific consumer API but rebuilds each local variant through the standard registered options components. An internal helper creates a framework `OptionsFactory<TOptions>` from the registered configure, post-configure, and validation services, appends the use-site delegate as the final post-configure step, and places that factory behind a separate framework `OptionsMonitor<TOptions>` with its own cache and the registered change-token sources.
+WebLib keeps the feature-specific consumer API but rebuilds each local variant through the standard registered options components. Reusable middleware libraries can call `ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor<TOptions>` from their own `UseX(options => ...)` overloads; ordinary applications normally use the feature-specific middleware API instead. The public method delegates to an internal implementation that creates a framework `OptionsFactory<TOptions>` from the registered configure, post-configure, and validation services, appends the use-site delegate as the final post-configure step, and places that factory behind a separate framework `OptionsMonitor<TOptions>` with its own cache and the registered change-token sources.
 
 The resulting order is:
 
@@ -55,10 +55,6 @@ The separate `OptionsMonitor<TOptions>` preserves reload semantics: when a regis
 ### Mutable reference values
 
 Fresh factory-created options isolate normal code-default collections, arrays, dictionaries, nested mutable objects, and values rebuilt by configuration binding. One explicit boundary remains: if consumer-owned configure/post-configure code deliberately assigns the same mutable object instance (for example a captured singleton list) to every newly created options instance, WebLib does not deep-clone that shared object. Avoid deliberately shared mutable instances when use-site mutation is required.
-
-### Named options versus local composition
-
-Named options remain the better fit for durable variants such as `Internal`, `Public`, or `Admin` that are part of service registration and are useful by name elsewhere. A use-site overload is the clearer fit when the application already has one shared baseline and exactly one middleware placement needs two local differences after `Build()`.
 
 ### Canonical host redirect example
 
