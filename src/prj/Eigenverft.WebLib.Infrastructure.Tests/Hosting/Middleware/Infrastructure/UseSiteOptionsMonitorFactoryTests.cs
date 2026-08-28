@@ -116,7 +116,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Middleware.Infrastructu
             services.AddSingleton<IConfiguration>(configuration);
             services
                 .AddOptions<TestOptions>()
-                .BindReplacingCollectionDefaults("Foo");
+                .BindReplacingCollectionDefaults("Foo", EmptyCollectionBehavior.UseCodeDefaults);
 
             using ServiceProvider provider = services.BuildServiceProvider();
             var app = new ApplicationBuilder(provider);
@@ -145,7 +145,7 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Middleware.Infrastructu
             services.AddSingleton<IConfiguration>(configuration);
             services
                 .AddOptions<TestOptions>()
-                .BindReplacingCollectionDefaults("Foo");
+                .BindReplacingCollectionDefaults("Foo", EmptyCollectionBehavior.UseCodeDefaults);
 
             using ServiceProvider provider = services.BuildServiceProvider();
             var app = new ApplicationBuilder(provider);
