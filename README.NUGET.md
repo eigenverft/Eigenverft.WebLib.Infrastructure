@@ -150,6 +150,22 @@ HTTPS/443. Set `RedirectFromHosts`, `Canonicalization = CanonicalHostMode.ToApex
 `HttpsTargetPort` only when the deployment needs them. `AddCanonicalHostRedirect()` without a delegate
 binds the `CanonicalHostRedirect` configuration section.
 
+Configure shared defaults during registration and override only the values that differ for one middleware use:
+
+```csharp
+builder.Services.AddCanonicalHostRedirect(options =>
+    options.PrimaryApexHost = "example.com");
+
+WebApplication app = builder.Build();
+
+app.UseCanonicalHostRedirect(options =>
+{
+    options.HttpsTargetPort = 8443;
+});
+```
+
+That second delegate affects only this concrete middleware use. Another `UseCanonicalHostRedirect()` call keeps the shared baseline. Configuration reloads rebuild the current baseline first and then reapply the local override.
+
 A redirect combines host and scheme normalization into one hop and preserves `PathBase`, path, and
 query. Incoming HTTP ports are never copied to HTTPS. When a reverse proxy supplies the external scheme
 or host, configure ASP.NET Core Forwarded Headers normally and call `UseForwardedHeaders()` before

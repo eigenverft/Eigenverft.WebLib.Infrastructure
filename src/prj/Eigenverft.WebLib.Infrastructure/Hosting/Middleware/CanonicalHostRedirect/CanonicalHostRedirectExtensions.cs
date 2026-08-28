@@ -92,6 +92,41 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.CanonicalHostRedir
             return app.UseMiddleware<CanonicalHostRedirectMiddleware>();
         }
 
+        /// <summary>
+        /// Adds the canonical host redirect middleware and overrides only the values that differ for this middleware use.
+        /// </summary>
+        /// <remarks>
+        /// Shared defaults still come from <c>AddCanonicalHostRedirect()</c>, configuration binding, and registered code configuration.
+        /// This delegate is applied last for this concrete middleware use, after registered post-configuration and before validation.
+        /// Other <c>UseCanonicalHostRedirect()</c> calls are unaffected. Configuration reloads rebuild this local variant from the
+        /// updated shared options pipeline and then reapply the local override.
+        /// </remarks>
+        /// <param name="app">The application builder.</param>
+        /// <param name="configure">Values to override for this middleware use.</param>
+        /// <returns>The same application builder.</returns>
+        public static IApplicationBuilder UseCanonicalHostRedirect(
+            this IApplicationBuilder app,
+            Action<CanonicalHostRedirectOptions> configure)
+        {
+            if (app is null)
+            {
+                throw new ArgumentNullException(nameof(app));
+            }
+
+            if (configure is null)
+            {
+                throw new ArgumentNullException(nameof(configure));
+            }
+
+            app.ApplicationServices.EnsureServicesRegistered<IOptionsChangeTokenSource<CanonicalHostRedirectOptions>>(
+                "Call services.AddCanonicalHostRedirect() before app.UseCanonicalHostRedirect().");
+
+            IOptionsMonitor<CanonicalHostRedirectOptions> optionsMonitor =
+                app.CreateUseSiteOptionsMonitor(configure);
+
+            return app.UseMiddleware<CanonicalHostRedirectMiddleware>(optionsMonitor);
+        }
+
         private static bool HasNoEmbeddedHostPorts(CanonicalHostRedirectOptions options)
         {
             if (!HasNoExplicitPort(options.PrimaryApexHost))

@@ -20,34 +20,68 @@ This layer deliberately makes no trust, legitimacy, proxy-authority, or request-
 
 `HttpContextFeatureExtensions` is a thin typed facade over `HttpContext.Features` only: `GetFeature<T>()`, `GetRequiredFeature<T>()`, `TryGetFeature<T>()`, `SetFeature<T>()`, `RemoveFeature<T>()`, plus parameterless and factory-based `GetOrCreateFeature<T>()` overloads.
 
-## C4: no ConfiguredOptionsMonitor port
+## C4: use-site options overrides without the legacy monitor
 
-### Legacy behavior and consumers
+### Legacy behavior and problems
 
-Legacy `ConfiguredOptionsMonitor<TOptions>` wrapped an `IOptionsMonitor<TOptions>`, created a new `TOptions`, shallow-copied public writable properties by reflection, and then applied a `UseX(Action<TOptions>)` delegate. Many legacy RequestFilters middleware extensions passed that decorator directly to middleware so global/reloadable DI options could be overlaid at pipeline-composition time.
+Legacy `ConfiguredOptionsMonitor<TOptions>` wrapped an `IOptionsMonitor<TOptions>`, created a new `TOptions`, shallow-copied public writable properties by reflection, and then applied a `UseX(Action<TOptions>)` delegate. RequestFilters middleware extensions passed that decorator directly to middleware so a concrete pipeline use could keep the normal reloadable baseline and override only the values that differed there.
 
-That behavior is not a safe generic foundation:
+The consumer idea remains useful, but that implementation is not a safe foundation:
 
-- the clone is shallow, so mutable reference-valued properties remain shared with the global instance;
-- reflection plus a `new()` constraint exists only to manufacture the copy;
+- the reflection copy is shallow, so mutable reference-valued properties can remain shared with the global instance;
+- reflection plus a `new()` constraint exists only to manufacture that copy;
 - `CurrentValue` and `Get(name)` return overlaid copies, while `OnChange` forwards the inner monitor's unmodified values;
-- it creates a second options-composition mechanism after the application service provider has already been built.
+- the library owns monitor behavior that the framework already provides.
 
-A workspace consumer review found no current WebLib `develop` consumer for this historical runtime-overlay model. The parallel WP1, WP4, WP5, and WP6 designs also explicitly do not require `UseX(Action<TOptions>)` local overrides.
+### Framework-based composition
 
-### Current .NET pattern
+WebLib keeps the feature-specific consumer API but rebuilds each local variant through the standard registered options components. An internal helper creates a framework `OptionsFactory<TOptions>` from the registered configure, post-configure, and validation services, appends the use-site delegate as the final post-configure step, and places that factory behind a separate framework `OptionsMonitor<TOptions>` with its own cache and the registered change-token sources.
 
-Current .NET options already provide reloadable `IOptionsMonitor<TOptions>`, named options, `IOptionsFactory<TOptions>`, configure/post-configure actions, and monitor caching/invalidation. When a common baseline must apply to both default and named variants, configure that baseline for all names (for example with `ConfigureAll`) and then add the named configuration. `ConfiguredOptionsDesignTests` verifies this baseline-plus-independent-variant pattern on both target frameworks at compile time and on the available runtime.
+The resulting order is:
 
-Named options are **not** claimed to be a drop-in replacement for an arbitrary `UseX(Action<TOptions>)` supplied after DI has been built. A variant that is part of application configuration should be established during service registration. A genuinely pipeline-local immutable setting should be modeled explicitly by the concrete feature.
+```text
+code defaults
+→ registered Configure steps (including configuration binding)
+→ later AddX code configuration
+→ registered PostConfigure steps
+→ local UseX(options => ...) override
+→ registered validation
+```
 
-### Decision
+Because `OptionsFactory<TOptions>` constructs a fresh options instance before replaying that pipeline, a use-site override does not need reflection cloning. Configuration helpers such as NetLib collection-replacement binding remain responsible for how code defaults and configuration form the baseline; the local override simply runs after that baseline has been rebuilt.
 
-WP3 therefore does **not** port `ConfiguredOptionsMonitor<TOptions>` and does not introduce a new generic local-options-overlay abstraction.
+The separate `OptionsMonitor<TOptions>` preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. Other middleware uses have separate monitors/caches and therefore remain unaffected.
 
-If a future real middleware needs multiple configured variants, prefer a feature-specific service-registration API using named options. If a future feature genuinely needs a pipeline-local setting at `UseX(...)` time, model it explicitly for that feature. Reconsider shared abstraction only after multiple current consumers demonstrate the same requirement.
+### Mutable reference values
 
-Platform references used for the decision:
+Fresh factory-created options isolate normal code-default collections, arrays, dictionaries, nested mutable objects, and values rebuilt by configuration binding. One explicit boundary remains: if consumer-owned configure/post-configure code deliberately assigns the same mutable object instance (for example a captured singleton list) to every newly created options instance, WebLib does not deep-clone that shared object. Avoid deliberately shared mutable instances when use-site mutation is required.
+
+### Named options versus local composition
+
+Named options remain the better fit for durable variants such as `Internal`, `Public`, or `Admin` that are part of service registration and are useful by name elsewhere. A use-site overload is the clearer fit when the application already has one shared baseline and exactly one middleware placement needs two local differences after `Build()`.
+
+### Canonical host redirect example
+
+Configure the shared baseline during service registration and override only the values that differ at one middleware placement:
+
+```csharp
+builder.Services.AddCanonicalHostRedirect(options =>
+{
+    options.PrimaryApexHost = "example.com";
+});
+
+var app = builder.Build();
+
+app.UseCanonicalHostRedirect(options =>
+{
+    options.HttpsTargetPort = 8443;
+});
+```
+
+The `HttpsTargetPort` override belongs only to this concrete middleware use. A different `UseCanonicalHostRedirect()` call still uses the shared baseline.
+
+Platform references:
 
 - [Options pattern in .NET](https://learn.microsoft.com/dotnet/core/extensions/options)
-- [Factory-based middleware activation in ASP.NET Core](https://learn.microsoft.com/aspnet/core/fundamentals/middleware/extensibility?view=aspnetcore-10.0)
+- [OptionsFactory<TOptions>](https://learn.microsoft.com/dotnet/api/microsoft.extensions.options.optionsfactory-1)
+- [OptionsMonitor<TOptions>](https://learn.microsoft.com/dotnet/api/microsoft.extensions.options.optionsmonitor-1)
