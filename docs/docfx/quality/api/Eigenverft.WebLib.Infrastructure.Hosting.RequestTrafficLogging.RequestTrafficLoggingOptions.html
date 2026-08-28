@@ -5,11 +5,11 @@
   <head>
     <meta charset="utf-8">
       <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-      <title>Class ClientForwardedIpAddress | Eigenverft.WebLib.Infrastructure </title>
+      <title>Class RequestTrafficLoggingOptions | Eigenverft.WebLib.Infrastructure </title>
       <meta name="viewport" content="width=device-width">
-      <meta name="title" content="Class ClientForwardedIpAddress | Eigenverft.WebLib.Infrastructure ">
+      <meta name="title" content="Class RequestTrafficLoggingOptions | Eigenverft.WebLib.Infrastructure ">
     
-    <meta name="description" content="Represents one forwarded-IP token without assigning trust or legitimacy to it.">
+    <meta name="description" content="Configures WebLib request traffic logging while delegating HTTP capture mechanics to ASP.NET Core HTTP Logging.">
       <link rel="shortcut icon" href="../favicon.ico">
       <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="../styles/docfx.css">
@@ -151,8 +151,8 @@
                       <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork" class="">Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork</a>
 
                         <ul class="nav level2">
-                          <li class="active">
-                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.html" title="ClientForwardedIpAddress" class="active">ClientForwardedIpAddress</a>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.html" title="ClientForwardedIpAddress" class="">ClientForwardedIpAddress</a>
                           </li>
                           <li class="">
                             <a href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpSource.html" title="ClientForwardedIpSource" class="">ClientForwardedIpSource</a>
@@ -228,8 +228,8 @@
                           <li class="">
                             <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingFields.html" title="RequestTrafficLoggingFields" class="">RequestTrafficLoggingFields</a>
                           </li>
-                          <li class="">
-                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.html" title="RequestTrafficLoggingOptions" class="">RequestTrafficLoggingOptions</a>
+                          <li class="active">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.html" title="RequestTrafficLoggingOptions" class="active">RequestTrafficLoggingOptions</a>
                           </li>
                           <li class="">
                             <a href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingServiceCollectionExtensions.html" title="RequestTrafficLoggingServiceCollectionExtensions" class="">RequestTrafficLoggingServiceCollectionExtensions</a>
@@ -286,18 +286,18 @@
         </div>
         <div class="article row grid-right">
           <div class="col-md-10">
-            <article class="content wrap" id="_content" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress">
+            <article class="content wrap" id="_content" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions">
 
 
 
-  <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress" class="text-break">Class ClientForwardedIpAddress</h1>
-  <div class="markdown level0 summary"><p>Represents one forwarded-IP token without assigning trust or legitimacy to it.</p>
+  <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions" class="text-break">Class RequestTrafficLoggingOptions</h1>
+  <div class="markdown level0 summary"><p>Configures WebLib request traffic logging while delegating HTTP capture mechanics to ASP.NET Core HTTP Logging.</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
     <h5>Inheritance</h5>
     <div class="level0"><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object">object</a></div>
-    <div class="level1"><span class="xref">ClientForwardedIpAddress</span></div>
+    <div class="level1"><span class="xref">RequestTrafficLoggingOptions</span></div>
   </div>
   <div class="inheritedMembers">
     <h5>Inherited Members</h5>
@@ -320,29 +320,61 @@
       <a class="xref" href="https://learn.microsoft.com/dotnet/api/system.object.tostring">object.ToString()</a>
     </div>
   </div>
-  <h6><strong>Namespace</strong>: <a class="xref" href="Eigenverft.html">Eigenverft</a>.<a class="xref" href="Eigenverft.WebLib.html">WebLib</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.html">Infrastructure</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.html">Hosting</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.html">Middleware</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.html">ClientNetwork</a></h6>
+  <h6><strong>Namespace</strong>: <a class="xref" href="Eigenverft.html">Eigenverft</a>.<a class="xref" href="Eigenverft.WebLib.html">WebLib</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.html">Infrastructure</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.html">Hosting</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.html">RequestTrafficLogging</a></h6>
   <h6><strong>Assembly</strong>: Eigenverft.WebLib.Infrastructure.dll</h6>
-  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_syntax">Syntax</h5>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_syntax">Syntax</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public sealed class ClientForwardedIpAddress</code></pre>
+    <pre><code class="lang-csharp hljs">public sealed class RequestTrafficLoggingOptions</code></pre>
   </div>
+  <h3 id="fields">Fields
+</h3>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_DefaultBodyLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.DefaultBodyLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L11">View Source</a>
+  </span>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_DefaultBodyLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.DefaultBodyLimit">DefaultBodyLimit</h4>
+  <div class="markdown level1 summary"><p>The default maximum number of body bytes retained by framework HTTP Logging.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public const int DefaultBodyLimit = 4096</code></pre>
+  </div>
+  <h5 class="fieldValue">Field Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
   <h3 id="properties">Properties
 </h3>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_Address.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.Address%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_Fields.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.Fields%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/ClientNetwork/IClientNetworkFeature.cs/#L48">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L16">View Source</a>
   </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_Address_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.Address*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_Address" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.Address">Address</h4>
-  <div class="markdown level1 summary"><p>Gets the normalized IP address when the token could be parsed as an IP endpoint or address.</p>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_Fields_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.Fields*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_Fields" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.Fields">Fields</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the enabled traffic-record field groups.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public IPAddress? Address { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public RequestTrafficLoggingFields Fields { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-condensed">
@@ -354,26 +386,29 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.net.ipaddress">IPAddress</a></td>
+        <td><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingFields.html">RequestTrafficLoggingFields</a></td>
         <td></td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_IsMalformed.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.IsMalformed%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestBodyLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestBodyLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/ClientNetwork/IClientNetworkFeature.cs/#L53">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L31">View Source</a>
   </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_IsMalformed_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.IsMalformed*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_IsMalformed" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.IsMalformed">IsMalformed</h4>
-  <div class="markdown level1 summary"><p>Gets a value indicating whether the token was present but could not be interpreted as an IP address.</p>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestBodyLimit_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestBodyLimit*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestBodyLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestBodyLimit">RequestBodyLimit</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the maximum request-body bytes retained by framework HTTP Logging.
+When request-body metadata is enabled, <code>RequestBodyTotalBytes</code> uses the request
+<code>Content-Length</code> when known and otherwise remains unknown; <code>RequestBodyTruncated</code>
+is only classified when that total is known.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public bool IsMalformed { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public int RequestBodyLimit { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-condensed">
@@ -385,26 +420,27 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.boolean">bool</a></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
         <td></td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_RawValue.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.RawValue%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestHeaders.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestHeaders%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/ClientNetwork/IClientNetworkFeature.cs/#L43">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L45">View Source</a>
   </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_RawValue_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.RawValue*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_RawValue" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.RawValue">RawValue</h4>
-  <div class="markdown level1 summary"><p>Gets the original trimmed token value.</p>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestHeaders_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestHeaders*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_RequestHeaders" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.RequestHeaders">RequestHeaders</h4>
+  <div class="markdown level1 summary"><p>Gets request header names whose values may be included when request-header capture is enabled.
+Other request header names remain visible with redacted values.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public string RawValue { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public ISet&lt;string&gt; RequestHeaders { get; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-condensed">
@@ -416,26 +452,29 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.iset-1">ISet</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a>&gt;</td>
         <td></td>
       </tr>
     </tbody>
   </table>
   <span class="small pull-right mobile-hide">
     <span class="divider">|</span>
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_Source.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.Source%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseBodyLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseBodyLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
   </span>
   <span class="small pull-right mobile-hide">
-    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/ClientNetwork/IClientNetworkFeature.cs/#L38">View Source</a>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L39">View Source</a>
   </span>
-  <a id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_Source_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.Source*"></a>
-  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress_Source" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress.Source">Source</h4>
-  <div class="markdown level1 summary"><p>Gets the header family that supplied the token.</p>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseBodyLimit_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseBodyLimit*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseBodyLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseBodyLimit">ResponseBodyLimit</h4>
+  <div class="markdown level1 summary"><p>Gets or sets the maximum response-body bytes retained by framework HTTP Logging.
+When response-body metadata is enabled, <code>ResponseBodyTotalBytes</code> uses the response
+<code>Content-Length</code> when known and otherwise remains unknown; <code>ResponseBodyTruncated</code>
+is only classified when that total is known.</p>
 </div>
   <div class="markdown level1 conceptual"></div>
   <h5 class="declaration">Declaration</h5>
   <div class="codewrapper">
-    <pre><code class="lang-csharp hljs">public ClientForwardedIpSource Source { get; }</code></pre>
+    <pre><code class="lang-csharp hljs">public int ResponseBodyLimit { get; set; }</code></pre>
   </div>
   <h5 class="propertyValue">Property Value</h5>
   <table class="table table-bordered table-condensed">
@@ -447,7 +486,101 @@
     </thead>
     <tbody>
       <tr>
-        <td><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpSource.html">ClientForwardedIpSource</a></td>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.int32">int</a></td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseHeaders.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseHeaders%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L58">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseHeaders_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseHeaders*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_ResponseHeaders" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.ResponseHeaders">ResponseHeaders</h4>
+  <div class="markdown level1 summary"><p>Gets response header names whose values may be included when response-header capture is enabled.
+Other response header names remain visible with redacted values.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ISet&lt;string&gt; ResponseHeaders { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.iset-1">ISet</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveHeaders.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveHeaders%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L70">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveHeaders_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveHeaders*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveHeaders" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveHeaders">SensitiveHeaders</h4>
+  <div class="markdown level1 summary"><p>Gets header names treated as sensitive by the selected <a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveValueMode">SensitiveValueMode</a>.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public ISet&lt;string&gt; SensitiveHeaders { get; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="https://learn.microsoft.com/dotnet/api/system.collections.generic.iset-1">ISet</a>&lt;<a class="xref" href="https://learn.microsoft.com/dotnet/api/system.string">string</a>&gt;</td>
+        <td></td>
+      </tr>
+    </tbody>
+  </table>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveValueMode.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveValueMode%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L23">View Source</a>
+  </span>
+  <a id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveValueMode_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveValueMode*"></a>
+  <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions_SensitiveValueMode" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions.SensitiveValueMode">SensitiveValueMode</h4>
+  <div class="markdown level1 summary"><p>Gets or sets how configured sensitive header values are represented.</p>
+</div>
+  <div class="markdown level1 conceptual"></div>
+  <h5 class="declaration">Declaration</h5>
+  <div class="codewrapper">
+    <pre><code class="lang-csharp hljs">public SensitiveValueMode SensitiveValueMode { get; set; }</code></pre>
+  </div>
+  <h5 class="propertyValue">Property Value</h5>
+  <table class="table table-bordered table-condensed">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.SensitiveValueMode.html">SensitiveValueMode</a></td>
         <td></td>
       </tr>
     </tbody>
@@ -461,10 +594,10 @@
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_Middleware_ClientNetwork_ClientForwardedIpAddress.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.Middleware.ClientNetwork.ClientForwardedIpAddress%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/develop/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RequestTrafficLogging_RequestTrafficLoggingOptions.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.RequestTrafficLoggingOptions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
                   </li>
                   <li>
-                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/Middleware/ClientNetwork/IClientNetworkFeature.cs/#L25" class="contribution-link">View Source</a>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/develop/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RequestTrafficLogging/RequestTrafficLoggingOptions.cs/#L8" class="contribution-link">View Source</a>
                   </li>
                 </ul>
               </div>
