@@ -113,27 +113,52 @@
 <p><code>UseMiddlewareOnce&lt;T&gt;()</code> keeps the legacy idea but narrows its contract: it deduplicates convention middleware within normal linear pipelines and native non-rejoining <code>Map</code> branches using a type-bound marker in <code>IApplicationBuilder.Properties</code>. It intentionally does not attempt graph-wide deduplication for rejoining <code>UseWhen</code> graphs. The generic <code>UseMiddleware&lt;T&gt;()</code> overload is retained for trimming/AOT friendliness.</p>
 <p><code>EnsureServicesRegistered(...)</code> keeps the developer-experience goal that <code>UseFoo()</code> should explain a missing <code>AddFoo()</code>, but registration checks now use <code>IServiceProviderIsService</code>. Required services are not instantiated merely to probe registration. Open generic definitions are rejected explicitly because the default .NET probe treats open generic definitions as non-resolvable; callers should check a representative closed service or a dedicated marker.</p>
 <p><code>HttpContextFeatureExtensions</code> is a thin typed facade over <code>HttpContext.Features</code> only: <code>GetFeature&lt;T&gt;()</code>, <code>GetRequiredFeature&lt;T&gt;()</code>, <code>TryGetFeature&lt;T&gt;()</code>, <code>SetFeature&lt;T&gt;()</code>, <code>RemoveFeature&lt;T&gt;()</code>, plus parameterless and factory-based <code>GetOrCreateFeature&lt;T&gt;()</code> overloads.</p>
-<h2 id="c4-no-configuredoptionsmonitor-port">C4: no ConfiguredOptionsMonitor port</h2>
-<h3 id="legacy-behavior-and-consumers">Legacy behavior and consumers</h3>
-<p>Legacy <code>ConfiguredOptionsMonitor&lt;TOptions&gt;</code> wrapped an <code>IOptionsMonitor&lt;TOptions&gt;</code>, created a new <code>TOptions</code>, shallow-copied public writable properties by reflection, and then applied a <code>UseX(Action&lt;TOptions&gt;)</code> delegate. Many legacy RequestFilters middleware extensions passed that decorator directly to middleware so global/reloadable DI options could be overlaid at pipeline-composition time.</p>
-<p>That behavior is not a safe generic foundation:</p>
+<h2 id="c4-use-site-options-overrides-without-the-legacy-monitor">C4: use-site options overrides without the legacy monitor</h2>
+<h3 id="legacy-behavior-and-problems">Legacy behavior and problems</h3>
+<p>Legacy <code>ConfiguredOptionsMonitor&lt;TOptions&gt;</code> wrapped an <code>IOptionsMonitor&lt;TOptions&gt;</code>, created a new <code>TOptions</code>, shallow-copied public writable properties by reflection, and then applied a <code>UseX(Action&lt;TOptions&gt;)</code> delegate. RequestFilters middleware extensions passed that decorator directly to middleware so a concrete pipeline use could keep the normal reloadable baseline and override only the values that differed there.</p>
+<p>The consumer idea remains useful, but that implementation is not a safe foundation:</p>
 <ul>
-<li>the clone is shallow, so mutable reference-valued properties remain shared with the global instance;</li>
-<li>reflection plus a <code>new()</code> constraint exists only to manufacture the copy;</li>
+<li>the reflection copy is shallow, so mutable reference-valued properties can remain shared with the global instance;</li>
+<li>reflection plus a <code>new()</code> constraint exists only to manufacture that copy;</li>
 <li><code>CurrentValue</code> and <code>Get(name)</code> return overlaid copies, while <code>OnChange</code> forwards the inner monitor's unmodified values;</li>
-<li>it creates a second options-composition mechanism after the application service provider has already been built.</li>
+<li>the library owns monitor behavior that the framework already provides.</li>
 </ul>
-<p>A workspace consumer review found no current WebLib <code>develop</code> consumer for this historical runtime-overlay model. The parallel WP1, WP4, WP5, and WP6 designs also explicitly do not require <code>UseX(Action&lt;TOptions&gt;)</code> local overrides.</p>
-<h3 id="current-net-pattern">Current .NET pattern</h3>
-<p>Current .NET options already provide reloadable <code>IOptionsMonitor&lt;TOptions&gt;</code>, named options, <code>IOptionsFactory&lt;TOptions&gt;</code>, configure/post-configure actions, and monitor caching/invalidation. When a common baseline must apply to both default and named variants, configure that baseline for all names (for example with <code>ConfigureAll</code>) and then add the named configuration. <code>ConfiguredOptionsDesignTests</code> verifies this baseline-plus-independent-variant pattern on both target frameworks at compile time and on the available runtime.</p>
-<p>Named options are <strong>not</strong> claimed to be a drop-in replacement for an arbitrary <code>UseX(Action&lt;TOptions&gt;)</code> supplied after DI has been built. A variant that is part of application configuration should be established during service registration. A genuinely pipeline-local immutable setting should be modeled explicitly by the concrete feature.</p>
-<h3 id="decision">Decision</h3>
-<p>WP3 therefore does <strong>not</strong> port <code>ConfiguredOptionsMonitor&lt;TOptions&gt;</code> and does not introduce a new generic local-options-overlay abstraction.</p>
-<p>If a future real middleware needs multiple configured variants, prefer a feature-specific service-registration API using named options. If a future feature genuinely needs a pipeline-local setting at <code>UseX(...)</code> time, model it explicitly for that feature. Reconsider shared abstraction only after multiple current consumers demonstrate the same requirement.</p>
-<p>Platform references used for the decision:</p>
+<h3 id="framework-based-composition">Framework-based composition</h3>
+<p>WebLib keeps the feature-specific consumer API but rebuilds each local variant through the standard registered options components. An internal helper creates a framework <code>OptionsFactory&lt;TOptions&gt;</code> from the registered configure, post-configure, and validation services, appends the use-site delegate as the final post-configure step, and places that factory behind a separate framework <code>OptionsMonitor&lt;TOptions&gt;</code> with its own cache and the registered change-token sources.</p>
+<p>The resulting order is:</p>
+<pre><code class="lang-text">code defaults
+→ registered Configure steps (including configuration binding)
+→ later AddX code configuration
+→ registered PostConfigure steps
+→ local UseX(options =&gt; ...) override
+→ registered validation
+</code></pre>
+<p>Because <code>OptionsFactory&lt;TOptions&gt;</code> constructs a fresh options instance before replaying that pipeline, a use-site override does not need reflection cloning. Configuration helpers such as NetLib collection-replacement binding remain responsible for how code defaults and configuration form the baseline; the local override simply runs after that baseline has been rebuilt.</p>
+<p>The separate <code>OptionsMonitor&lt;TOptions&gt;</code> preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. Other middleware uses have separate monitors/caches and therefore remain unaffected.</p>
+<h3 id="mutable-reference-values">Mutable reference values</h3>
+<p>Fresh factory-created options isolate normal code-default collections, arrays, dictionaries, nested mutable objects, and values rebuilt by configuration binding. One explicit boundary remains: if consumer-owned configure/post-configure code deliberately assigns the same mutable object instance (for example a captured singleton list) to every newly created options instance, WebLib does not deep-clone that shared object. Avoid deliberately shared mutable instances when use-site mutation is required.</p>
+<h3 id="named-options-versus-local-composition">Named options versus local composition</h3>
+<p>Named options remain the better fit for durable variants such as <code>Internal</code>, <code>Public</code>, or <code>Admin</code> that are part of service registration and are useful by name elsewhere. A use-site overload is the clearer fit when the application already has one shared baseline and exactly one middleware placement needs two local differences after <code>Build()</code>.</p>
+<h3 id="canonical-host-redirect-example">Canonical host redirect example</h3>
+<p>Configure the shared baseline during service registration and override only the values that differ at one middleware placement:</p>
+<pre><code class="lang-csharp">builder.Services.AddCanonicalHostRedirect(options =&gt;
+{
+    options.PrimaryApexHost = &quot;example.com&quot;;
+});
+
+var app = builder.Build();
+
+app.UseCanonicalHostRedirect(options =&gt;
+{
+    options.HttpsTargetPort = 8443;
+});
+</code></pre>
+<p>The <code>HttpsTargetPort</code> override belongs only to this concrete middleware use. A different <code>UseCanonicalHostRedirect()</code> call still uses the shared baseline.</p>
+<p>Platform references:</p>
 <ul>
 <li><a href="https://learn.microsoft.com/dotnet/core/extensions/options">Options pattern in .NET</a></li>
-<li><a href="https://learn.microsoft.com/aspnet/core/fundamentals/middleware/extensibility?view=aspnetcore-10.0">Factory-based middleware activation in ASP.NET Core</a></li>
+<li><a href="https://learn.microsoft.com/dotnet/api/microsoft.extensions.options.optionsfactory-1">OptionsFactory<toptions></toptions></a></li>
+<li><a href="https://learn.microsoft.com/dotnet/api/microsoft.extensions.options.optionsmonitor-1">OptionsMonitor<toptions></toptions></a></li>
 </ul>
 
 </article>
@@ -144,7 +169,7 @@
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-request-traffic-logging/.github/workflows/.config/docfx/build/docs/middleware-infrastructure.md/#L1" class="contribution-link">Edit this page</a>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-use-site-options-overrides/.github/workflows/.config/docfx/build/docs/middleware-infrastructure.md/#L1" class="contribution-link">Edit this page</a>
                   </li>
                 </ul>
               </div>
