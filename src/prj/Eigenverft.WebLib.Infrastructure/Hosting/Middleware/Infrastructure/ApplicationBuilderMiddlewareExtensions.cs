@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Options;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure
 {
@@ -38,6 +39,31 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure
             app.UseMiddleware<TMiddleware>();
             app.Properties[markerKey] = true;
             return app;
+        }
+
+        /// <summary>
+        /// Creates an isolated options monitor for one middleware use by rebuilding the registered options baseline
+        /// and applying the supplied local override afterwards.
+        /// </summary>
+        /// <remarks>
+        /// Global options are not modified and separate middleware uses remain independent. Registered configure and
+        /// post-configure steps build the baseline before <paramref name="configure"/> runs, and registered validation
+        /// runs afterwards. Configuration reloads rebuild from the current registered baseline and then reapply the
+        /// same local override.
+        /// </remarks>
+        /// <typeparam name="TOptions">The options type.</typeparam>
+        /// <param name="app">The application builder for the concrete middleware use.</param>
+        /// <param name="configure">The local override to apply only to this options monitor.</param>
+        /// <returns>An isolated, reload-aware options monitor.</returns>
+        public static IOptionsMonitor<TOptions> CreateUseSiteOptionsMonitor<TOptions>(
+            this IApplicationBuilder app,
+            Action<TOptions> configure)
+            where TOptions : class
+        {
+            ArgumentNullException.ThrowIfNull(app);
+            ArgumentNullException.ThrowIfNull(configure);
+
+            return UseSiteOptionsMonitorFactory.Create(app, configure);
         }
     }
 }

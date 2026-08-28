@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.CollectionOverrides;
 using Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure;
@@ -14,6 +15,46 @@ namespace Eigenverft.WebLib.Infrastructure.Tests.Hosting.Middleware.Infrastructu
     [TestClass]
     public sealed class UseSiteOptionsMonitorFactoryTests
     {
+        [TestMethod]
+        public void PublicContractIsExportedWithoutExposingTheInternalFactory()
+        {
+            MethodInfo? publicMethod = null;
+            foreach (MethodInfo candidate in typeof(ApplicationBuilderMiddlewareExtensions)
+                .GetMethods(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (candidate.Name == nameof(ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor))
+                {
+                    Assert.IsNull(publicMethod);
+                    publicMethod = candidate;
+                }
+            }
+
+            Assert.IsNotNull(publicMethod);
+            Assert.IsTrue(publicMethod.IsGenericMethodDefinition);
+            Assert.AreEqual(typeof(IOptionsMonitor<>), publicMethod.ReturnType.GetGenericTypeDefinition());
+
+            Type? factoryType = typeof(ApplicationBuilderMiddlewareExtensions).Assembly.GetType(
+                "Eigenverft.WebLib.Infrastructure.Hosting.Middleware.Infrastructure.UseSiteOptionsMonitorFactory");
+            Assert.IsNotNull(factoryType);
+            Assert.IsFalse(factoryType.IsPublic);
+        }
+
+        [TestMethod]
+        public void PublicContractRejectsNullArguments()
+        {
+            IApplicationBuilder? nullApp = null;
+            Assert.ThrowsExactly<ArgumentNullException>(() =>
+                nullApp!.CreateUseSiteOptionsMonitor<TestOptions>(_ => { }));
+
+            var services = new ServiceCollection();
+            services.AddOptions<TestOptions>();
+            using ServiceProvider provider = services.BuildServiceProvider();
+            var app = new ApplicationBuilder(provider);
+
+            Assert.ThrowsExactly<ArgumentNullException>(() =>
+                app.CreateUseSiteOptionsMonitor<TestOptions>(null!));
+        }
+
         [TestMethod]
         public void BaselineUsesNormalRegisteredOptions()
         {

@@ -35,7 +35,7 @@ The consumer idea remains useful, but that implementation is not a safe foundati
 
 ### Framework-based composition
 
-WebLib keeps the feature-specific consumer API but rebuilds each local variant through the standard registered options components. An internal helper creates a framework `OptionsFactory<TOptions>` from the registered configure, post-configure, and validation services, appends the use-site delegate as the final post-configure step, and places that factory behind a separate framework `OptionsMonitor<TOptions>` with its own cache and the registered change-token sources.
+WebLib keeps the feature-specific consumer API but rebuilds each local variant through the standard registered options components. Reusable middleware libraries can call `ApplicationBuilderMiddlewareExtensions.CreateUseSiteOptionsMonitor<TOptions>` from their own `UseX(options => ...)` overloads; ordinary applications normally use the feature-specific middleware API instead. The public method delegates to an internal implementation that creates a framework `OptionsFactory<TOptions>` from the registered configure, post-configure, and validation services, appends the use-site delegate as the final post-configure step, and places that factory behind a separate framework `OptionsMonitor<TOptions>` with its own cache and the registered change-token sources.
 
 The resulting order is:
 
@@ -50,15 +50,11 @@ code defaults
 
 Because `OptionsFactory<TOptions>` constructs a fresh options instance before replaying that pipeline, a use-site override does not need reflection cloning. Configuration helpers such as NetLib collection-replacement binding remain responsible for how code defaults and configuration form the baseline; the local override simply runs after that baseline has been rebuilt.
 
-The separate `OptionsMonitor<TOptions>` preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. Other middleware uses have separate monitors/caches and therefore remain unaffected.
+The separate `OptionsMonitor<TOptions>` preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. `OnChange` subscribers receive that rebuilt value after the local override has been reapplied. The application's registered/global options monitor is never mutated, and other middleware uses have separate monitors/caches and therefore remain unaffected.
 
 ### Mutable reference values
 
 Fresh factory-created options isolate normal code-default collections, arrays, dictionaries, nested mutable objects, and values rebuilt by configuration binding. One explicit boundary remains: if consumer-owned configure/post-configure code deliberately assigns the same mutable object instance (for example a captured singleton list) to every newly created options instance, WebLib does not deep-clone that shared object. Avoid deliberately shared mutable instances when use-site mutation is required.
-
-### Named options versus local composition
-
-Named options remain the better fit for durable variants such as `Internal`, `Public`, or `Admin` that are part of service registration and are useful by name elsewhere. A use-site overload is the clearer fit when the application already has one shared baseline and exactly one middleware placement needs two local differences after `Build()`.
 
 ### Canonical host redirect example
 
