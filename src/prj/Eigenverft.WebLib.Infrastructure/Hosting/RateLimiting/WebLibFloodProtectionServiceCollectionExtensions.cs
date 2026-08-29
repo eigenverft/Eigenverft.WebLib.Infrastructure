@@ -16,30 +16,26 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
     /// <summary>Provides service-registration helpers for WebLib flood protection.</summary>
     public static class WebLibFloodProtectionServiceCollectionExtensions
     {
+        private const string ConfigurationSectionName = "FloodProtection";
+
         /// <summary>
         /// Adds framework-based flood protection using a per-client-IP token bucket and an optional global concurrency limiter.
         /// </summary>
         /// <param name="services">The service collection to configure.</param>
-        /// <param name="configure">Optional startup-time configuration for the WebLib convenience options.</param>
         /// <returns>The original service collection.</returns>
         /// <remarks>
-        /// This method registers ASP.NET Core rate-limiting services. The consuming application still activates the native
-        /// middleware with <c>app.UseRateLimiter()</c>. Client IPs are read from <c>HttpContext.Connection.RemoteIpAddress</c>,
-        /// so trusted forwarded-header processing must run before rate limiting when a reverse proxy supplies the real client IP.
+        /// Options are bound from the <c>FloodProtection</c> configuration section over the class defaults and validated on startup.
+        /// The consuming application still activates the native middleware with <c>app.UseRateLimiter()</c>. Client IPs are read from
+        /// <c>HttpContext.Connection.RemoteIpAddress</c>, so trusted forwarded-header processing must run before rate limiting when a
+        /// reverse proxy supplies the real client IP.
         /// </remarks>
-        public static IServiceCollection AddFloodProtection(
-            this IServiceCollection services,
-            Action<WebLibFloodProtectionOptions>? configure = null)
+        public static IServiceCollection AddFloodProtection(this IServiceCollection services)
         {
             ArgumentNullException.ThrowIfNull(services);
 
-            OptionsBuilder<WebLibFloodProtectionOptions> optionsBuilder = services.AddOptions<WebLibFloodProtectionOptions>();
-            if (configure is not null)
-            {
-                optionsBuilder.Configure(configure);
-            }
-
-            optionsBuilder
+            services
+                .AddOptions<WebLibFloodProtectionOptions>()
+                .BindConfiguration(ConfigurationSectionName)
                 .Validate(static options => options.BurstSize > 0, "BurstSize must be greater than zero.")
                 .Validate(static options => options.RequestsPerSecond > 0, "RequestsPerSecond must be greater than zero.")
                 .Validate(static options => options.QueueLimit >= 0, "QueueLimit cannot be negative.")
@@ -50,6 +46,27 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
             services.AddRateLimiter(static _ => { });
             services.TryAddEnumerable(
                 ServiceDescriptor.Transient<IConfigureOptions<RateLimiterOptions>, WebLibFloodProtectionRateLimiterOptionsSetup>());
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds flood protection and applies code-based configuration after the <c>FloodProtection</c> configuration section.
+        /// </summary>
+        /// <param name="services">The service collection to configure.</param>
+        /// <param name="configure">Startup-time configuration applied after configuration binding.</param>
+        /// <returns>The original service collection.</returns>
+        public static IServiceCollection AddFloodProtection(
+            this IServiceCollection services,
+            Action<WebLibFloodProtectionOptions>? configure)
+        {
+            ArgumentNullException.ThrowIfNull(services);
+
+            services.AddFloodProtection();
+            if (configure is not null)
+            {
+                services.Configure(configure);
+            }
 
             return services;
         }

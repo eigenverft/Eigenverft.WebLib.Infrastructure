@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.RateLimiting;
@@ -8,6 +9,7 @@ using Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -26,6 +28,78 @@ public sealed class WebLibFloodProtectionTests
         Assert.AreEqual(20, options.QueueLimit);
         Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.MissingClientIpBehavior);
         Assert.IsNull(options.GlobalConcurrencyLimit);
+    }
+
+    [TestMethod]
+    public void ParameterlessRegistrationUsesClassDefaultsWithoutManualOptionsBinding()
+    {
+        using ServiceProvider provider = BuildProvider();
+        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+
+        Assert.AreEqual(40, options.BurstSize);
+        Assert.AreEqual(10, options.RequestsPerSecond);
+        Assert.AreEqual(20, options.QueueLimit);
+        Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.MissingClientIpBehavior);
+        Assert.IsNull(options.GlobalConcurrencyLimit);
+    }
+
+    [TestMethod]
+    public void ConfigurationOverridesConfiguredValues()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:BurstSize"] = "60",
+            ["FloodProtection:QueueLimit"] = "50",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration);
+        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+
+        Assert.AreEqual(60, options.BurstSize);
+        Assert.AreEqual(10, options.RequestsPerSecond);
+        Assert.AreEqual(50, options.QueueLimit);
+    }
+
+    [TestMethod]
+    public void MissingConfigurationValuesLeaveClassDefaultsIntact()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:BurstSize"] = "60",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration);
+        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+
+        Assert.AreEqual(60, options.BurstSize);
+        Assert.AreEqual(10, options.RequestsPerSecond);
+        Assert.AreEqual(20, options.QueueLimit);
+        Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.MissingClientIpBehavior);
+        Assert.IsNull(options.GlobalConcurrencyLimit);
+    }
+
+    [TestMethod]
+    public void LambdaConfigurationOverridesJsonConfiguration()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:BurstSize"] = "60",
+            ["FloodProtection:QueueLimit"] = "50",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration, options =>
+        {
+            options.BurstSize = 70;
+            options.RequestsPerSecond = 25;
+        });
+        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+
+        Assert.AreEqual(70, options.BurstSize);
+        Assert.AreEqual(25, options.RequestsPerSecond);
+        Assert.AreEqual(50, options.QueueLimit);
     }
 
     [TestMethod]
@@ -255,11 +329,58 @@ public sealed class WebLibFloodProtectionTests
             () => _ = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value);
     }
 
+    [TestMethod]
+    public void InvalidConfigurationStillFailsOptionsValidation()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:QueueLimit"] = "-1",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration);
+
+        Assert.ThrowsExactly<OptionsValidationException>(
+            () => _ = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value);
+    }
+
+    [TestMethod]
+    public void ValidateOnStartRemainsActive()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:QueueLimit"] = "-1",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration);
+        IStartupValidator startupValidator = provider.GetRequiredService<IStartupValidator>();
+
+        Assert.ThrowsExactly<OptionsValidationException>(() => startupValidator.Validate());
+    }
+
     private static ServiceProvider BuildProvider(Action<WebLibFloodProtectionOptions>? configure = null)
+    {
+        return BuildProvider(new ConfigurationManager(), configure);
+    }
+
+    private static ServiceProvider BuildProvider(
+        ConfigurationManager configuration,
+        Action<WebLibFloodProtectionOptions>? configure = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddFloodProtection(configure);
+        services.AddSingleton<IConfiguration>(configuration);
+
+        if (configure is null)
+        {
+            services.AddFloodProtection();
+        }
+        else
+        {
+            services.AddFloodProtection(configure);
+        }
+
         return services.BuildServiceProvider(validateScopes: true);
     }
 
