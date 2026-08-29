@@ -396,6 +396,20 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.yml\" sourcestartlinenumber=\"1\">Configures the optional server-wide request-rate token bucket.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.yml",
       "output": {
         ".html": {
@@ -658,16 +672,6 @@
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/flood-protection.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/flood-protection.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
       "source_relative_path": "docs/getting-started.md",
       "output": {
         ".html": {
@@ -692,16 +696,6 @@
       "output": {
         ".html": {
           "relative_path": "docs/middleware-infrastructure.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "docs/static-pwa-hosting.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/static-pwa-hosting.html"
         }
       },
       "version": ""

@@ -821,12 +821,89 @@ references:
   isSpec: "True"
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RequestsPerSecond
   nameWithType: WebLibFloodProtectionOptions.RequestsPerSecond
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.ServerWide
+  name: ServerWide
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_ServerWide
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.ServerWide
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.ServerWide
+  nameWithType: WebLibFloodProtectionOptions.ServerWide
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.ServerWide*
+  name: ServerWide
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_ServerWide_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.ServerWide
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.ServerWide
+  nameWithType: WebLibFloodProtectionOptions.ServerWide
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions
+  name: WebLibFloodProtectionServerWideOptions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions
+  nameWithType: WebLibFloodProtectionServerWideOptions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.BurstSize
+  name: BurstSize
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServerWideOptions_BurstSize
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.BurstSize
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.BurstSize
+  nameWithType: WebLibFloodProtectionServerWideOptions.BurstSize
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.BurstSize*
+  name: BurstSize
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServerWideOptions_BurstSize_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.BurstSize
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.BurstSize
+  nameWithType: WebLibFloodProtectionServerWideOptions.BurstSize
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.Enabled
+  name: Enabled
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServerWideOptions_Enabled
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.Enabled
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.Enabled
+  nameWithType: WebLibFloodProtectionServerWideOptions.Enabled
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.Enabled*
+  name: Enabled
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServerWideOptions_Enabled_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.Enabled
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.Enabled
+  nameWithType: WebLibFloodProtectionServerWideOptions.Enabled
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.QueueLimit
+  name: QueueLimit
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServerWideOptions_QueueLimit
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.QueueLimit
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.QueueLimit
+  nameWithType: WebLibFloodProtectionServerWideOptions.QueueLimit
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.QueueLimit*
+  name: QueueLimit
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServerWideOptions_QueueLimit_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.QueueLimit
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.QueueLimit
+  nameWithType: WebLibFloodProtectionServerWideOptions.QueueLimit
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.RequestsPerSecond
+  name: RequestsPerSecond
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServerWideOptions_RequestsPerSecond
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.RequestsPerSecond
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.RequestsPerSecond
+  nameWithType: WebLibFloodProtectionServerWideOptions.RequestsPerSecond
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.RequestsPerSecond*
+  name: RequestsPerSecond
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServerWideOptions_RequestsPerSecond_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.RequestsPerSecond
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServerWideOptions.RequestsPerSecond
+  nameWithType: WebLibFloodProtectionServerWideOptions.RequestsPerSecond
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions
   name: WebLibFloodProtectionServiceCollectionExtensions
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html
   commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions
   nameWithType: WebLibFloodProtectionServiceCollectionExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  name: AddFloodProtection(IServiceCollection)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServiceCollectionExtensions_AddFloodProtection_Microsoft_Extensions_DependencyInjection_IServiceCollection_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  nameWithType: WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(IServiceCollection)
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions})
   name: AddFloodProtection(IServiceCollection, Action<WebLibFloodProtectionOptions>?)
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServiceCollectionExtensions_AddFloodProtection_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions__
