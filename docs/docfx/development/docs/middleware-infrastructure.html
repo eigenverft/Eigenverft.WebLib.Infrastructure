@@ -86,12 +86,6 @@
                     <li class="">
                       <a href="getting-started.html" title="Getting started" class="">Getting started</a>
                     </li>
-                    <li class="">
-                      <a href="flood-protection.html" title="Request flood protection" class="">Request flood protection</a>
-                    </li>
-                    <li class="">
-                      <a href="static-pwa-hosting.html" title="Isolated static and PWA hosting" class="">Isolated static and PWA hosting</a>
-                    </li>
                   </ul>
                 </div>
               </div>
@@ -134,7 +128,7 @@
 → registered validation
 </code></pre>
 <p>Because <code>OptionsFactory&lt;TOptions&gt;</code> constructs a fresh options instance before replaying that pipeline, a use-site override does not need reflection cloning. Configuration helpers such as NetLib collection-replacement binding remain responsible for how code defaults and configuration form the baseline; the local override simply runs after that baseline has been rebuilt.</p>
-<p>The separate <code>OptionsMonitor&lt;TOptions&gt;</code> preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. Other middleware uses have separate monitors/caches and therefore remain unaffected.</p>
+<p>The separate <code>OptionsMonitor&lt;TOptions&gt;</code> preserves reload semantics: when a registered change token fires, its isolated cache is invalidated, the baseline is rebuilt from current configuration, and the same local override is applied again. <code>OnChange</code> subscribers receive that rebuilt value after the local override has been reapplied. The application's registered/global options monitor is never mutated, and other middleware uses have separate monitors/caches and therefore remain unaffected.</p>
 <h3 id="mutable-reference-values">Mutable reference values</h3>
 <p>Fresh factory-created options isolate normal code-default collections, arrays, dictionaries, nested mutable objects, and values rebuilt by configuration binding. One explicit boundary remains: if consumer-owned configure/post-configure code deliberately assigns the same mutable object instance (for example a captured singleton list) to every newly created options instance, WebLib does not deep-clone that shared object. Avoid deliberately shared mutable instances when use-site mutation is required.</p>
 <h3 id="canonical-host-redirect-example">Canonical host redirect example</h3>
@@ -167,7 +161,7 @@ app.UseCanonicalHostRedirect(options =&gt;
               <div class="contribution">
                 <ul class="nav">
                   <li>
-                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-public-use-site-options/.github/workflows/.config/docfx/build/docs/middleware-infrastructure.md/#L1" class="contribution-link">Edit this page</a>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/flood-protection-options-configuration/.github/workflows/.config/docfx/build/docs/middleware-infrastructure.md/#L1" class="contribution-link">Edit this page</a>
                   </li>
                 </ul>
               </div>
