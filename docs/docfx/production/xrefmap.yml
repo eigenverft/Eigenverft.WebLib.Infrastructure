@@ -207,6 +207,53 @@ references:
   fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Features.HttpContextFeatureExtensions.TryGetFeature(Of TFeature)(Microsoft.AspNetCore.Http.HttpContext, TFeature)
   nameWithType: HttpContextFeatureExtensions.TryGetFeature<TFeature>(HttpContext, out TFeature?)
   nameWithType.vb: HttpContextFeatureExtensions.TryGetFeature(Of TFeature)(HttpContext, TFeature)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts
+  name: Eigenverft.WebLib.Infrastructure.Hosting.Hsts
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Hosting.Hsts
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts
+  nameWithType: Eigenverft.WebLib.Infrastructure.Hosting.Hsts
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions
+  name: WebLibHstsExtensions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions
+  nameWithType: WebLibHstsExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  name: AddWebLibHsts(IServiceCollection)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Hsts_WebLibHstsExtensions_AddWebLibHsts_Microsoft_Extensions_DependencyInjection_IServiceCollection_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  nameWithType: WebLibHstsExtensions.AddWebLibHsts(IServiceCollection)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.AspNetCore.HttpsPolicy.HstsOptions})
+  name: AddWebLibHsts(IServiceCollection, Action<HstsOptions>)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Hsts_WebLibHstsExtensions_AddWebLibHsts_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Microsoft_AspNetCore_HttpsPolicy_HstsOptions__
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.AspNetCore.HttpsPolicy.HstsOptions})
+  name.vb: AddWebLibHsts(IServiceCollection, Action(Of HstsOptions))
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action<Microsoft.AspNetCore.HttpsPolicy.HstsOptions>)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action(Of Microsoft.AspNetCore.HttpsPolicy.HstsOptions))
+  nameWithType: WebLibHstsExtensions.AddWebLibHsts(IServiceCollection, Action<HstsOptions>)
+  nameWithType.vb: WebLibHstsExtensions.AddWebLibHsts(IServiceCollection, Action(Of HstsOptions))
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts*
+  name: AddWebLibHsts
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Hsts_WebLibHstsExtensions_AddWebLibHsts_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts
+  nameWithType: WebLibHstsExtensions.AddWebLibHsts
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  name: UseWebLibHsts(IApplicationBuilder)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Hsts_WebLibHstsExtensions_UseWebLibHsts_Microsoft_AspNetCore_Builder_IApplicationBuilder_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  nameWithType: WebLibHstsExtensions.UseWebLibHsts(IApplicationBuilder)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts*
+  name: UseWebLibHsts
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Hsts_WebLibHstsExtensions_UseWebLibHsts_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts
+  nameWithType: WebLibHstsExtensions.UseWebLibHsts
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions
   name: HttpResponseExtensions
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.html
@@ -750,99 +797,208 @@ references:
   commentId: F:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.SharedPartition
   fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.SharedPartition
   nameWithType: MissingClientIpBehavior.SharedPartition
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions
-  name: WebLibFloodProtectionOptions
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html
-  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions
-  nameWithType: WebLibFloodProtectionOptions
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.BurstSize
-  name: BurstSize
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_BurstSize
-  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.BurstSize
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.BurstSize
-  nameWithType: WebLibFloodProtectionOptions.BurstSize
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.BurstSize*
-  name: BurstSize
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_BurstSize_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.BurstSize
-  isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.BurstSize
-  nameWithType: WebLibFloodProtectionOptions.BurstSize
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyLimit
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions
+  name: WebLibRequestTrafficShapingOptions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions
+  nameWithType: WebLibRequestTrafficShapingOptions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.GlobalConcurrencyLimit
   name: GlobalConcurrencyLimit
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyLimit
-  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyLimit
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyLimit
-  nameWithType: WebLibFloodProtectionOptions.GlobalConcurrencyLimit
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyLimit*
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingOptions_GlobalConcurrencyLimit
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.GlobalConcurrencyLimit
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.GlobalConcurrencyLimit
+  nameWithType: WebLibRequestTrafficShapingOptions.GlobalConcurrencyLimit
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.GlobalConcurrencyLimit*
   name: GlobalConcurrencyLimit
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_GlobalConcurrencyLimit_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyLimit
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingOptions_GlobalConcurrencyLimit_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.GlobalConcurrencyLimit
   isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.GlobalConcurrencyLimit
-  nameWithType: WebLibFloodProtectionOptions.GlobalConcurrencyLimit
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.MissingClientIpBehavior
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.GlobalConcurrencyLimit
+  nameWithType: WebLibRequestTrafficShapingOptions.GlobalConcurrencyLimit
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.PerClient
+  name: PerClient
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingOptions_PerClient
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.PerClient
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.PerClient
+  nameWithType: WebLibRequestTrafficShapingOptions.PerClient
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.PerClient*
+  name: PerClient
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingOptions_PerClient_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.PerClient
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.PerClient
+  nameWithType: WebLibRequestTrafficShapingOptions.PerClient
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.ServerWide
+  name: ServerWide
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingOptions_ServerWide
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.ServerWide
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.ServerWide
+  nameWithType: WebLibRequestTrafficShapingOptions.ServerWide
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.ServerWide*
+  name: ServerWide
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingOptions_ServerWide_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.ServerWide
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.ServerWide
+  nameWithType: WebLibRequestTrafficShapingOptions.ServerWide
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions
+  name: WebLibRequestTrafficShapingPerClientOptions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.BurstSize
+  name: BurstSize
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingPerClientOptions_BurstSize
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.BurstSize
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.BurstSize
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions.BurstSize
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.BurstSize*
+  name: BurstSize
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingPerClientOptions_BurstSize_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.BurstSize
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.BurstSize
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions.BurstSize
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.Enabled
+  name: Enabled
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingPerClientOptions_Enabled
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.Enabled
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.Enabled
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions.Enabled
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.Enabled*
+  name: Enabled
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingPerClientOptions_Enabled_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.Enabled
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.Enabled
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions.Enabled
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.MissingClientIpBehavior
   name: MissingClientIpBehavior
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_MissingClientIpBehavior
-  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.MissingClientIpBehavior
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.MissingClientIpBehavior
-  nameWithType: WebLibFloodProtectionOptions.MissingClientIpBehavior
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.MissingClientIpBehavior*
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingPerClientOptions_MissingClientIpBehavior
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.MissingClientIpBehavior
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.MissingClientIpBehavior
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions.MissingClientIpBehavior
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.MissingClientIpBehavior*
   name: MissingClientIpBehavior
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_MissingClientIpBehavior_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.MissingClientIpBehavior
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingPerClientOptions_MissingClientIpBehavior_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.MissingClientIpBehavior
   isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.MissingClientIpBehavior
-  nameWithType: WebLibFloodProtectionOptions.MissingClientIpBehavior
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueLimit
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.MissingClientIpBehavior
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions.MissingClientIpBehavior
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.QueueLimit
   name: QueueLimit
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_QueueLimit
-  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueLimit
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueLimit
-  nameWithType: WebLibFloodProtectionOptions.QueueLimit
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueLimit*
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingPerClientOptions_QueueLimit
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.QueueLimit
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.QueueLimit
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions.QueueLimit
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.QueueLimit*
   name: QueueLimit
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_QueueLimit_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueLimit
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingPerClientOptions_QueueLimit_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.QueueLimit
   isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.QueueLimit
-  nameWithType: WebLibFloodProtectionOptions.QueueLimit
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RequestsPerSecond
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.QueueLimit
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions.QueueLimit
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.RequestsPerSecond
   name: RequestsPerSecond
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_RequestsPerSecond
-  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RequestsPerSecond
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RequestsPerSecond
-  nameWithType: WebLibFloodProtectionOptions.RequestsPerSecond
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RequestsPerSecond*
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingPerClientOptions_RequestsPerSecond
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.RequestsPerSecond
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.RequestsPerSecond
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions.RequestsPerSecond
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.RequestsPerSecond*
   name: RequestsPerSecond
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions_RequestsPerSecond_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RequestsPerSecond
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingPerClientOptions_RequestsPerSecond_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.RequestsPerSecond
   isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.RequestsPerSecond
-  nameWithType: WebLibFloodProtectionOptions.RequestsPerSecond
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions
-  name: WebLibFloodProtectionServiceCollectionExtensions
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html
-  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions
-  nameWithType: WebLibFloodProtectionServiceCollectionExtensions
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions})
-  name: AddFloodProtection(IServiceCollection, Action<WebLibFloodProtectionOptions>?)
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServiceCollectionExtensions_AddFloodProtection_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionOptions__
-  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions})
-  name.vb: AddFloodProtection(IServiceCollection, Action(Of WebLibFloodProtectionOptions))
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action<Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions>?)
-  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action(Of Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions))
-  nameWithType: WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(IServiceCollection, Action<WebLibFloodProtectionOptions>?)
-  nameWithType.vb: WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection(IServiceCollection, Action(Of WebLibFloodProtectionOptions))
-- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection*
-  name: AddFloodProtection
-  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibFloodProtectionServiceCollectionExtensions_AddFloodProtection_
-  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.RequestsPerSecond
+  nameWithType: WebLibRequestTrafficShapingPerClientOptions.RequestsPerSecond
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions
+  name: WebLibRequestTrafficShapingServerWideOptions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions
+  nameWithType: WebLibRequestTrafficShapingServerWideOptions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.BurstSize
+  name: BurstSize
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_BurstSize
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.BurstSize
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.BurstSize
+  nameWithType: WebLibRequestTrafficShapingServerWideOptions.BurstSize
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.BurstSize*
+  name: BurstSize
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_BurstSize_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.BurstSize
   isSpec: "True"
-  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection
-  nameWithType: WebLibFloodProtectionServiceCollectionExtensions.AddFloodProtection
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.BurstSize
+  nameWithType: WebLibRequestTrafficShapingServerWideOptions.BurstSize
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.Enabled
+  name: Enabled
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_Enabled
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.Enabled
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.Enabled
+  nameWithType: WebLibRequestTrafficShapingServerWideOptions.Enabled
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.Enabled*
+  name: Enabled
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_Enabled_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.Enabled
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.Enabled
+  nameWithType: WebLibRequestTrafficShapingServerWideOptions.Enabled
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.QueueLimit
+  name: QueueLimit
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_QueueLimit
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.QueueLimit
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.QueueLimit
+  nameWithType: WebLibRequestTrafficShapingServerWideOptions.QueueLimit
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.QueueLimit*
+  name: QueueLimit
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_QueueLimit_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.QueueLimit
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.QueueLimit
+  nameWithType: WebLibRequestTrafficShapingServerWideOptions.QueueLimit
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond
+  name: RequestsPerSecond
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_RequestsPerSecond
+  commentId: P:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond
+  nameWithType: WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond*
+  name: RequestsPerSecond
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_RequestsPerSecond_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond
+  nameWithType: WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions
+  name: WebLibRequestTrafficShapingServiceCollectionExtensions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions
+  nameWithType: WebLibRequestTrafficShapingServiceCollectionExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  name: AddRequestTrafficShaping(IServiceCollection)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServiceCollectionExtensions_AddRequestTrafficShaping_Microsoft_Extensions_DependencyInjection_IServiceCollection_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  nameWithType: WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping(IServiceCollection)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions})
+  name: AddRequestTrafficShaping(IServiceCollection, Action<WebLibRequestTrafficShapingOptions>)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServiceCollectionExtensions_AddRequestTrafficShaping_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingOptions__
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions})
+  name.vb: AddRequestTrafficShaping(IServiceCollection, Action(Of WebLibRequestTrafficShapingOptions))
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action<Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions>)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action(Of Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions))
+  nameWithType: WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping(IServiceCollection, Action<WebLibRequestTrafficShapingOptions>)
+  nameWithType.vb: WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping(IServiceCollection, Action(Of WebLibRequestTrafficShapingOptions))
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping*
+  name: AddRequestTrafficShaping
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServiceCollectionExtensions_AddRequestTrafficShaping_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping
+  nameWithType: WebLibRequestTrafficShapingServiceCollectionExtensions.AddRequestTrafficShaping
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging
   name: Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.RequestTrafficLogging.html
