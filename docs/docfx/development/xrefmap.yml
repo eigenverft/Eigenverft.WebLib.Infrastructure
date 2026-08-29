@@ -207,6 +207,53 @@ references:
   fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Features.HttpContextFeatureExtensions.TryGetFeature(Of TFeature)(Microsoft.AspNetCore.Http.HttpContext, TFeature)
   nameWithType: HttpContextFeatureExtensions.TryGetFeature<TFeature>(HttpContext, out TFeature?)
   nameWithType.vb: HttpContextFeatureExtensions.TryGetFeature(Of TFeature)(HttpContext, TFeature)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts
+  name: Eigenverft.WebLib.Infrastructure.Hosting.Hsts
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.html
+  commentId: N:Eigenverft.WebLib.Infrastructure.Hosting.Hsts
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts
+  nameWithType: Eigenverft.WebLib.Infrastructure.Hosting.Hsts
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions
+  name: WebLibHstsExtensions
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html
+  commentId: T:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions
+  nameWithType: WebLibHstsExtensions
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  name: AddWebLibHsts(IServiceCollection)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Hsts_WebLibHstsExtensions_AddWebLibHsts_Microsoft_Extensions_DependencyInjection_IServiceCollection_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection)
+  nameWithType: WebLibHstsExtensions.AddWebLibHsts(IServiceCollection)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.AspNetCore.HttpsPolicy.HstsOptions})
+  name: AddWebLibHsts(IServiceCollection, Action<HstsOptions>)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Hsts_WebLibHstsExtensions_AddWebLibHsts_Microsoft_Extensions_DependencyInjection_IServiceCollection_System_Action_Microsoft_AspNetCore_HttpsPolicy_HstsOptions__
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.Action{Microsoft.AspNetCore.HttpsPolicy.HstsOptions})
+  name.vb: AddWebLibHsts(IServiceCollection, Action(Of HstsOptions))
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action<Microsoft.AspNetCore.HttpsPolicy.HstsOptions>)
+  fullName.vb: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts(Microsoft.Extensions.DependencyInjection.IServiceCollection, System.Action(Of Microsoft.AspNetCore.HttpsPolicy.HstsOptions))
+  nameWithType: WebLibHstsExtensions.AddWebLibHsts(IServiceCollection, Action<HstsOptions>)
+  nameWithType.vb: WebLibHstsExtensions.AddWebLibHsts(IServiceCollection, Action(Of HstsOptions))
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts*
+  name: AddWebLibHsts
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Hsts_WebLibHstsExtensions_AddWebLibHsts_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.AddWebLibHsts
+  nameWithType: WebLibHstsExtensions.AddWebLibHsts
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  name: UseWebLibHsts(IApplicationBuilder)
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Hsts_WebLibHstsExtensions_UseWebLibHsts_Microsoft_AspNetCore_Builder_IApplicationBuilder_
+  commentId: M:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts(Microsoft.AspNetCore.Builder.IApplicationBuilder)
+  nameWithType: WebLibHstsExtensions.UseWebLibHsts(IApplicationBuilder)
+- uid: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts*
+  name: UseWebLibHsts
+  href: api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html#Eigenverft_WebLib_Infrastructure_Hosting_Hsts_WebLibHstsExtensions_UseWebLibHsts_
+  commentId: Overload:Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts
+  isSpec: "True"
+  fullName: Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.UseWebLibHsts
+  nameWithType: WebLibHstsExtensions.UseWebLibHsts
 - uid: Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions
   name: HttpResponseExtensions
   href: api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.html

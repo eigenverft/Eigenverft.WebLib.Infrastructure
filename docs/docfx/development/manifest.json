@@ -88,6 +88,34 @@
     },
     {
       "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.yml\" sourcestartlinenumber=\"1\">Registers and activates the WebLib HSTS policy on top of ASP.NET Core's native HSTS support.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Hsts",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
       "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.HttpResponseExtensions.yml",
       "output": {
         ".html": {
@@ -658,16 +686,6 @@
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/flood-protection.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/flood-protection.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
       "source_relative_path": "docs/getting-started.md",
       "output": {
         ".html": {
@@ -692,16 +710,6 @@
       "output": {
         ".html": {
           "relative_path": "docs/middleware-infrastructure.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "docs/static-pwa-hosting.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/static-pwa-hosting.html"
         }
       },
       "version": ""
