@@ -448,7 +448,7 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions",
-      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.yml\" sourcestartlinenumber=\"1\">Configures the optional server-wide request-rate token bucket.</p>\n"
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.yml\" sourcestartlinenumber=\"1\">Configures the server-wide request-rate token bucket.</p>\n"
     },
     {
       "type": "ManagedReference",
