@@ -30,10 +30,10 @@ public sealed class WebLibRequestTrafficShapingTests
         Assert.AreEqual(20, options.PerClient.QueueLimit);
         Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.PerClient.MissingClientIpBehavior);
         Assert.IsNotNull(options.ServerWide);
-        Assert.IsFalse(options.ServerWide.Enabled);
-        Assert.AreEqual(0, options.ServerWide.BurstSize);
-        Assert.AreEqual(0, options.ServerWide.RequestsPerSecond);
-        Assert.AreEqual(0, options.ServerWide.QueueLimit);
+        Assert.IsTrue(options.ServerWide.Enabled);
+        Assert.AreEqual(10_000, options.ServerWide.BurstSize);
+        Assert.AreEqual(10_000, options.ServerWide.RequestsPerSecond);
+        Assert.AreEqual(10_000, options.ServerWide.QueueLimit);
         Assert.IsNull(options.GlobalConcurrencyLimit);
     }
 
@@ -50,11 +50,13 @@ public sealed class WebLibRequestTrafficShapingTests
         Assert.AreEqual(20, options.PerClient.QueueLimit);
         Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.PerClient.MissingClientIpBehavior);
         Assert.IsNotNull(options.ServerWide);
-        Assert.IsFalse(options.ServerWide.Enabled);
-        Assert.AreEqual(0, options.ServerWide.BurstSize);
-        Assert.AreEqual(0, options.ServerWide.RequestsPerSecond);
-        Assert.AreEqual(0, options.ServerWide.QueueLimit);
+        Assert.IsTrue(options.ServerWide.Enabled);
+        Assert.AreEqual(10_000, options.ServerWide.BurstSize);
+        Assert.AreEqual(10_000, options.ServerWide.RequestsPerSecond);
+        Assert.AreEqual(10_000, options.ServerWide.QueueLimit);
         Assert.IsNull(options.GlobalConcurrencyLimit);
+
+        provider.GetRequiredService<IStartupValidator>().Validate();
     }
 
     [TestMethod]
@@ -92,11 +94,48 @@ public sealed class WebLibRequestTrafficShapingTests
         Assert.AreEqual(20, options.PerClient.QueueLimit);
         Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.PerClient.MissingClientIpBehavior);
         Assert.IsNotNull(options.ServerWide);
-        Assert.IsFalse(options.ServerWide.Enabled);
-        Assert.AreEqual(0, options.ServerWide.BurstSize);
-        Assert.AreEqual(0, options.ServerWide.RequestsPerSecond);
-        Assert.AreEqual(0, options.ServerWide.QueueLimit);
+        Assert.IsTrue(options.ServerWide.Enabled);
+        Assert.AreEqual(10_000, options.ServerWide.BurstSize);
+        Assert.AreEqual(10_000, options.ServerWide.RequestsPerSecond);
+        Assert.AreEqual(10_000, options.ServerWide.QueueLimit);
         Assert.IsNull(options.GlobalConcurrencyLimit);
+    }
+
+    [TestMethod]
+    public void ServerWideCanBeDisabledByConfigurationWithoutReplacingItsStartingValues()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["RequestTrafficShaping:ServerWide:Enabled"] = "false",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration);
+        WebLibRequestTrafficShapingOptions options = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
+
+        Assert.IsFalse(options.ServerWide.Enabled);
+        Assert.AreEqual(10_000, options.ServerWide.BurstSize);
+        Assert.AreEqual(10_000, options.ServerWide.RequestsPerSecond);
+        Assert.AreEqual(10_000, options.ServerWide.QueueLimit);
+    }
+
+    [TestMethod]
+    public void PartialServerWideConfigurationKeepsRemainingStartingDefaults()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["RequestTrafficShaping:ServerWide:BurstSize"] = "5000",
+            ["RequestTrafficShaping:ServerWide:RequestsPerSecond"] = "5000",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration);
+        WebLibRequestTrafficShapingOptions options = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
+
+        Assert.IsTrue(options.ServerWide.Enabled);
+        Assert.AreEqual(5_000, options.ServerWide.BurstSize);
+        Assert.AreEqual(5_000, options.ServerWide.RequestsPerSecond);
+        Assert.AreEqual(10_000, options.ServerWide.QueueLimit);
     }
 
     [TestMethod]
@@ -305,6 +344,25 @@ public sealed class WebLibRequestTrafficShapingTests
 
         using RateLimitLease firstLease = limiter.AttemptAcquire(CreateContext("192.0.2.61"), permitCount: 1);
         using RateLimitLease secondLease = limiter.AttemptAcquire(CreateContext("192.0.2.62"), permitCount: 1);
+
+        Assert.IsTrue(firstLease.IsAcquired);
+        Assert.IsFalse(secondLease.IsAcquired);
+        Assert.IsTrue(secondLease.TryGetMetadata(MetadataName.RetryAfter, out _));
+    }
+
+    [TestMethod]
+    public void DisabledServerWideStillUsesPerClientTokenBucket()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            ConfigureSingleTokenNoQueue(options);
+            options.ServerWide.Enabled = false;
+        });
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+        var context = CreateContext("192.0.2.65");
+
+        using RateLimitLease firstLease = limiter.AttemptAcquire(context, permitCount: 1);
+        using RateLimitLease secondLease = limiter.AttemptAcquire(context, permitCount: 1);
 
         Assert.IsTrue(firstLease.IsAcquired);
         Assert.IsFalse(secondLease.IsAcquired);
@@ -621,23 +679,12 @@ public sealed class WebLibRequestTrafficShapingTests
     }
 
     [TestMethod]
-    public void EnabledServerWideLimiterRequiresExplicitPositiveBurstAndRate()
-    {
-        using ServiceProvider provider = BuildProvider(options => options.ServerWide.Enabled = true);
-
-        Assert.ThrowsExactly<OptionsValidationException>(
-            () => _ = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value);
-    }
-
-    [TestMethod]
-    public void InvalidEnabledServerWideQueueLimitFailsOptionsValidation()
+    public void ServerWideBurstBelowRequestsPerSecondFailsOptionsValidation()
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.ServerWide.Enabled = true;
-            options.ServerWide.BurstSize = 1;
-            options.ServerWide.RequestsPerSecond = 1;
-            options.ServerWide.QueueLimit = -1;
+            options.ServerWide.BurstSize = 9_999;
+            options.ServerWide.RequestsPerSecond = 10_000;
         });
 
         Assert.ThrowsExactly<OptionsValidationException>(
@@ -645,20 +692,25 @@ public sealed class WebLibRequestTrafficShapingTests
     }
 
     [TestMethod]
-    public void DisabledServerWideDoesNotValidateUnusedRateValues()
+    public void InvalidServerWideQueueLimitFailsOptionsValidation()
+    {
+        using ServiceProvider provider = BuildProvider(options => options.ServerWide.QueueLimit = -1);
+
+        Assert.ThrowsExactly<OptionsValidationException>(
+            () => _ = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value);
+    }
+
+    [TestMethod]
+    public void DisabledServerWideStillRequiresValidRateValues()
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
             options.ServerWide.Enabled = false;
-            options.ServerWide.BurstSize = -1;
-            options.ServerWide.RequestsPerSecond = -1;
-            options.ServerWide.QueueLimit = -1;
+            options.ServerWide.BurstSize = 0;
         });
 
-        WebLibRequestTrafficShapingOptions options =
-            provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
-
-        Assert.IsFalse(options.ServerWide.Enabled);
+        Assert.ThrowsExactly<OptionsValidationException>(
+            () => _ = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value);
     }
 
     [TestMethod]
@@ -671,11 +723,10 @@ public sealed class WebLibRequestTrafficShapingTests
     }
 
     [TestMethod]
-    public void EnabledPerClientRequiresPositiveBurstAndRate()
+    public void PerClientRequiresPositiveBurstAndRate()
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.PerClient.Enabled = true;
             options.PerClient.BurstSize = 0;
             options.PerClient.RequestsPerSecond = 0;
         });
@@ -685,21 +736,29 @@ public sealed class WebLibRequestTrafficShapingTests
     }
 
     [TestMethod]
-    public void DisabledPerClientDoesNotValidateUnusedRateValues()
+    public void PerClientBurstBelowRequestsPerSecondFailsOptionsValidation()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.PerClient.BurstSize = 9;
+            options.PerClient.RequestsPerSecond = 10;
+        });
+
+        Assert.ThrowsExactly<OptionsValidationException>(
+            () => _ = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value);
+    }
+
+    [TestMethod]
+    public void DisabledPerClientStillRequiresValidOptionValues()
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
             options.PerClient.Enabled = false;
-            options.PerClient.BurstSize = -1;
-            options.PerClient.RequestsPerSecond = -1;
-            options.PerClient.QueueLimit = -1;
             options.PerClient.MissingClientIpBehavior = (MissingClientIpBehavior)12345;
         });
 
-        WebLibRequestTrafficShapingOptions options =
-            provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
-
-        Assert.IsFalse(options.PerClient.Enabled);
+        Assert.ThrowsExactly<OptionsValidationException>(
+            () => _ = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value);
     }
     [TestMethod]
     public void InvalidConfigurationStillFailsOptionsValidation()

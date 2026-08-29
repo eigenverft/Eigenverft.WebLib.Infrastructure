@@ -20,8 +20,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
         private const string ConfigurationSectionName = "RequestTrafficShaping";
 
         /// <summary>
-        /// Adds request traffic shaping using a per-client token bucket, an optional server-wide token bucket, and an
-        /// optional global concurrency limiter.
+        /// Adds request traffic shaping using a per-client token bucket, a server-wide token bucket, and an optional
+        /// global concurrency limiter.
         /// </summary>
         /// <param name="services">The service collection to configure.</param>
         /// <returns>The original service collection.</returns>
@@ -38,22 +38,28 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
                 .AddOptions<WebLibRequestTrafficShapingOptions>()
                 .BindConfiguration(ConfigurationSectionName)
                 .Validate(static options => options.PerClient is not null, "PerClient cannot be null.")
-                .Validate(static options => options.PerClient is null || !options.PerClient.Enabled || options.PerClient.BurstSize > 0,
-                    "PerClient.BurstSize must be greater than zero when PerClient is enabled.")
-                .Validate(static options => options.PerClient is null || !options.PerClient.Enabled || options.PerClient.RequestsPerSecond > 0,
-                    "PerClient.RequestsPerSecond must be greater than zero when PerClient is enabled.")
-                .Validate(static options => options.PerClient is null || !options.PerClient.Enabled || options.PerClient.QueueLimit >= 0,
-                    "PerClient.QueueLimit cannot be negative when PerClient is enabled.")
-                .Validate(static options => options.PerClient is null || !options.PerClient.Enabled ||
+                .Validate(static options => options.PerClient is null || options.PerClient.BurstSize > 0,
+                    "PerClient.BurstSize must be greater than zero.")
+                .Validate(static options => options.PerClient is null || options.PerClient.RequestsPerSecond > 0,
+                    "PerClient.RequestsPerSecond must be greater than zero.")
+                .Validate(static options => options.PerClient is null || options.PerClient.QueueLimit >= 0,
+                    "PerClient.QueueLimit cannot be negative.")
+                .Validate(static options => options.PerClient is null ||
                     Enum.IsDefined(typeof(MissingClientIpBehavior), options.PerClient.MissingClientIpBehavior),
-                    "PerClient.MissingClientIpBehavior is invalid when PerClient is enabled.")
+                    "PerClient.MissingClientIpBehavior is invalid.")
+                .Validate(static options => options.PerClient is null ||
+                    options.PerClient.BurstSize >= options.PerClient.RequestsPerSecond,
+                    "PerClient.BurstSize must be greater than or equal to PerClient.RequestsPerSecond.")
                 .Validate(static options => options.ServerWide is not null, "ServerWide cannot be null.")
-                .Validate(static options => options.ServerWide is null || !options.ServerWide.Enabled || options.ServerWide.BurstSize > 0,
-                    "ServerWide.BurstSize must be greater than zero when ServerWide is enabled.")
-                .Validate(static options => options.ServerWide is null || !options.ServerWide.Enabled || options.ServerWide.RequestsPerSecond > 0,
-                    "ServerWide.RequestsPerSecond must be greater than zero when ServerWide is enabled.")
-                .Validate(static options => options.ServerWide is null || !options.ServerWide.Enabled || options.ServerWide.QueueLimit >= 0,
-                    "ServerWide.QueueLimit cannot be negative when ServerWide is enabled.")
+                .Validate(static options => options.ServerWide is null || options.ServerWide.BurstSize > 0,
+                    "ServerWide.BurstSize must be greater than zero.")
+                .Validate(static options => options.ServerWide is null || options.ServerWide.RequestsPerSecond > 0,
+                    "ServerWide.RequestsPerSecond must be greater than zero.")
+                .Validate(static options => options.ServerWide is null || options.ServerWide.QueueLimit >= 0,
+                    "ServerWide.QueueLimit cannot be negative.")
+                .Validate(static options => options.ServerWide is null ||
+                    options.ServerWide.BurstSize >= options.ServerWide.RequestsPerSecond,
+                    "ServerWide.BurstSize must be greater than or equal to ServerWide.RequestsPerSecond.")
                 .Validate(static options => options.GlobalConcurrencyLimit is null || options.GlobalConcurrencyLimit > 0,
                     "GlobalConcurrencyLimit must be null or greater than zero.")
                 .ValidateOnStart();

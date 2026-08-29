@@ -6,16 +6,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
     /// Configures WebLib request traffic shaping on top of ASP.NET Core's native rate-limiters.
     /// </summary>
     /// <remarks>
-    /// The per-client token bucket is enabled by default to preserve the existing request-shaping baseline. The server-wide
-    /// token bucket is opt-in so no new aggregate production rate is imposed implicitly. The optional global concurrency
-    /// limit remains an independent third dimension for simultaneously active work.
+    /// The per-client and server-wide token buckets are both enabled by default with finite WebLib starting values. These
+    /// values are infrastructure defaults, not capacity guarantees, and consumers should tune them after representative
+    /// load testing. The optional global concurrency limit remains an independent third dimension for active work.
     /// </remarks>
     public sealed class WebLibRequestTrafficShapingOptions
     {
         /// <summary>Gets or sets the per-client token-bucket settings.</summary>
         public WebLibRequestTrafficShapingPerClientOptions PerClient { get; set; } = new();
 
-        /// <summary>Gets or sets the optional server-wide token-bucket settings.</summary>
+        /// <summary>Gets or sets the server-wide token-bucket settings.</summary>
         public WebLibRequestTrafficShapingServerWideOptions ServerWide { get; set; } = new();
 
         /// <summary>Gets or sets the optional whole-application concurrency limit.</summary>
@@ -47,25 +47,29 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
         public MissingClientIpBehavior MissingClientIpBehavior { get; set; } = MissingClientIpBehavior.SharedPartition;
     }
 
-    /// <summary>Configures the optional server-wide request-rate token bucket.</summary>
+    /// <summary>Configures the server-wide request-rate token bucket.</summary>
     /// <remarks>
-    /// The server-wide limiter is intentionally opt-in. Its numeric defaults are zero so enabling it without explicit burst
-    /// and sustained-rate values fails validation instead of silently imposing an arbitrary production limit. Its bounded
-    /// queue is native <c>OldestFirst</c> FIFO arrival ordering, not per-client fairness.
+    /// The server-wide limiter is enabled by default with WebLib starting values of 10,000 sustained requests per second,
+    /// a 10,000-request burst capacity, and a 10,000-request bounded queue. These values are not a capacity guarantee and
+    /// should be tuned for the consumer after representative load testing. The queue uses native <c>OldestFirst</c> FIFO
+    /// arrival ordering and does not provide per-client fairness.
     /// </remarks>
     public sealed class WebLibRequestTrafficShapingServerWideOptions
     {
         /// <summary>Gets or sets whether the server-wide token bucket participates in the limiter chain.</summary>
-        public bool Enabled { get; set; }
+        public bool Enabled { get; set; } = true;
 
         /// <summary>Gets or sets the maximum aggregate burst capacity for the server instance.</summary>
-        public int BurstSize { get; set; }
+        /// <remarks>The WebLib starting default is 10,000 requests.</remarks>
+        public int BurstSize { get; set; } = 10_000;
 
         /// <summary>Gets or sets the aggregate sustained replenishment rate, in requests per second.</summary>
-        public int RequestsPerSecond { get; set; }
+        /// <remarks>The WebLib starting default is 10,000 requests per second.</remarks>
+        public int RequestsPerSecond { get; set; } = 10_000;
 
         /// <summary>Gets or sets the maximum request count queued by the shared server-wide token bucket.</summary>
-        public int QueueLimit { get; set; }
+        /// <remarks>The WebLib starting default is 10,000 queued requests, approximately one sustained-rate second.</remarks>
+        public int QueueLimit { get; set; } = 10_000;
     }
 
     /// <summary>Defines how the per-client limiter behaves when no client IP is available on the connection.</summary>

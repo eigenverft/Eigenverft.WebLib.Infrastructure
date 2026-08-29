@@ -248,8 +248,11 @@ builder.Services.AddRequestTrafficShaping(options =>
     options.PerClient.RequestsPerSecond = 10;
     options.PerClient.QueueLimit = 20;
 
-    // Server-wide shaping is opt-in and requires explicit positive burst/rate values when enabled.
-    options.ServerWide.Enabled = false;
+    // Server-wide WebLib starting policy; tune after representative consumer load tests.
+    options.ServerWide.Enabled = true;
+    options.ServerWide.BurstSize = 10_000;
+    options.ServerWide.RequestsPerSecond = 10_000;
+    options.ServerWide.QueueLimit = 10_000;
 
     // Optional orthogonal whole-application concurrency guard.
     // options.GlobalConcurrencyLimit = 500;
@@ -271,13 +274,16 @@ The same options bind at startup from `RequestTrafficShaping`; class defaults ar
       "QueueLimit": 20
     },
     "ServerWide": {
-      "Enabled": false
+      "Enabled": true,
+      "BurstSize": 10000,
+      "RequestsPerSecond": 10000,
+      "QueueLimit": 10000
     }
   }
 }
 ```
 
-The limiter chain is per-client token bucket, then the optional shared server-wide token bucket, then the optional `GlobalConcurrencyLimit`. Both token buckets use the native .NET implementation with bounded oldest-first queues. Disabling one token-bucket layer skips only that layer. `PerClient.Enabled` defaults to `true`; `ServerWide.Enabled` defaults to `false`. Retry timing remains based on native lease metadata. These settings configure limiter construction at startup; they do not live-reconfigure already running token buckets. If a trusted reverse proxy supplies the client IP, run Forwarded Headers before rate limiting.
+The limiter chain is per-client token bucket, then the shared server-wide token bucket, then the optional `GlobalConcurrencyLimit`. Both token buckets use the native .NET implementation with bounded oldest-first queues. `PerClient.Enabled` and `ServerWide.Enabled` both default to `true`; disabling either token-bucket layer skips only that layer. Server-wide `BurstSize`, `RequestsPerSecond`, and `QueueLimit` each default to `10,000` as generous WebLib infrastructure starting values, not as a capacity guarantee. Tune them after representative load tests for the consuming application. Both token-bucket option groups require positive burst/rate values, a non-negative queue, and `BurstSize >= RequestsPerSecond` because the current native mapping replenishes once per second. Retry timing remains based on native lease metadata. These settings configure limiter construction at startup; they do not live-reconfigure already running token buckets. If a trusted reverse proxy supplies the client IP, run Forwarded Headers before rate limiting.
 
 ### Request traffic logging
 
