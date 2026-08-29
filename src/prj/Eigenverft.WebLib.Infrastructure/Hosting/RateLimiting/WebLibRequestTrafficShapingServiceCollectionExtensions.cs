@@ -14,79 +14,84 @@ using Microsoft.Extensions.Options;
 
 namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
 {
-    /// <summary>Provides service-registration helpers for WebLib flood protection.</summary>
-    public static class WebLibFloodProtectionServiceCollectionExtensions
+    /// <summary>Provides service-registration helpers for WebLib request traffic shaping.</summary>
+    public static class WebLibRequestTrafficShapingServiceCollectionExtensions
     {
-        private const string ConfigurationSectionName = "FloodProtection";
+        private const string ConfigurationSectionName = "RequestTrafficShaping";
 
         /// <summary>
-        /// Adds framework-based flood protection using a per-client-IP token bucket, an optional server-wide token bucket,
-        /// and an optional global concurrency limiter.
+        /// Adds request traffic shaping using a per-client token bucket, an optional server-wide token bucket, and an
+        /// optional global concurrency limiter.
         /// </summary>
         /// <param name="services">The service collection to configure.</param>
         /// <returns>The original service collection.</returns>
         /// <remarks>
-        /// Options are bound from the <c>FloodProtection</c> configuration section over the class defaults and validated on startup.
-        /// The consuming application still activates the native middleware with <c>app.UseRateLimiter()</c>. Client IPs are read from
-        /// <c>HttpContext.Connection.RemoteIpAddress</c>, so trusted forwarded-header processing must run before rate limiting when a
-        /// reverse proxy supplies the real client IP.
+        /// Options are bound from the <c>RequestTrafficShaping</c> configuration section over class defaults and validated
+        /// on startup. The consuming application activates ASP.NET Core's native middleware with <c>app.UseRateLimiter()</c>.
+        /// Trusted forwarded-header processing must run before rate limiting when a reverse proxy supplies the real client IP.
         /// </remarks>
-        public static IServiceCollection AddFloodProtection(this IServiceCollection services)
+        public static IServiceCollection AddRequestTrafficShaping(this IServiceCollection services)
         {
             ArgumentNullException.ThrowIfNull(services);
 
             services
-                .AddOptions<WebLibFloodProtectionOptions>()
+                .AddOptions<WebLibRequestTrafficShapingOptions>()
                 .BindConfiguration(ConfigurationSectionName)
-                .Validate(static options => options.BurstSize > 0, "BurstSize must be greater than zero.")
-                .Validate(static options => options.RequestsPerSecond > 0, "RequestsPerSecond must be greater than zero.")
-                .Validate(static options => options.QueueLimit >= 0, "QueueLimit cannot be negative.")
-                .Validate(static options => Enum.IsDefined(typeof(MissingClientIpBehavior), options.MissingClientIpBehavior), "MissingClientIpBehavior is invalid.")
+                .Validate(static options => options.PerClient is not null, "PerClient cannot be null.")
+                .Validate(static options => options.PerClient is null || !options.PerClient.Enabled || options.PerClient.BurstSize > 0,
+                    "PerClient.BurstSize must be greater than zero when PerClient is enabled.")
+                .Validate(static options => options.PerClient is null || !options.PerClient.Enabled || options.PerClient.RequestsPerSecond > 0,
+                    "PerClient.RequestsPerSecond must be greater than zero when PerClient is enabled.")
+                .Validate(static options => options.PerClient is null || !options.PerClient.Enabled || options.PerClient.QueueLimit >= 0,
+                    "PerClient.QueueLimit cannot be negative when PerClient is enabled.")
+                .Validate(static options => options.PerClient is null || !options.PerClient.Enabled ||
+                    Enum.IsDefined(typeof(MissingClientIpBehavior), options.PerClient.MissingClientIpBehavior),
+                    "PerClient.MissingClientIpBehavior is invalid when PerClient is enabled.")
                 .Validate(static options => options.ServerWide is not null, "ServerWide cannot be null.")
-                .Validate(static options => options.ServerWide is null || options.ServerWide.BurstSize >= 0, "ServerWide.BurstSize cannot be negative.")
-                .Validate(static options => options.ServerWide is null || options.ServerWide.RequestsPerSecond >= 0, "ServerWide.RequestsPerSecond cannot be negative.")
-                .Validate(static options => options.ServerWide is null || options.ServerWide.QueueLimit >= 0, "ServerWide.QueueLimit cannot be negative.")
-                .Validate(static options => options.ServerWide is null || !options.ServerWide.Enabled || options.ServerWide.BurstSize > 0, "ServerWide.BurstSize must be greater than zero when ServerWide is enabled.")
-                .Validate(static options => options.ServerWide is null || !options.ServerWide.Enabled || options.ServerWide.RequestsPerSecond > 0, "ServerWide.RequestsPerSecond must be greater than zero when ServerWide is enabled.")
-                .Validate(static options => options.GlobalConcurrencyLimit is null || options.GlobalConcurrencyLimit > 0, "GlobalConcurrencyLimit must be null or greater than zero.")
+                .Validate(static options => options.ServerWide is null || !options.ServerWide.Enabled || options.ServerWide.BurstSize > 0,
+                    "ServerWide.BurstSize must be greater than zero when ServerWide is enabled.")
+                .Validate(static options => options.ServerWide is null || !options.ServerWide.Enabled || options.ServerWide.RequestsPerSecond > 0,
+                    "ServerWide.RequestsPerSecond must be greater than zero when ServerWide is enabled.")
+                .Validate(static options => options.ServerWide is null || !options.ServerWide.Enabled || options.ServerWide.QueueLimit >= 0,
+                    "ServerWide.QueueLimit cannot be negative when ServerWide is enabled.")
+                .Validate(static options => options.GlobalConcurrencyLimit is null || options.GlobalConcurrencyLimit > 0,
+                    "GlobalConcurrencyLimit must be null or greater than zero.")
                 .ValidateOnStart();
 
             services.AddRateLimiter(static _ => { });
             services.TryAddEnumerable(
-                ServiceDescriptor.Transient<IConfigureOptions<RateLimiterOptions>, WebLibFloodProtectionRateLimiterOptionsSetup>());
+                ServiceDescriptor.Transient<IConfigureOptions<RateLimiterOptions>, WebLibRequestTrafficShapingRateLimiterOptionsSetup>());
 
             return services;
         }
 
         /// <summary>
-        /// Adds flood protection and applies code-based configuration after the <c>FloodProtection</c> configuration section.
+        /// Adds request traffic shaping and applies code-based configuration after the
+        /// <c>RequestTrafficShaping</c> configuration section.
         /// </summary>
         /// <param name="services">The service collection to configure.</param>
         /// <param name="configure">Startup-time configuration applied after configuration binding.</param>
         /// <returns>The original service collection.</returns>
-        public static IServiceCollection AddFloodProtection(
+        public static IServiceCollection AddRequestTrafficShaping(
             this IServiceCollection services,
-            Action<WebLibFloodProtectionOptions>? configure)
+            Action<WebLibRequestTrafficShapingOptions> configure)
         {
             ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(configure);
 
-            services.AddFloodProtection();
-            if (configure is not null)
-            {
-                services.Configure(configure);
-            }
-
+            services.AddRequestTrafficShaping();
+            services.Configure(configure);
             return services;
         }
     }
 
-    internal sealed class WebLibFloodProtectionRateLimiterOptionsSetup : IConfigureOptions<RateLimiterOptions>
+    internal sealed class WebLibRequestTrafficShapingRateLimiterOptionsSetup : IConfigureOptions<RateLimiterOptions>
     {
         private const string RetryAfterHeaderName = "Retry-After";
 
-        private readonly IOptions<WebLibFloodProtectionOptions> _options;
+        private readonly IOptions<WebLibRequestTrafficShapingOptions> _options;
 
-        public WebLibFloodProtectionRateLimiterOptionsSetup(IOptions<WebLibFloodProtectionOptions> options)
+        public WebLibRequestTrafficShapingRateLimiterOptionsSetup(IOptions<WebLibRequestTrafficShapingOptions> options)
         {
             _options = options ?? throw new ArgumentNullException(nameof(options));
         }
@@ -95,25 +100,31 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
         {
             ArgumentNullException.ThrowIfNull(rateLimiterOptions);
 
-            WebLibFloodProtectionOptions options = _options.Value;
-            PartitionedRateLimiter<HttpContext> floodLimiter = CreateFloodLimiter(options);
+            WebLibRequestTrafficShapingOptions options = _options.Value;
+            PartitionedRateLimiter<HttpContext>? shapingLimiter = CreateRequestTrafficShapingLimiter(options);
 
             rateLimiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            rateLimiterOptions.GlobalLimiter = rateLimiterOptions.GlobalLimiter is null
-                ? floodLimiter
-                : PartitionedRateLimiter.CreateChained(rateLimiterOptions.GlobalLimiter, floodLimiter);
+            if (shapingLimiter is not null)
+            {
+                rateLimiterOptions.GlobalLimiter = rateLimiterOptions.GlobalLimiter is null
+                    ? shapingLimiter
+                    : PartitionedRateLimiter.CreateChained(rateLimiterOptions.GlobalLimiter, shapingLimiter);
+            }
 
             Func<OnRejectedContext, CancellationToken, ValueTask>? previousOnRejected = rateLimiterOptions.OnRejected;
             rateLimiterOptions.OnRejected = (context, cancellationToken) =>
                 OnRejectedAsync(context, cancellationToken, previousOnRejected);
         }
 
-        private static PartitionedRateLimiter<HttpContext> CreateFloodLimiter(WebLibFloodProtectionOptions options)
+        private static PartitionedRateLimiter<HttpContext>? CreateRequestTrafficShapingLimiter(
+            WebLibRequestTrafficShapingOptions options)
         {
-            var limiters = new List<PartitionedRateLimiter<HttpContext>>(capacity: 3)
+            var limiters = new List<PartitionedRateLimiter<HttpContext>>(capacity: 3);
+
+            if (options.PerClient.Enabled)
             {
-                CreatePerIpLimiter(options),
-            };
+                limiters.Add(CreatePerClientLimiter(options.PerClient));
+            }
 
             if (options.ServerWide.Enabled)
             {
@@ -125,12 +136,16 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
                 limiters.Add(CreateGlobalConcurrencyLimiter(globalConcurrencyLimit));
             }
 
-            return limiters.Count == 1
-                ? limiters[0]
-                : PartitionedRateLimiter.CreateChained(limiters.ToArray());
+            return limiters.Count switch
+            {
+                0 => null,
+                1 => limiters[0],
+                _ => PartitionedRateLimiter.CreateChained(limiters.ToArray()),
+            };
         }
 
-        private static PartitionedRateLimiter<HttpContext> CreatePerIpLimiter(WebLibFloodProtectionOptions options)
+        private static PartitionedRateLimiter<HttpContext> CreatePerClientLimiter(
+            WebLibRequestTrafficShapingPerClientOptions options)
         {
             return PartitionedRateLimiter.Create<HttpContext, string>(context =>
             {
@@ -148,7 +163,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
         }
 
         private static PartitionedRateLimiter<HttpContext> CreateServerWideTokenBucketLimiter(
-            WebLibFloodProtectionServerWideOptions options)
+            WebLibRequestTrafficShapingServerWideOptions options)
         {
             return PartitionedRateLimiter.Create<HttpContext, string>(
                 _ => RateLimitPartition.GetTokenBucketLimiter(

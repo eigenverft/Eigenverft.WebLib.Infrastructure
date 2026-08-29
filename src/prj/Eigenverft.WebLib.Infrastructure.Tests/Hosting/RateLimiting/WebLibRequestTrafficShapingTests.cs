@@ -16,17 +16,19 @@ using Microsoft.Extensions.Options;
 namespace Eigenverft.WebLib.Infrastructure.Tests;
 
 [TestClass]
-public sealed class WebLibFloodProtectionTests
+public sealed class WebLibRequestTrafficShapingTests
 {
     [TestMethod]
     public void DefaultsAreFiniteConfigurableStartingValues()
     {
-        var options = new WebLibFloodProtectionOptions();
+        var options = new WebLibRequestTrafficShapingOptions();
 
-        Assert.AreEqual(40, options.BurstSize);
-        Assert.AreEqual(10, options.RequestsPerSecond);
-        Assert.AreEqual(20, options.QueueLimit);
-        Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.MissingClientIpBehavior);
+        Assert.IsNotNull(options.PerClient);
+        Assert.IsTrue(options.PerClient.Enabled);
+        Assert.AreEqual(40, options.PerClient.BurstSize);
+        Assert.AreEqual(10, options.PerClient.RequestsPerSecond);
+        Assert.AreEqual(20, options.PerClient.QueueLimit);
+        Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.PerClient.MissingClientIpBehavior);
         Assert.IsNotNull(options.ServerWide);
         Assert.IsFalse(options.ServerWide.Enabled);
         Assert.AreEqual(0, options.ServerWide.BurstSize);
@@ -39,12 +41,14 @@ public sealed class WebLibFloodProtectionTests
     public void ParameterlessRegistrationUsesClassDefaultsWithoutManualOptionsBinding()
     {
         using ServiceProvider provider = BuildProvider();
-        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+        WebLibRequestTrafficShapingOptions options = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
 
-        Assert.AreEqual(40, options.BurstSize);
-        Assert.AreEqual(10, options.RequestsPerSecond);
-        Assert.AreEqual(20, options.QueueLimit);
-        Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.MissingClientIpBehavior);
+        Assert.IsNotNull(options.PerClient);
+        Assert.IsTrue(options.PerClient.Enabled);
+        Assert.AreEqual(40, options.PerClient.BurstSize);
+        Assert.AreEqual(10, options.PerClient.RequestsPerSecond);
+        Assert.AreEqual(20, options.PerClient.QueueLimit);
+        Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.PerClient.MissingClientIpBehavior);
         Assert.IsNotNull(options.ServerWide);
         Assert.IsFalse(options.ServerWide.Enabled);
         Assert.AreEqual(0, options.ServerWide.BurstSize);
@@ -59,16 +63,16 @@ public sealed class WebLibFloodProtectionTests
         var configuration = new ConfigurationManager();
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["FloodProtection:BurstSize"] = "60",
-            ["FloodProtection:QueueLimit"] = "50",
+            ["RequestTrafficShaping:PerClient:BurstSize"] = "60",
+            ["RequestTrafficShaping:PerClient:QueueLimit"] = "50",
         });
 
         using ServiceProvider provider = BuildProvider(configuration);
-        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+        WebLibRequestTrafficShapingOptions options = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
 
-        Assert.AreEqual(60, options.BurstSize);
-        Assert.AreEqual(10, options.RequestsPerSecond);
-        Assert.AreEqual(50, options.QueueLimit);
+        Assert.AreEqual(60, options.PerClient.BurstSize);
+        Assert.AreEqual(10, options.PerClient.RequestsPerSecond);
+        Assert.AreEqual(50, options.PerClient.QueueLimit);
     }
 
     [TestMethod]
@@ -77,16 +81,16 @@ public sealed class WebLibFloodProtectionTests
         var configuration = new ConfigurationManager();
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["FloodProtection:BurstSize"] = "60",
+            ["RequestTrafficShaping:PerClient:BurstSize"] = "60",
         });
 
         using ServiceProvider provider = BuildProvider(configuration);
-        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+        WebLibRequestTrafficShapingOptions options = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
 
-        Assert.AreEqual(60, options.BurstSize);
-        Assert.AreEqual(10, options.RequestsPerSecond);
-        Assert.AreEqual(20, options.QueueLimit);
-        Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.MissingClientIpBehavior);
+        Assert.AreEqual(60, options.PerClient.BurstSize);
+        Assert.AreEqual(10, options.PerClient.RequestsPerSecond);
+        Assert.AreEqual(20, options.PerClient.QueueLimit);
+        Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.PerClient.MissingClientIpBehavior);
         Assert.IsNotNull(options.ServerWide);
         Assert.IsFalse(options.ServerWide.Enabled);
         Assert.AreEqual(0, options.ServerWide.BurstSize);
@@ -101,20 +105,20 @@ public sealed class WebLibFloodProtectionTests
         var configuration = new ConfigurationManager();
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["FloodProtection:BurstSize"] = "60",
-            ["FloodProtection:QueueLimit"] = "50",
+            ["RequestTrafficShaping:PerClient:BurstSize"] = "60",
+            ["RequestTrafficShaping:PerClient:QueueLimit"] = "50",
         });
 
         using ServiceProvider provider = BuildProvider(configuration, options =>
         {
-            options.BurstSize = 70;
-            options.RequestsPerSecond = 25;
+            options.PerClient.BurstSize = 70;
+            options.PerClient.RequestsPerSecond = 25;
         });
-        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+        WebLibRequestTrafficShapingOptions options = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
 
-        Assert.AreEqual(70, options.BurstSize);
-        Assert.AreEqual(25, options.RequestsPerSecond);
-        Assert.AreEqual(50, options.QueueLimit);
+        Assert.AreEqual(70, options.PerClient.BurstSize);
+        Assert.AreEqual(25, options.PerClient.RequestsPerSecond);
+        Assert.AreEqual(50, options.PerClient.QueueLimit);
     }
 
     [TestMethod]
@@ -123,10 +127,10 @@ public sealed class WebLibFloodProtectionTests
         var configuration = new ConfigurationManager();
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["FloodProtection:ServerWide:Enabled"] = "true",
-            ["FloodProtection:ServerWide:BurstSize"] = "4",
-            ["FloodProtection:ServerWide:RequestsPerSecond"] = "2",
-            ["FloodProtection:ServerWide:QueueLimit"] = "200",
+            ["RequestTrafficShaping:ServerWide:Enabled"] = "true",
+            ["RequestTrafficShaping:ServerWide:BurstSize"] = "4",
+            ["RequestTrafficShaping:ServerWide:RequestsPerSecond"] = "2",
+            ["RequestTrafficShaping:ServerWide:QueueLimit"] = "200",
         });
 
         using ServiceProvider provider = BuildProvider(configuration, options =>
@@ -134,7 +138,7 @@ public sealed class WebLibFloodProtectionTests
             options.ServerWide.BurstSize = 6;
             options.ServerWide.QueueLimit = 500;
         });
-        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+        WebLibRequestTrafficShapingOptions options = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
 
         Assert.IsTrue(options.ServerWide.Enabled);
         Assert.AreEqual(6, options.ServerWide.BurstSize);
@@ -228,7 +232,7 @@ public sealed class WebLibFloodProtectionTests
         using ServiceProvider provider = BuildProvider(options =>
         {
             ConfigureSingleTokenNoQueue(options);
-            options.MissingClientIpBehavior = MissingClientIpBehavior.BypassPerIpLimit;
+            options.PerClient.MissingClientIpBehavior = MissingClientIpBehavior.BypassPerIpLimit;
         });
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
 
@@ -248,7 +252,7 @@ public sealed class WebLibFloodProtectionTests
         using ServiceProvider provider = BuildProvider(options =>
         {
             ConfigureSingleTokenNoQueue(options);
-            options.MissingClientIpBehavior = MissingClientIpBehavior.BypassPerIpLimit;
+            options.PerClient.MissingClientIpBehavior = MissingClientIpBehavior.BypassPerIpLimit;
             options.GlobalConcurrencyLimit = 1;
         });
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
@@ -273,7 +277,7 @@ public sealed class WebLibFloodProtectionTests
         using ServiceProvider provider = BuildProvider(options =>
         {
             ConfigureSingleTokenNoQueue(options);
-            options.MissingClientIpBehavior = MissingClientIpBehavior.BypassPerIpLimit;
+            options.PerClient.MissingClientIpBehavior = MissingClientIpBehavior.BypassPerIpLimit;
             ConfigureServerWideTokenBucket(options, burstSize: 1, requestsPerSecond: 1, queueLimit: 0);
         });
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
@@ -290,13 +294,51 @@ public sealed class WebLibFloodProtectionTests
     }
 
     [TestMethod]
+    public void DisabledPerClientStillUsesServerWideTokenBucket()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.PerClient.Enabled = false;
+            ConfigureServerWideTokenBucket(options, burstSize: 1, requestsPerSecond: 1, queueLimit: 0);
+        });
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+
+        using RateLimitLease firstLease = limiter.AttemptAcquire(CreateContext("192.0.2.61"), permitCount: 1);
+        using RateLimitLease secondLease = limiter.AttemptAcquire(CreateContext("192.0.2.62"), permitCount: 1);
+
+        Assert.IsTrue(firstLease.IsAcquired);
+        Assert.IsFalse(secondLease.IsAcquired);
+        Assert.IsTrue(secondLease.TryGetMetadata(MetadataName.RetryAfter, out _));
+    }
+
+    [TestMethod]
+    public void DisabledPerClientStillUsesGlobalConcurrencyLimiter()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.PerClient.Enabled = false;
+            options.GlobalConcurrencyLimit = 1;
+        });
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+
+        RateLimitLease firstLease = limiter.AttemptAcquire(CreateContext("192.0.2.63"), permitCount: 1);
+        using RateLimitLease secondLease = limiter.AttemptAcquire(CreateContext("192.0.2.64"), permitCount: 1);
+
+        Assert.IsTrue(firstLease.IsAcquired);
+        Assert.IsFalse(secondLease.IsAcquired);
+
+        firstLease.Dispose();
+        using RateLimitLease afterRelease = limiter.AttemptAcquire(CreateContext("192.0.2.64"), permitCount: 1);
+        Assert.IsTrue(afterRelease.IsAcquired);
+    }
+    [TestMethod]
     public async Task QueueLimitBoundsQueuedWorkForOneClient()
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.BurstSize = 1;
-            options.RequestsPerSecond = 1;
-            options.QueueLimit = 1;
+            options.PerClient.BurstSize = 1;
+            options.PerClient.RequestsPerSecond = 1;
+            options.PerClient.QueueLimit = 1;
         });
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
         var context = CreateContext("203.0.113.20");
@@ -332,9 +374,9 @@ public sealed class WebLibFloodProtectionTests
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.BurstSize = 1;
-            options.RequestsPerSecond = 1;
-            options.QueueLimit = 0;
+            options.PerClient.BurstSize = 1;
+            options.PerClient.RequestsPerSecond = 1;
+            options.PerClient.QueueLimit = 0;
         });
         RateLimiterOptions frameworkOptions = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value;
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
@@ -361,9 +403,9 @@ public sealed class WebLibFloodProtectionTests
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.BurstSize = 100;
-            options.RequestsPerSecond = 100;
-            options.QueueLimit = 0;
+            options.PerClient.BurstSize = 100;
+            options.PerClient.RequestsPerSecond = 100;
+            options.PerClient.QueueLimit = 0;
             ConfigureServerWideTokenBucket(options, burstSize: 1, requestsPerSecond: 1, queueLimit: 0);
         });
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
@@ -407,9 +449,9 @@ public sealed class WebLibFloodProtectionTests
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.BurstSize = 100;
-            options.RequestsPerSecond = 100;
-            options.QueueLimit = 0;
+            options.PerClient.BurstSize = 100;
+            options.PerClient.RequestsPerSecond = 100;
+            options.PerClient.QueueLimit = 0;
             ConfigureServerWideTokenBucket(options, burstSize: 1, requestsPerSecond: 1, queueLimit: 1);
         });
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
@@ -453,7 +495,7 @@ public sealed class WebLibFloodProtectionTests
     public void NativeTokenBucketConfigurationUsesOldestFirstArrivalOrdering()
     {
         TokenBucketRateLimiterOptions options =
-            WebLibFloodProtectionRateLimiterOptionsSetup.CreateTokenBucketOptions(
+            WebLibRequestTrafficShapingRateLimiterOptionsSetup.CreateTokenBucketOptions(
                 burstSize: 5,
                 requestsPerSecond: 2,
                 queueLimit: 500);
@@ -472,9 +514,9 @@ public sealed class WebLibFloodProtectionTests
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.BurstSize = 100;
-            options.RequestsPerSecond = 100;
-            options.QueueLimit = 0;
+            options.PerClient.BurstSize = 100;
+            options.PerClient.RequestsPerSecond = 100;
+            options.PerClient.QueueLimit = 0;
             ConfigureServerWideTokenBucket(options, burstSize: 1, requestsPerSecond: 1, queueLimit: 0);
         });
         RateLimiterOptions frameworkOptions = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value;
@@ -503,9 +545,9 @@ public sealed class WebLibFloodProtectionTests
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.BurstSize = 100;
-            options.RequestsPerSecond = 100;
-            options.QueueLimit = 0;
+            options.PerClient.BurstSize = 100;
+            options.PerClient.RequestsPerSecond = 100;
+            options.PerClient.QueueLimit = 0;
             options.GlobalConcurrencyLimit = 1;
         });
         PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
@@ -529,9 +571,9 @@ public sealed class WebLibFloodProtectionTests
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.BurstSize = 100;
-            options.RequestsPerSecond = 100;
-            options.QueueLimit = 0;
+            options.PerClient.BurstSize = 100;
+            options.PerClient.RequestsPerSecond = 100;
+            options.PerClient.QueueLimit = 0;
             ConfigureServerWideTokenBucket(options, burstSize: 3, requestsPerSecond: 1, queueLimit: 0);
             options.GlobalConcurrencyLimit = 1;
         });
@@ -556,9 +598,9 @@ public sealed class WebLibFloodProtectionTests
     {
         using ServiceProvider provider = BuildProvider(options =>
         {
-            options.BurstSize = 100;
-            options.RequestsPerSecond = 100;
-            options.QueueLimit = 0;
+            options.PerClient.BurstSize = 100;
+            options.PerClient.RequestsPerSecond = 100;
+            options.PerClient.QueueLimit = 0;
             ConfigureServerWideTokenBucket(options, burstSize: 2, requestsPerSecond: 1, queueLimit: 0);
             options.GlobalConcurrencyLimit = 1;
         });
@@ -584,40 +626,94 @@ public sealed class WebLibFloodProtectionTests
         using ServiceProvider provider = BuildProvider(options => options.ServerWide.Enabled = true);
 
         Assert.ThrowsExactly<OptionsValidationException>(
-            () => _ = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value);
+            () => _ = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value);
     }
 
     [TestMethod]
-    public void InvalidServerWideQueueLimitFailsOptionsValidation()
+    public void InvalidEnabledServerWideQueueLimitFailsOptionsValidation()
     {
-        using ServiceProvider provider = BuildProvider(options => options.ServerWide.QueueLimit = -1);
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.ServerWide.Enabled = true;
+            options.ServerWide.BurstSize = 1;
+            options.ServerWide.RequestsPerSecond = 1;
+            options.ServerWide.QueueLimit = -1;
+        });
 
         Assert.ThrowsExactly<OptionsValidationException>(
-            () => _ = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value);
+            () => _ = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value);
+    }
+
+    [TestMethod]
+    public void DisabledServerWideDoesNotValidateUnusedRateValues()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.ServerWide.Enabled = false;
+            options.ServerWide.BurstSize = -1;
+            options.ServerWide.RequestsPerSecond = -1;
+            options.ServerWide.QueueLimit = -1;
+        });
+
+        WebLibRequestTrafficShapingOptions options =
+            provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
+
+        Assert.IsFalse(options.ServerWide.Enabled);
     }
 
     [TestMethod]
     public void InvalidQueueLimitFailsOptionsValidation()
     {
-        using ServiceProvider provider = BuildProvider(options => options.QueueLimit = -1);
+        using ServiceProvider provider = BuildProvider(options => options.PerClient.QueueLimit = -1);
 
         Assert.ThrowsExactly<OptionsValidationException>(
-            () => _ = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value);
+            () => _ = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value);
     }
 
+    [TestMethod]
+    public void EnabledPerClientRequiresPositiveBurstAndRate()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.PerClient.Enabled = true;
+            options.PerClient.BurstSize = 0;
+            options.PerClient.RequestsPerSecond = 0;
+        });
+
+        Assert.ThrowsExactly<OptionsValidationException>(
+            () => _ = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value);
+    }
+
+    [TestMethod]
+    public void DisabledPerClientDoesNotValidateUnusedRateValues()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.PerClient.Enabled = false;
+            options.PerClient.BurstSize = -1;
+            options.PerClient.RequestsPerSecond = -1;
+            options.PerClient.QueueLimit = -1;
+            options.PerClient.MissingClientIpBehavior = (MissingClientIpBehavior)12345;
+        });
+
+        WebLibRequestTrafficShapingOptions options =
+            provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value;
+
+        Assert.IsFalse(options.PerClient.Enabled);
+    }
     [TestMethod]
     public void InvalidConfigurationStillFailsOptionsValidation()
     {
         var configuration = new ConfigurationManager();
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["FloodProtection:QueueLimit"] = "-1",
+            ["RequestTrafficShaping:PerClient:QueueLimit"] = "-1",
         });
 
         using ServiceProvider provider = BuildProvider(configuration);
 
         Assert.ThrowsExactly<OptionsValidationException>(
-            () => _ = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value);
+            () => _ = provider.GetRequiredService<IOptions<WebLibRequestTrafficShapingOptions>>().Value);
     }
 
     [TestMethod]
@@ -626,7 +722,7 @@ public sealed class WebLibFloodProtectionTests
         var configuration = new ConfigurationManager();
         configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["FloodProtection:QueueLimit"] = "-1",
+            ["RequestTrafficShaping:PerClient:QueueLimit"] = "-1",
         });
 
         using ServiceProvider provider = BuildProvider(configuration);
@@ -635,14 +731,14 @@ public sealed class WebLibFloodProtectionTests
         Assert.ThrowsExactly<OptionsValidationException>(() => startupValidator.Validate());
     }
 
-    private static ServiceProvider BuildProvider(Action<WebLibFloodProtectionOptions>? configure = null)
+    private static ServiceProvider BuildProvider(Action<WebLibRequestTrafficShapingOptions>? configure = null)
     {
         return BuildProvider(new ConfigurationManager(), configure);
     }
 
     private static ServiceProvider BuildProvider(
         ConfigurationManager configuration,
-        Action<WebLibFloodProtectionOptions>? configure = null)
+        Action<WebLibRequestTrafficShapingOptions>? configure = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -650,11 +746,11 @@ public sealed class WebLibFloodProtectionTests
 
         if (configure is null)
         {
-            services.AddFloodProtection();
+            services.AddRequestTrafficShaping();
         }
         else
         {
-            services.AddFloodProtection(configure);
+            services.AddRequestTrafficShaping(configure);
         }
 
         return services.BuildServiceProvider(validateScopes: true);
@@ -663,7 +759,7 @@ public sealed class WebLibFloodProtectionTests
     private static PartitionedRateLimiter<HttpContext> GetLimiter(ServiceProvider provider)
     {
         RateLimiterOptions options = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value;
-        return options.GlobalLimiter ?? throw new AssertFailedException("Expected WebLib flood protection to configure a global limiter.");
+        return options.GlobalLimiter ?? throw new AssertFailedException("Expected WebLib request traffic shaping to configure a global limiter.");
     }
 
     private static DefaultHttpContext CreateContext(string ipAddress)
@@ -674,7 +770,7 @@ public sealed class WebLibFloodProtectionTests
     }
 
     private static void ConfigureServerWideTokenBucket(
-        WebLibFloodProtectionOptions options,
+        WebLibRequestTrafficShapingOptions options,
         int burstSize,
         int requestsPerSecond,
         int queueLimit)
@@ -685,10 +781,10 @@ public sealed class WebLibFloodProtectionTests
         options.ServerWide.QueueLimit = queueLimit;
     }
 
-    private static void ConfigureSingleTokenNoQueue(WebLibFloodProtectionOptions options)
+    private static void ConfigureSingleTokenNoQueue(WebLibRequestTrafficShapingOptions options)
     {
-        options.BurstSize = 1;
-        options.RequestsPerSecond = 1;
-        options.QueueLimit = 0;
+        options.PerClient.BurstSize = 1;
+        options.PerClient.RequestsPerSecond = 1;
+        options.PerClient.QueueLimit = 0;
     }
 }

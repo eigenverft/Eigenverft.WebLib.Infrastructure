@@ -179,11 +179,11 @@ public sealed class WebLibHstsTests
     {
         using ServiceProvider provider = BuildProvider(
             Environments.Production,
-            configureServices: services => services.AddFloodProtection(options =>
+            configureServices: services => services.AddRequestTrafficShaping(options =>
             {
-                options.BurstSize = 1;
-                options.RequestsPerSecond = 1;
-                options.QueueLimit = 0;
+                options.PerClient.BurstSize = 1;
+                options.PerClient.RequestsPerSecond = 1;
+                options.PerClient.QueueLimit = 0;
             }));
 
         RequestDelegate pipeline = BuildPipeline(provider, app =>
