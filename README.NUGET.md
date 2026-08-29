@@ -217,18 +217,44 @@ already wires ASP.NET Core host filtering to the live configuration object. Clea
 `builder.Configuration.Sources` and adding replacement sources does not remove that wiring, so a
 rebuilt `AllowedHosts` value is still consumed by the built-in host-filtering options.
 
-### Flood protection
+### HSTS
 
-For a small framework-based HTTP flood guard, register WebLib's per-client-IP token bucket and activate ASP.NET Core rate limiting:
+WebLib keeps HSTS framework-owned and adds a small registration/use-site wrapper with a 180-day default. Configuration binds from the `Hsts` section and an optional code callback is applied last:
+
+```csharp
+using Eigenverft.WebLib.Infrastructure.Hosting.Hsts;
+
+builder.Services.AddWebLibHsts(options =>
+{
+    // Optional startup-time override after configuration binding.
+    options.Preload = false;
+});
+
+WebApplication app = builder.Build();
+app.UseWebLibHsts(); // no HSTS middleware in Development
+```
+
+### Request traffic shaping
+
+Register WebLib's native rate-limiter composition and activate ASP.NET Core rate limiting:
 
 ```csharp
 using Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting;
 
-builder.Services.AddFloodProtection(options =>
+builder.Services.AddRequestTrafficShaping(options =>
 {
-    options.BurstSize = 40;
-    options.RequestsPerSecond = 10;
-    options.QueueLimit = 20;
+    options.PerClient.Enabled = true;
+    options.PerClient.BurstSize = 40;
+    options.PerClient.RequestsPerSecond = 10;
+    options.PerClient.QueueLimit = 20;
+
+    // Server-wide WebLib starting policy; tune after representative consumer load tests.
+    options.ServerWide.Enabled = true;
+    options.ServerWide.BurstSize = 10_000;
+    options.ServerWide.RequestsPerSecond = 10_000;
+    options.ServerWide.QueueLimit = 10_000;
+
+    // Optional orthogonal whole-application concurrency guard.
     // options.GlobalConcurrencyLimit = 500;
 });
 
@@ -236,7 +262,28 @@ WebApplication app = builder.Build();
 app.UseRateLimiter();
 ```
 
-The per-IP limiter allows short bursts, paces sustained traffic through a bounded oldest-first queue, and returns `429 Too Many Requests` when that queue is full. `GlobalConcurrencyLimit` is an optional whole-application guard. The defaults are starting values, not universal capacity limits; tune them under realistic load. If a trusted reverse proxy supplies the client IP, run Forwarded Headers before rate limiting.
+The same options bind at startup from `RequestTrafficShaping`; class defaults are applied first, JSON/configuration second, and the optional callback last:
+
+```json
+{
+  "RequestTrafficShaping": {
+    "PerClient": {
+      "Enabled": true,
+      "BurstSize": 40,
+      "RequestsPerSecond": 10,
+      "QueueLimit": 20
+    },
+    "ServerWide": {
+      "Enabled": true,
+      "BurstSize": 10000,
+      "RequestsPerSecond": 10000,
+      "QueueLimit": 10000
+    }
+  }
+}
+```
+
+The limiter chain is per-client token bucket, then the shared server-wide token bucket, then the optional `GlobalConcurrencyLimit`. Both token buckets use the native .NET implementation with bounded oldest-first queues. `PerClient.Enabled` and `ServerWide.Enabled` both default to `true`; disabling either token-bucket layer skips only that layer. Server-wide `BurstSize`, `RequestsPerSecond`, and `QueueLimit` each default to `10,000` as generous WebLib infrastructure starting values, not as a capacity guarantee. Tune them after representative load tests for the consuming application. Both token-bucket option groups require positive burst/rate values, a non-negative queue, and `BurstSize >= RequestsPerSecond` because the current native mapping replenishes once per second. Retry timing remains based on native lease metadata. These settings configure limiter construction at startup; they do not live-reconfigure already running token buckets. If a trusted reverse proxy supplies the client IP, run Forwarded Headers before rate limiting.
 
 ### Request traffic logging
 

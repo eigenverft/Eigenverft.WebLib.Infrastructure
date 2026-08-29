@@ -9,6 +9,7 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
     {
         internal const string MissingSharedPartition = "__weblib_missing_client_ip__";
         internal const string MissingBypassPartition = "__weblib_missing_client_ip_bypass__";
+        internal const string ServerWideTokenBucketPartition = "__weblib_server_wide_token_bucket__";
         internal const string GlobalConcurrencyPartition = "__weblib_global_concurrency__";
 
         internal static string? Resolve(HttpContext context)

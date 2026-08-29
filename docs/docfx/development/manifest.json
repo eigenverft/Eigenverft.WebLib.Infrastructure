@@ -1,5 +1,5 @@
 {
-  "source_base_path": "D:/a/Eigenverft.WebLib.Infrastructure/Eigenverft.WebLib.Infrastructure/.github/workflows/.config/docfx/build",
+  "source_base_path": "D:/Programs/Eigenverft.App.McpServer/workspaces/users/carstenriedel--3159fa757f183514/_tempWorkTrees/Eigenverft.WebLib.Infrastructure/request-traffic-shaping-integration/.github/workflows/.config/docfx/build",
   "xrefmap": "xrefmap.yml",
   "files": [
     {
@@ -84,6 +84,34 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Features",
+      "Summary": null
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.yml\" sourcestartlinenumber=\"1\">Registers and activates the WebLib HSTS policy on top of ASP.NET Core's native HSTS support.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.Hsts.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.Hsts",
       "Summary": null
     },
     {
@@ -378,35 +406,63 @@
       "Uid": null,
       "IsMRef": true,
       "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior",
-      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.yml\" sourcestartlinenumber=\"1\">Defines how the per-IP limiter behaves when no client IP is available on the connection.</p>\n"
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.yml\" sourcestartlinenumber=\"1\">Defines how the per-client limiter behaves when no client IP is available on the connection.</p>\n"
     },
     {
       "type": "ManagedReference",
-      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.yml",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.yml",
       "output": {
         ".html": {
-          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html"
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html"
         }
       },
       "version": "",
       "Uid": null,
       "IsMRef": true,
-      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions",
-      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.yml\" sourcestartlinenumber=\"1\">Configures the WebLib convenience layer over ASP.NET Core rate limiting for generic request flood protection.</p>\n"
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.yml\" sourcestartlinenumber=\"1\">Configures WebLib request traffic shaping on top of ASP.NET Core's native rate-limiters.</p>\n"
     },
     {
       "type": "ManagedReference",
-      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.yml",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.yml",
       "output": {
         ".html": {
-          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html"
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html"
         }
       },
       "version": "",
       "Uid": null,
       "IsMRef": true,
-      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions",
-      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.yml\" sourcestartlinenumber=\"1\">Provides service-registration helpers for WebLib flood protection.</p>\n"
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.yml\" sourcestartlinenumber=\"1\">Configures the per-client request-rate token bucket partitioned by normalized client IP address.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.yml\" sourcestartlinenumber=\"1\">Configures the optional server-wide request-rate token bucket.</p>\n"
+    },
+    {
+      "type": "ManagedReference",
+      "source_relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.yml",
+      "output": {
+        ".html": {
+          "relative_path": "api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.html"
+        }
+      },
+      "version": "",
+      "Uid": null,
+      "IsMRef": true,
+      "Title": "Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions",
+      "Summary": "<p sourcefile=\"api/Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.yml\" sourcestartlinenumber=\"1\">Provides service-registration helpers for WebLib request traffic shaping.</p>\n"
     },
     {
       "type": "ManagedReference",
@@ -658,16 +714,6 @@
     },
     {
       "type": "Conceptual",
-      "source_relative_path": "docs/flood-protection.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/flood-protection.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
       "source_relative_path": "docs/getting-started.md",
       "output": {
         ".html": {
@@ -692,16 +738,6 @@
       "output": {
         ".html": {
           "relative_path": "docs/middleware-infrastructure.html"
-        }
-      },
-      "version": ""
-    },
-    {
-      "type": "Conceptual",
-      "source_relative_path": "docs/static-pwa-hosting.md",
-      "output": {
-        ".html": {
-          "relative_path": "docs/static-pwa-hosting.html"
         }
       },
       "version": ""

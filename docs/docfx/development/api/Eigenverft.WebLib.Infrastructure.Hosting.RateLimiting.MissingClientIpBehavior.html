@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Enum MissingClientIpBehavior | Eigenverft.WebLib.Infrastructure ">
     
-    <meta name="description" content="Defines how the per-IP limiter behaves when no client IP is available on the connection.">
+    <meta name="description" content="Defines how the per-client limiter behaves when no client IP is available on the connection.">
       <link rel="shortcut icon" href="../favicon.ico">
       <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="../styles/docfx.css">
@@ -122,6 +122,16 @@
                     </li>
                     <li class="">
                       <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Hsts.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Hsts" class="">Eigenverft.WebLib.Infrastructure.Hosting.Hsts</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html" title="WebLibHstsExtensions" class="">WebLibHstsExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
                       <a href="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel" class="">Eigenverft.WebLib.Infrastructure.Hosting.Kestrel</a>
 
                         <ul class="nav level2">
@@ -210,10 +220,16 @@
                             <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.html" title="MissingClientIpBehavior" class="active">MissingClientIpBehavior</a>
                           </li>
                           <li class="">
-                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html" title="WebLibFloodProtectionOptions" class="">WebLibFloodProtectionOptions</a>
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html" title="WebLibRequestTrafficShapingOptions" class="">WebLibRequestTrafficShapingOptions</a>
                           </li>
                           <li class="">
-                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html" title="WebLibFloodProtectionServiceCollectionExtensions" class="">WebLibFloodProtectionServiceCollectionExtensions</a>
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html" title="WebLibRequestTrafficShapingPerClientOptions" class="">WebLibRequestTrafficShapingPerClientOptions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html" title="WebLibRequestTrafficShapingServerWideOptions" class="">WebLibRequestTrafficShapingServerWideOptions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.html" title="WebLibRequestTrafficShapingServiceCollectionExtensions" class="">WebLibRequestTrafficShapingServiceCollectionExtensions</a>
                           </li>
                         </ul>
                     </li>
@@ -292,7 +308,7 @@
 
 
   <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_MissingClientIpBehavior" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior" class="text-break">Enum MissingClientIpBehavior</h1>
-  <div class="markdown level0 summary"><p>Defines how the per-IP limiter behaves when no client IP is available on the connection.</p>
+  <div class="markdown level0 summary"><p>Defines how the per-client limiter behaves when no client IP is available on the connection.</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <h6><strong>Namespace</strong>: <a class="xref" href="Eigenverft.html">Eigenverft</a>.<a class="xref" href="Eigenverft.WebLib.html">WebLib</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.html">Infrastructure</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.html">Hosting</a>.<a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.html">RateLimiting</a></h6>
@@ -313,7 +329,8 @@
     </thead></thead><tbody>
       <tr>
         <td id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_MissingClientIpBehavior_BypassPerIpLimit">BypassPerIpLimit</td>
-        <td><p>Bypasses only the per-IP token bucket for requests without a client IP. The optional global concurrency limiter still applies.</p>
+        <td><p>Bypasses only the per-client token bucket for requests without a client IP. Server-wide shaping and optional
+global concurrency limiting still apply.</p>
 </td>
       </tr>
       <tr>
@@ -330,12 +347,6 @@
             <div class="sideaffix">
               <div class="contribution">
                 <ul class="nav">
-                  <li>
-                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/weblib-public-use-site-options/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_MissingClientIpBehavior.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
-                  </li>
-                  <li>
-                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/weblib-public-use-site-options/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibFloodProtectionOptions.cs/#L48" class="contribution-link">View Source</a>
-                  </li>
                 </ul>
               </div>
               <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">

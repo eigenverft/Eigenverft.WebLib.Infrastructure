@@ -122,6 +122,16 @@
                     </li>
                     <li class="">
                       <span class="expand-stub"></span>
+                      <a href="Eigenverft.WebLib.Infrastructure.Hosting.Hsts.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Hsts" class="">Eigenverft.WebLib.Infrastructure.Hosting.Hsts</a>
+
+                        <ul class="nav level2">
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.Hsts.WebLibHstsExtensions.html" title="WebLibHstsExtensions" class="">WebLibHstsExtensions</a>
+                          </li>
+                        </ul>
+                    </li>
+                    <li class="">
+                      <span class="expand-stub"></span>
                       <a href="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel.html" title="Eigenverft.WebLib.Infrastructure.Hosting.Kestrel" class="">Eigenverft.WebLib.Infrastructure.Hosting.Kestrel</a>
 
                         <ul class="nav level2">
@@ -210,10 +220,16 @@
                             <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.html" title="MissingClientIpBehavior" class="">MissingClientIpBehavior</a>
                           </li>
                           <li class="">
-                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html" title="WebLibFloodProtectionOptions" class="">WebLibFloodProtectionOptions</a>
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html" title="WebLibRequestTrafficShapingOptions" class="">WebLibRequestTrafficShapingOptions</a>
                           </li>
                           <li class="">
-                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html" title="WebLibFloodProtectionServiceCollectionExtensions" class="">WebLibFloodProtectionServiceCollectionExtensions</a>
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html" title="WebLibRequestTrafficShapingPerClientOptions" class="">WebLibRequestTrafficShapingPerClientOptions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html" title="WebLibRequestTrafficShapingServerWideOptions" class="">WebLibRequestTrafficShapingServerWideOptions</a>
+                          </li>
+                          <li class="">
+                            <a href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.html" title="WebLibRequestTrafficShapingServiceCollectionExtensions" class="">WebLibRequestTrafficShapingServiceCollectionExtensions</a>
                           </li>
                         </ul>
                     </li>
@@ -295,17 +311,23 @@
     <h3 id="classes">
 Classes
 </h3>
-      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionOptions.html">WebLibFloodProtectionOptions</a></h4>
-      <section><p>Configures the WebLib convenience layer over ASP.NET Core rate limiting for generic request flood protection.</p>
+      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingOptions.html">WebLibRequestTrafficShapingOptions</a></h4>
+      <section><p>Configures WebLib request traffic shaping on top of ASP.NET Core's native rate-limiters.</p>
 </section>
-      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibFloodProtectionServiceCollectionExtensions.html">WebLibFloodProtectionServiceCollectionExtensions</a></h4>
-      <section><p>Provides service-registration helpers for WebLib flood protection.</p>
+      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingPerClientOptions.html">WebLibRequestTrafficShapingPerClientOptions</a></h4>
+      <section><p>Configures the per-client request-rate token bucket partitioned by normalized client IP address.</p>
+</section>
+      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.html">WebLibRequestTrafficShapingServerWideOptions</a></h4>
+      <section><p>Configures the optional server-wide request-rate token bucket.</p>
+</section>
+      <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServiceCollectionExtensions.html">WebLibRequestTrafficShapingServiceCollectionExtensions</a></h4>
+      <section><p>Provides service-registration helpers for WebLib request traffic shaping.</p>
 </section>
     <h3 id="enums">
 Enums
 </h3>
       <h4><a class="xref" href="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.MissingClientIpBehavior.html">MissingClientIpBehavior</a></h4>
-      <section><p>Defines how the per-IP limiter behaves when no client IP is available on the connection.</p>
+      <section><p>Defines how the per-client limiter behaves when no client IP is available on the connection.</p>
 </section>
 
 
