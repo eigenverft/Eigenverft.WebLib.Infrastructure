@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using System.Threading.RateLimiting;
@@ -8,6 +9,7 @@ using Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting;
 
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -25,7 +27,119 @@ public sealed class WebLibFloodProtectionTests
         Assert.AreEqual(10, options.RequestsPerSecond);
         Assert.AreEqual(20, options.QueueLimit);
         Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.MissingClientIpBehavior);
+        Assert.IsNotNull(options.ServerWide);
+        Assert.IsFalse(options.ServerWide.Enabled);
+        Assert.AreEqual(0, options.ServerWide.BurstSize);
+        Assert.AreEqual(0, options.ServerWide.RequestsPerSecond);
+        Assert.AreEqual(0, options.ServerWide.QueueLimit);
         Assert.IsNull(options.GlobalConcurrencyLimit);
+    }
+
+    [TestMethod]
+    public void ParameterlessRegistrationUsesClassDefaultsWithoutManualOptionsBinding()
+    {
+        using ServiceProvider provider = BuildProvider();
+        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+
+        Assert.AreEqual(40, options.BurstSize);
+        Assert.AreEqual(10, options.RequestsPerSecond);
+        Assert.AreEqual(20, options.QueueLimit);
+        Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.MissingClientIpBehavior);
+        Assert.IsNotNull(options.ServerWide);
+        Assert.IsFalse(options.ServerWide.Enabled);
+        Assert.AreEqual(0, options.ServerWide.BurstSize);
+        Assert.AreEqual(0, options.ServerWide.RequestsPerSecond);
+        Assert.AreEqual(0, options.ServerWide.QueueLimit);
+        Assert.IsNull(options.GlobalConcurrencyLimit);
+    }
+
+    [TestMethod]
+    public void ConfigurationOverridesConfiguredValues()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:BurstSize"] = "60",
+            ["FloodProtection:QueueLimit"] = "50",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration);
+        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+
+        Assert.AreEqual(60, options.BurstSize);
+        Assert.AreEqual(10, options.RequestsPerSecond);
+        Assert.AreEqual(50, options.QueueLimit);
+    }
+
+    [TestMethod]
+    public void MissingConfigurationValuesLeaveClassDefaultsIntact()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:BurstSize"] = "60",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration);
+        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+
+        Assert.AreEqual(60, options.BurstSize);
+        Assert.AreEqual(10, options.RequestsPerSecond);
+        Assert.AreEqual(20, options.QueueLimit);
+        Assert.AreEqual(MissingClientIpBehavior.SharedPartition, options.MissingClientIpBehavior);
+        Assert.IsNotNull(options.ServerWide);
+        Assert.IsFalse(options.ServerWide.Enabled);
+        Assert.AreEqual(0, options.ServerWide.BurstSize);
+        Assert.AreEqual(0, options.ServerWide.RequestsPerSecond);
+        Assert.AreEqual(0, options.ServerWide.QueueLimit);
+        Assert.IsNull(options.GlobalConcurrencyLimit);
+    }
+
+    [TestMethod]
+    public void LambdaConfigurationOverridesJsonConfiguration()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:BurstSize"] = "60",
+            ["FloodProtection:QueueLimit"] = "50",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration, options =>
+        {
+            options.BurstSize = 70;
+            options.RequestsPerSecond = 25;
+        });
+        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+
+        Assert.AreEqual(70, options.BurstSize);
+        Assert.AreEqual(25, options.RequestsPerSecond);
+        Assert.AreEqual(50, options.QueueLimit);
+    }
+
+    [TestMethod]
+    public void ServerWideConfigurationBindsAndLambdaAppliesLast()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:ServerWide:Enabled"] = "true",
+            ["FloodProtection:ServerWide:BurstSize"] = "4",
+            ["FloodProtection:ServerWide:RequestsPerSecond"] = "2",
+            ["FloodProtection:ServerWide:QueueLimit"] = "200",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration, options =>
+        {
+            options.ServerWide.BurstSize = 6;
+            options.ServerWide.QueueLimit = 500;
+        });
+        WebLibFloodProtectionOptions options = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value;
+
+        Assert.IsTrue(options.ServerWide.Enabled);
+        Assert.AreEqual(6, options.ServerWide.BurstSize);
+        Assert.AreEqual(2, options.ServerWide.RequestsPerSecond);
+        Assert.AreEqual(500, options.ServerWide.QueueLimit);
     }
 
     [TestMethod]
@@ -154,6 +268,28 @@ public sealed class WebLibFloodProtectionTests
     }
 
     [TestMethod]
+    public void MissingClientIpBypassStillUsesServerWideTokenBucket()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            ConfigureSingleTokenNoQueue(options);
+            options.MissingClientIpBehavior = MissingClientIpBehavior.BypassPerIpLimit;
+            ConfigureServerWideTokenBucket(options, burstSize: 1, requestsPerSecond: 1, queueLimit: 0);
+        });
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+
+        var first = new DefaultHttpContext();
+        var second = new DefaultHttpContext();
+
+        using RateLimitLease firstLease = limiter.AttemptAcquire(first, permitCount: 1);
+        using RateLimitLease secondLease = limiter.AttemptAcquire(second, permitCount: 1);
+
+        Assert.IsTrue(firstLease.IsAcquired);
+        Assert.IsFalse(secondLease.IsAcquired);
+        Assert.IsTrue(secondLease.TryGetMetadata(MetadataName.RetryAfter, out _));
+    }
+
+    [TestMethod]
     public async Task QueueLimitBoundsQueuedWorkForOneClient()
     {
         using ServiceProvider provider = BuildProvider(options =>
@@ -221,6 +357,148 @@ public sealed class WebLibFloodProtectionTests
     }
 
     [TestMethod]
+    public void ServerWideTokenBucketCapsDistinctClientIpsTogether()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.BurstSize = 100;
+            options.RequestsPerSecond = 100;
+            options.QueueLimit = 0;
+            ConfigureServerWideTokenBucket(options, burstSize: 1, requestsPerSecond: 1, queueLimit: 0);
+        });
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+
+        var first = CreateContext("192.0.2.41");
+        var second = CreateContext("192.0.2.42");
+
+        using RateLimitLease firstLease = limiter.AttemptAcquire(first, permitCount: 1);
+        using RateLimitLease secondLease = limiter.AttemptAcquire(second, permitCount: 1);
+
+        Assert.IsTrue(firstLease.IsAcquired);
+        Assert.IsFalse(secondLease.IsAcquired);
+        Assert.IsTrue(secondLease.TryGetMetadata(MetadataName.RetryAfter, out _));
+    }
+
+    [TestMethod]
+    public void PerIpLimiterRunsBeforeServerWideLimiter()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            ConfigureSingleTokenNoQueue(options);
+            ConfigureServerWideTokenBucket(options, burstSize: 2, requestsPerSecond: 1, queueLimit: 0);
+        });
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+
+        var firstClient = CreateContext("198.51.100.41");
+        var secondClient = CreateContext("198.51.100.42");
+
+        using RateLimitLease firstLease = limiter.AttemptAcquire(firstClient, permitCount: 1);
+        using RateLimitLease repeatedFirstClientLease = limiter.AttemptAcquire(firstClient, permitCount: 1);
+        using RateLimitLease secondClientLease = limiter.AttemptAcquire(secondClient, permitCount: 1);
+
+        Assert.IsTrue(firstLease.IsAcquired);
+        Assert.IsFalse(repeatedFirstClientLease.IsAcquired);
+        Assert.IsTrue(secondClientLease.IsAcquired,
+            "A per-IP rejection must stop the native chain before the shared server-wide token is consumed.");
+    }
+
+    [TestMethod]
+    public async Task ServerWideQueueIsBoundedAfterPerIpLimiterAllowsRequest()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.BurstSize = 100;
+            options.RequestsPerSecond = 100;
+            options.QueueLimit = 0;
+            ConfigureServerWideTokenBucket(options, burstSize: 1, requestsPerSecond: 1, queueLimit: 1);
+        });
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+
+        using RateLimitLease active = limiter.AttemptAcquire(CreateContext("203.0.113.41"), permitCount: 1);
+        Assert.IsTrue(active.IsAcquired);
+
+        using var cancellation = new CancellationTokenSource();
+        Task<RateLimitLease> queued = limiter.AcquireAsync(
+            CreateContext("203.0.113.42"),
+            permitCount: 1,
+            cancellation.Token).AsTask();
+
+        Assert.IsFalse(queued.IsCompleted);
+        RateLimiterStatistics? statistics = limiter.GetStatistics(CreateContext("203.0.113.42"));
+        Assert.IsNotNull(statistics);
+        Assert.AreEqual(1L, statistics.CurrentQueuedCount);
+
+        ValueTask<RateLimitLease> overflowAcquire = limiter.AcquireAsync(
+            CreateContext("203.0.113.43"),
+            permitCount: 1,
+            CancellationToken.None);
+        Assert.IsTrue(overflowAcquire.IsCompletedSuccessfully,
+            "A full server-wide queue should reject rather than enqueue more work.");
+        using RateLimitLease overflow = overflowAcquire.Result;
+        Assert.IsFalse(overflow.IsAcquired);
+
+        cancellation.Cancel();
+        try
+        {
+            await queued;
+            Assert.Fail("Expected the globally queued acquire to observe cancellation.");
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected: TaskCanceledException is also a valid cancellation result.
+        }
+    }
+
+    [TestMethod]
+    public void NativeTokenBucketConfigurationUsesOldestFirstArrivalOrdering()
+    {
+        TokenBucketRateLimiterOptions options =
+            WebLibFloodProtectionRateLimiterOptionsSetup.CreateTokenBucketOptions(
+                burstSize: 5,
+                requestsPerSecond: 2,
+                queueLimit: 500);
+
+        Assert.AreEqual(QueueProcessingOrder.OldestFirst, options.QueueProcessingOrder);
+        Assert.AreEqual(500, options.QueueLimit);
+        Assert.IsTrue(options.AutoReplenishment);
+        Assert.AreEqual(TimeSpan.FromSeconds(1), options.ReplenishmentPeriod);
+
+        // The server-wide limiter uses one shared partition. OldestFirst therefore provides FIFO arrival ordering only;
+        // it does not introduce per-client fairness inside that global queue.
+    }
+
+    [TestMethod]
+    public async Task ServerWideTokenBucketRejectionPreservesFrameworkRetryAfterMetadata()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.BurstSize = 100;
+            options.RequestsPerSecond = 100;
+            options.QueueLimit = 0;
+            ConfigureServerWideTokenBucket(options, burstSize: 1, requestsPerSecond: 1, queueLimit: 0);
+        });
+        RateLimiterOptions frameworkOptions = provider.GetRequiredService<IOptions<RateLimiterOptions>>().Value;
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+        var acceptedContext = CreateContext("203.0.113.44");
+        var rejectedContext = CreateContext("203.0.113.45");
+
+        using RateLimitLease accepted = limiter.AttemptAcquire(acceptedContext, permitCount: 1);
+        using RateLimitLease rejected = limiter.AttemptAcquire(rejectedContext, permitCount: 1);
+
+        Assert.IsTrue(accepted.IsAcquired);
+        Assert.IsFalse(rejected.IsAcquired);
+        Assert.IsTrue(rejected.TryGetMetadata(MetadataName.RetryAfter, out TimeSpan retryAfter));
+        Assert.IsGreaterThan(TimeSpan.Zero, retryAfter);
+
+        Assert.IsNotNull(frameworkOptions.OnRejected);
+        await frameworkOptions.OnRejected(
+            new OnRejectedContext { HttpContext = rejectedContext, Lease = rejected },
+            CancellationToken.None);
+
+        Assert.IsTrue(rejectedContext.Response.Headers.ContainsKey("Retry-After"));
+    }
+
+    [TestMethod]
     public void OptionalGlobalConcurrencyLimiterCapsDistinctClientsTogether()
     {
         using ServiceProvider provider = BuildProvider(options =>
@@ -247,6 +525,78 @@ public sealed class WebLibFloodProtectionTests
     }
 
     [TestMethod]
+    public void GlobalConcurrencyLimitRemainsIndependentWithServerWideTokenBucketEnabled()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.BurstSize = 100;
+            options.RequestsPerSecond = 100;
+            options.QueueLimit = 0;
+            ConfigureServerWideTokenBucket(options, burstSize: 3, requestsPerSecond: 1, queueLimit: 0);
+            options.GlobalConcurrencyLimit = 1;
+        });
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+
+        RateLimitLease firstLease = limiter.AttemptAcquire(CreateContext("192.0.2.51"), permitCount: 1);
+        using RateLimitLease blockedByConcurrency = limiter.AttemptAcquire(CreateContext("192.0.2.52"), permitCount: 1);
+
+        Assert.IsTrue(firstLease.IsAcquired);
+        Assert.IsFalse(blockedByConcurrency.IsAcquired);
+        Assert.IsFalse(blockedByConcurrency.TryGetMetadata(MetadataName.RetryAfter, out _),
+            "The optional concurrency limiter remains a distinct non-rate-based rejection dimension.");
+
+        firstLease.Dispose();
+
+        using RateLimitLease afterRelease = limiter.AttemptAcquire(CreateContext("192.0.2.53"), permitCount: 1);
+        Assert.IsTrue(afterRelease.IsAcquired);
+    }
+
+    [TestMethod]
+    public void NativeChainDoesNotRollbackServerWideTokenWhenLaterConcurrencyLimiterRejects()
+    {
+        using ServiceProvider provider = BuildProvider(options =>
+        {
+            options.BurstSize = 100;
+            options.RequestsPerSecond = 100;
+            options.QueueLimit = 0;
+            ConfigureServerWideTokenBucket(options, burstSize: 2, requestsPerSecond: 1, queueLimit: 0);
+            options.GlobalConcurrencyLimit = 1;
+        });
+        PartitionedRateLimiter<HttpContext> limiter = GetLimiter(provider);
+
+        RateLimitLease firstLease = limiter.AttemptAcquire(CreateContext("198.51.100.51"), permitCount: 1);
+        using RateLimitLease rejectedByConcurrency = limiter.AttemptAcquire(CreateContext("198.51.100.52"), permitCount: 1);
+
+        Assert.IsTrue(firstLease.IsAcquired);
+        Assert.IsFalse(rejectedByConcurrency.IsAcquired);
+
+        firstLease.Dispose();
+
+        using RateLimitLease thirdLease = limiter.AttemptAcquire(CreateContext("198.51.100.53"), permitCount: 1);
+        Assert.IsFalse(thirdLease.IsAcquired,
+            "The native chain disposes prior leases on failure, but token-bucket leases do not refund consumed tokens.");
+        Assert.IsTrue(thirdLease.TryGetMetadata(MetadataName.RetryAfter, out _));
+    }
+
+    [TestMethod]
+    public void EnabledServerWideLimiterRequiresExplicitPositiveBurstAndRate()
+    {
+        using ServiceProvider provider = BuildProvider(options => options.ServerWide.Enabled = true);
+
+        Assert.ThrowsExactly<OptionsValidationException>(
+            () => _ = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value);
+    }
+
+    [TestMethod]
+    public void InvalidServerWideQueueLimitFailsOptionsValidation()
+    {
+        using ServiceProvider provider = BuildProvider(options => options.ServerWide.QueueLimit = -1);
+
+        Assert.ThrowsExactly<OptionsValidationException>(
+            () => _ = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value);
+    }
+
+    [TestMethod]
     public void InvalidQueueLimitFailsOptionsValidation()
     {
         using ServiceProvider provider = BuildProvider(options => options.QueueLimit = -1);
@@ -255,11 +605,58 @@ public sealed class WebLibFloodProtectionTests
             () => _ = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value);
     }
 
+    [TestMethod]
+    public void InvalidConfigurationStillFailsOptionsValidation()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:QueueLimit"] = "-1",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration);
+
+        Assert.ThrowsExactly<OptionsValidationException>(
+            () => _ = provider.GetRequiredService<IOptions<WebLibFloodProtectionOptions>>().Value);
+    }
+
+    [TestMethod]
+    public void ValidateOnStartRemainsActive()
+    {
+        var configuration = new ConfigurationManager();
+        configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["FloodProtection:QueueLimit"] = "-1",
+        });
+
+        using ServiceProvider provider = BuildProvider(configuration);
+        IStartupValidator startupValidator = provider.GetRequiredService<IStartupValidator>();
+
+        Assert.ThrowsExactly<OptionsValidationException>(() => startupValidator.Validate());
+    }
+
     private static ServiceProvider BuildProvider(Action<WebLibFloodProtectionOptions>? configure = null)
+    {
+        return BuildProvider(new ConfigurationManager(), configure);
+    }
+
+    private static ServiceProvider BuildProvider(
+        ConfigurationManager configuration,
+        Action<WebLibFloodProtectionOptions>? configure = null)
     {
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddFloodProtection(configure);
+        services.AddSingleton<IConfiguration>(configuration);
+
+        if (configure is null)
+        {
+            services.AddFloodProtection();
+        }
+        else
+        {
+            services.AddFloodProtection(configure);
+        }
+
         return services.BuildServiceProvider(validateScopes: true);
     }
 
@@ -274,6 +671,18 @@ public sealed class WebLibFloodProtectionTests
         var context = new DefaultHttpContext();
         context.Connection.RemoteIpAddress = IPAddress.Parse(ipAddress);
         return context;
+    }
+
+    private static void ConfigureServerWideTokenBucket(
+        WebLibFloodProtectionOptions options,
+        int burstSize,
+        int requestsPerSecond,
+        int queueLimit)
+    {
+        options.ServerWide.Enabled = true;
+        options.ServerWide.BurstSize = burstSize;
+        options.ServerWide.RequestsPerSecond = requestsPerSecond;
+        options.ServerWide.QueueLimit = queueLimit;
     }
 
     private static void ConfigureSingleTokenNoQueue(WebLibFloodProtectionOptions options)
