@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
 using System.Threading.RateLimiting;
@@ -19,7 +20,8 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
         private const string ConfigurationSectionName = "FloodProtection";
 
         /// <summary>
-        /// Adds framework-based flood protection using a per-client-IP token bucket and an optional global concurrency limiter.
+        /// Adds framework-based flood protection using a per-client-IP token bucket, an optional server-wide token bucket,
+        /// and an optional global concurrency limiter.
         /// </summary>
         /// <param name="services">The service collection to configure.</param>
         /// <returns>The original service collection.</returns>
@@ -40,6 +42,12 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
                 .Validate(static options => options.RequestsPerSecond > 0, "RequestsPerSecond must be greater than zero.")
                 .Validate(static options => options.QueueLimit >= 0, "QueueLimit cannot be negative.")
                 .Validate(static options => Enum.IsDefined(typeof(MissingClientIpBehavior), options.MissingClientIpBehavior), "MissingClientIpBehavior is invalid.")
+                .Validate(static options => options.ServerWide is not null, "ServerWide cannot be null.")
+                .Validate(static options => options.ServerWide is null || options.ServerWide.BurstSize >= 0, "ServerWide.BurstSize cannot be negative.")
+                .Validate(static options => options.ServerWide is null || options.ServerWide.RequestsPerSecond >= 0, "ServerWide.RequestsPerSecond cannot be negative.")
+                .Validate(static options => options.ServerWide is null || options.ServerWide.QueueLimit >= 0, "ServerWide.QueueLimit cannot be negative.")
+                .Validate(static options => options.ServerWide is null || !options.ServerWide.Enabled || options.ServerWide.BurstSize > 0, "ServerWide.BurstSize must be greater than zero when ServerWide is enabled.")
+                .Validate(static options => options.ServerWide is null || !options.ServerWide.Enabled || options.ServerWide.RequestsPerSecond > 0, "ServerWide.RequestsPerSecond must be greater than zero when ServerWide is enabled.")
                 .Validate(static options => options.GlobalConcurrencyLimit is null || options.GlobalConcurrencyLimit > 0, "GlobalConcurrencyLimit must be null or greater than zero.")
                 .ValidateOnStart();
 
@@ -102,12 +110,24 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
 
         private static PartitionedRateLimiter<HttpContext> CreateFloodLimiter(WebLibFloodProtectionOptions options)
         {
-            PartitionedRateLimiter<HttpContext> perIpLimiter = CreatePerIpLimiter(options);
-            return options.GlobalConcurrencyLimit is int globalConcurrencyLimit
-                ? PartitionedRateLimiter.CreateChained(
-                    perIpLimiter,
-                    CreateGlobalConcurrencyLimiter(globalConcurrencyLimit))
-                : perIpLimiter;
+            var limiters = new List<PartitionedRateLimiter<HttpContext>>(capacity: 3)
+            {
+                CreatePerIpLimiter(options),
+            };
+
+            if (options.ServerWide.Enabled)
+            {
+                limiters.Add(CreateServerWideTokenBucketLimiter(options.ServerWide));
+            }
+
+            if (options.GlobalConcurrencyLimit is int globalConcurrencyLimit)
+            {
+                limiters.Add(CreateGlobalConcurrencyLimiter(globalConcurrencyLimit));
+            }
+
+            return limiters.Count == 1
+                ? limiters[0]
+                : PartitionedRateLimiter.CreateChained(limiters.ToArray());
         }
 
         private static PartitionedRateLimiter<HttpContext> CreatePerIpLimiter(WebLibFloodProtectionOptions options)
@@ -123,16 +143,34 @@ namespace Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting
                 string partitionKey = clientKey ?? ClientIpPartitionKey.MissingSharedPartition;
                 return RateLimitPartition.GetTokenBucketLimiter(
                     partitionKey,
-                    _ => new TokenBucketRateLimiterOptions
-                    {
-                        TokenLimit = options.BurstSize,
-                        TokensPerPeriod = options.RequestsPerSecond,
-                        ReplenishmentPeriod = TimeSpan.FromSeconds(1),
-                        AutoReplenishment = true,
-                        QueueLimit = options.QueueLimit,
-                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                    });
+                    _ => CreateTokenBucketOptions(options.BurstSize, options.RequestsPerSecond, options.QueueLimit));
             }, StringComparer.Ordinal);
+        }
+
+        private static PartitionedRateLimiter<HttpContext> CreateServerWideTokenBucketLimiter(
+            WebLibFloodProtectionServerWideOptions options)
+        {
+            return PartitionedRateLimiter.Create<HttpContext, string>(
+                _ => RateLimitPartition.GetTokenBucketLimiter(
+                    ClientIpPartitionKey.ServerWideTokenBucketPartition,
+                    _ => CreateTokenBucketOptions(options.BurstSize, options.RequestsPerSecond, options.QueueLimit)),
+                StringComparer.Ordinal);
+        }
+
+        internal static TokenBucketRateLimiterOptions CreateTokenBucketOptions(
+            int burstSize,
+            int requestsPerSecond,
+            int queueLimit)
+        {
+            return new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = burstSize,
+                TokensPerPeriod = requestsPerSecond,
+                ReplenishmentPeriod = TimeSpan.FromSeconds(1),
+                AutoReplenishment = true,
+                QueueLimit = queueLimit,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            };
         }
 
         private static PartitionedRateLimiter<HttpContext> CreateGlobalConcurrencyLimiter(int permitLimit)
