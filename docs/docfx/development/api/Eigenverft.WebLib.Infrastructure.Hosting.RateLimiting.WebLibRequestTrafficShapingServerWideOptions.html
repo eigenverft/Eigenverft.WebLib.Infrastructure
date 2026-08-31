@@ -9,7 +9,7 @@
       <meta name="viewport" content="width=device-width">
       <meta name="title" content="Class WebLibRequestTrafficShapingServerWideOptions | Eigenverft.WebLib.Infrastructure ">
     
-    <meta name="description" content="Configures the optional server-wide request-rate token bucket.">
+    <meta name="description" content="Configures the server-wide request-rate token bucket.">
       <link rel="shortcut icon" href="../favicon.ico">
       <link rel="stylesheet" href="../styles/docfx.vendor.min.css">
       <link rel="stylesheet" href="../styles/docfx.css">
@@ -307,7 +307,7 @@
 
 
   <h1 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions" class="text-break">Class WebLibRequestTrafficShapingServerWideOptions</h1>
-  <div class="markdown level0 summary"><p>Configures the optional server-wide request-rate token bucket.</p>
+  <div class="markdown level0 summary"><p>Configures the server-wide request-rate token bucket.</p>
 </div>
   <div class="markdown level0 conceptual"></div>
   <div class="inheritance">
@@ -343,14 +343,20 @@
     <pre><code class="lang-csharp hljs">public sealed class WebLibRequestTrafficShapingServerWideOptions</code></pre>
   </div>
   <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_remarks"><strong>Remarks</strong></h5>
-  <div class="markdown level0 remarks"><p>The server-wide limiter is intentionally opt-in. Its numeric defaults are zero so enabling it without explicit burst
-and sustained-rate values fails validation instead of silently imposing an arbitrary production limit. Its bounded
-queue is native <code>OldestFirst</code> FIFO arrival ordering, not per-client fairness.</p>
+  <div class="markdown level0 remarks"><p>The server-wide limiter is enabled by default with WebLib starting values of 10,000 sustained requests per second,
+a 10,000-request burst capacity, and a 10,000-request bounded queue. These values are not a capacity guarantee and
+should be tuned for the consumer after representative load testing. The queue uses native <code>OldestFirst</code> FIFO
+arrival ordering and does not provide per-client fairness.</p>
 </div>
   <h3 id="properties">Properties
 </h3>
-
-
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/csproj-property-groups/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_BurstSize.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.BurstSize%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/csproj-property-groups/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibRequestTrafficShapingOptions.cs/#L64">View Source</a>
+  </span>
   <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_BurstSize_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.BurstSize*"></a>
   <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_BurstSize" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.BurstSize">BurstSize</h4>
   <div class="markdown level1 summary"><p>Gets or sets the maximum aggregate burst capacity for the server instance.</p>
@@ -375,8 +381,16 @@ queue is native <code>OldestFirst</code> FIFO arrival ordering, not per-client f
       </tr>
     </tbody>
   </table>
-
-
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_BurstSize_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The WebLib starting default is 10,000 requests.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/csproj-property-groups/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_Enabled.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.Enabled%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/csproj-property-groups/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibRequestTrafficShapingOptions.cs/#L60">View Source</a>
+  </span>
   <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_Enabled_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.Enabled*"></a>
   <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_Enabled" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.Enabled">Enabled</h4>
   <div class="markdown level1 summary"><p>Gets or sets whether the server-wide token bucket participates in the limiter chain.</p>
@@ -401,8 +415,13 @@ queue is native <code>OldestFirst</code> FIFO arrival ordering, not per-client f
       </tr>
     </tbody>
   </table>
-
-
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/csproj-property-groups/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_QueueLimit.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.QueueLimit%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/csproj-property-groups/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibRequestTrafficShapingOptions.cs/#L72">View Source</a>
+  </span>
   <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_QueueLimit_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.QueueLimit*"></a>
   <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_QueueLimit" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.QueueLimit">QueueLimit</h4>
   <div class="markdown level1 summary"><p>Gets or sets the maximum request count queued by the shared server-wide token bucket.</p>
@@ -427,8 +446,16 @@ queue is native <code>OldestFirst</code> FIFO arrival ordering, not per-client f
       </tr>
     </tbody>
   </table>
-
-
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_QueueLimit_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The WebLib starting default is 10,000 queued requests, approximately one sustained-rate second.</p>
+</div>
+  <span class="small pull-right mobile-hide">
+    <span class="divider">|</span>
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/csproj-property-groups/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_RequestsPerSecond.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A">Edit this page</a>
+  </span>
+  <span class="small pull-right mobile-hide">
+    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/csproj-property-groups/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibRequestTrafficShapingOptions.cs/#L68">View Source</a>
+  </span>
   <a id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_RequestsPerSecond_" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond*"></a>
   <h4 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_RequestsPerSecond" data-uid="Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions.RequestsPerSecond">RequestsPerSecond</h4>
   <div class="markdown level1 summary"><p>Gets or sets the aggregate sustained replenishment rate, in requests per second.</p>
@@ -453,6 +480,9 @@ queue is native <code>OldestFirst</code> FIFO arrival ordering, not per-client f
       </tr>
     </tbody>
   </table>
+  <h5 id="Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions_RequestsPerSecond_remarks">Remarks</h5>
+  <div class="markdown level1 remarks"><p>The WebLib starting default is 10,000 requests per second.</p>
+</div>
 
 </article>
           </div>
@@ -461,6 +491,12 @@ queue is native <code>OldestFirst</code> FIFO arrival ordering, not per-client f
             <div class="sideaffix">
               <div class="contribution">
                 <ul class="nav">
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/new/feature/csproj-property-groups/apiSpec/new?filename=Eigenverft_WebLib_Infrastructure_Hosting_RateLimiting_WebLibRequestTrafficShapingServerWideOptions.md&amp;value=---%0Auid%3A%20Eigenverft.WebLib.Infrastructure.Hosting.RateLimiting.WebLibRequestTrafficShapingServerWideOptions%0Asummary%3A%20&#39;*You%20can%20override%20summary%20for%20the%20API%20here%20using%20*MARKDOWN*%20syntax&#39;%0A---%0A%0A*Please%20type%20below%20more%20information%20about%20this%20API%3A*%0A%0A" class="contribution-link">Edit this page</a>
+                  </li>
+                  <li>
+                    <a href="https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/feature/csproj-property-groups/src/prj/Eigenverft.WebLib.Infrastructure/Hosting/RateLimiting/WebLibRequestTrafficShapingOptions.cs/#L57" class="contribution-link">View Source</a>
+                  </li>
                 </ul>
               </div>
               <nav class="bs-docs-sidebar hidden-print hidden-xs hidden-sm affix" id="affix">
