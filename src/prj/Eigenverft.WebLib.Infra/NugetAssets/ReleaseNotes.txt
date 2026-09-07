@@ -1,1 +1,0 @@
-Composition-only project; capability packages own release artifacts.

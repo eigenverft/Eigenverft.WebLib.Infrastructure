@@ -2,4 +2,4 @@
 
 ASP.NET Core static-file hosting helpers with additional mappings and content-type provider support.
 
-Static-file hosting preserves the original public namespaces and behavior from Eigenverft.WebLib.Infrastructure.
+Static-file hosting preserves the original behavior from Eigenverft.WebLib.Infrastructure.
