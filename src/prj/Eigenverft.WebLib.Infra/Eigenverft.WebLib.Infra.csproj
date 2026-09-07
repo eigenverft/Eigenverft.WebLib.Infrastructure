@@ -1,0 +1,147 @@
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <!-- General build settings: defines the output type and target framework -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <!-- Packaging and publish configuration -->
+  <PropertyGroup>
+    <!-- This project is a local composition accumulator; capability packages own distribution. -->
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+    <PublishRelease>false</PublishRelease>
+    <IsTestProject>false</IsTestProject>
+    <PackAsTool>false</PackAsTool>
+  </PropertyGroup>
+
+  <!-- C# language features and debugging configuration -->
+  <PropertyGroup>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <DebugType>embedded</DebugType>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- Keep Git configuration on disk without showing it as a project item -->
+  <ItemGroup>
+    <None Remove=".gitignore" />
+  </ItemGroup>
+
+  <!-- Versioning -->
+  <PropertyGroup>
+    <VersionBuild>1</VersionBuild>
+    <VersionMajor>0</VersionMajor>
+    <VersionMinor>0</VersionMinor>
+    <VersionRevision>0</VersionRevision>
+    <AssemblyVersion>$(VersionBuild).$(VersionMajor).$(VersionMinor).$(VersionRevision)</AssemblyVersion>
+    <FileVersion>$(VersionBuild).$(VersionMajor).$(VersionMinor).$(VersionRevision)</FileVersion>
+    <Version>$(VersionBuild).$(VersionMajor).$(VersionMinor).$(VersionRevision)$(VersionSuffix)</Version>
+    <PackageVersion>$(Version)</PackageVersion>
+  </PropertyGroup>
+
+  <!-- Package metadata -->
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Authors>Eigenverft</Authors>
+    <Owners>Eigenverft</Owners>
+    <Company>Eigenverft</Company>
+    <Copyright>Copyright © 2026 Eigenverft</Copyright>
+    <PackageId>Eigenverft.WebLib.Infra</PackageId>
+    <RepositoryUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageTags>dotnet;aspnet-core;web;infrastructure;hosting;middleware;kestrel;security;eigenverft</PackageTags>
+    <Description>Non-packable local accumulator for the Eigenverft WebLib capability projects.</Description>
+    <PackageReadmeFile>Readme.md</PackageReadmeFile>
+    <PackageLicenseFile>License.txt</PackageLicenseFile>
+    <PackageIcon>Icon-128x128.png</PackageIcon>
+    <PackageReleaseNotes>$([System.IO.File]::ReadAllText("$(MSBuildProjectDirectory)\NugetAssets\ReleaseNotes.txt"))</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <!-- Framework dependencies -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <!-- Cross-repository capabilities; the aggregate has no dependency on the legacy aggregate package. -->
+  <ItemGroup>
+    <PackageReference Include="Eigenverft.NetLib.Hosting.SelfHttpWarmup" Version="1.0.0" />
+    <PackageReference Include="Eigenverft.NetLib.Security.DataProtection" Version="1.0.0" />
+  </ItemGroup>
+
+  <!-- Web capability projects included by this local composition accumulator. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Eigenverft.WebLib.Middleware.Primitives\Eigenverft.WebLib.Middleware.Primitives.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\Eigenverft.WebLib.ClientNetwork\Eigenverft.WebLib.ClientNetwork.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\Eigenverft.WebLib.RequestTrafficLogging\Eigenverft.WebLib.RequestTrafficLogging.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\Eigenverft.WebLib.RequestTrafficShaping\Eigenverft.WebLib.RequestTrafficShaping.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\Eigenverft.WebLib.Kestrel.Sni\Eigenverft.WebLib.Kestrel.Sni.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\Eigenverft.WebLib.Hosting.DirectoryLayout\Eigenverft.WebLib.Hosting.DirectoryLayout.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\Eigenverft.WebLib.Hsts\Eigenverft.WebLib.Hsts.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\Eigenverft.WebLib.CanonicalHostRedirect\Eigenverft.WebLib.CanonicalHostRedirect.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\Eigenverft.WebLib.HealthProbes\Eigenverft.WebLib.HealthProbes.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+    <ProjectReference Include="..\Eigenverft.WebLib.StaticFiles\Eigenverft.WebLib.StaticFiles.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- Package specs -->
+  <ItemGroup>
+    <None Include="$(MSBuildProjectDirectory)\NugetAssets\**\*" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PackageOutputPath Condition=" '$(PackageOutputPath)' == '' ">$(MSBuildProjectDirectory)\bin\Pack</PackageOutputPath>
+    <LocalPackagesDir></LocalPackagesDir>
+  </PropertyGroup>
+
+  <!-- Publish behavior keep slim for library specs -->
+	<PropertyGroup Condition="'$(_IsPublishing)' == 'true'">
+		<!-- Flat publish output -->
+		<PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildProjectDirectory)\bin\Publish\</PublishDir>
+		<PublishAot>false</PublishAot>
+		<PublishTrimmed>false</PublishTrimmed>
+	</PropertyGroup>
+
+  <!-- Publish behavior for executable future useage program main etc -->
+	<PropertyGroup Condition="'$(_IsPublishing)' == 'true' and '$(OutputType)' != 'Library'">
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+		<PublishSelfContained>true</PublishSelfContained>
+		<PublishSingleFile>true</PublishSingleFile>
+		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+	</PropertyGroup>
+
+  <Target Name="CopyToLocalPackages" AfterTargets="Pack" Condition="'$(IsPackable)' == 'true' and '$(LocalPackagesDir)'!=''">
+    <Message Text="Copy $(PackageOutputPath)/$(PackageId).$(PackageVersion).nupkg to $(LocalPackagesDir)" Importance="high" />
+    <Copy SourceFiles="$(PackageOutputPath)/$(PackageId).$(PackageVersion).nupkg" DestinationFolder="$(LocalPackagesDir)"  />
+  </Target>
+
+  <!-- Import for version information already integrated in < net8.0 -->
+  <Import Project="Build/SourceControlState.targets" />
+  <!-- Closes the SDK after this file; outer publish dispatch is nested inside. -->
+  <Import Project="Build/ImportSdkTargets.targets" />
+
+</Project>

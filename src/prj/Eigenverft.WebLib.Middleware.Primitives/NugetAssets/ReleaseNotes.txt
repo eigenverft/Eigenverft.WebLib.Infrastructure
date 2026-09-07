@@ -1,0 +1,4 @@
+Initial capability package extracted from Eigenverft.WebLib.Infrastructure.
+
+- ASP.NET Core middleware and request-pipeline primitives, typed HTTP context features, response helpers, and service registration utilities.
+- Public namespaces and behavior remain compatible with the original Infrastructure implementation.

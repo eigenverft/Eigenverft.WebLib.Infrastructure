@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- General build settings: defines the output type and target framework -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <!-- Packaging and publish configuration -->
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Multi-target tests and all generated reports are isolated per TFM. -->
+    <TestTfmsInParallel>true</TestTfmsInParallel>
+    <PackAsTool>false</PackAsTool>
+  </PropertyGroup>
+
+  <!-- C# language features and debugging configuration -->
+  <PropertyGroup>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <DebugType>embedded</DebugType>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- Keep Git configuration on disk without showing it as a project item -->
+  <ItemGroup>
+    <None Remove=".gitignore" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <VSTestLogger>trx%3bLogFileName=$(MSBuildThisFileDirectory)\MSTestResults\$(MSBuildProjectName)-$(TargetFramework).trx;html%3bLogFileName=$(MSBuildThisFileDirectory)\MSTestResults\result-$(TargetFramework).html</VSTestLogger>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.4.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+  <Target Name="ListVulnerable" AfterTargets="PostBuildEvent">
+    <MakeDir Directories="$(MSBuildThisFileDirectory)NugetReport\$(TargetFramework)" />
+    <Exec Condition="!$([MSBuild]::IsOSUnixLike())" Command="dotnet list &quot;$(MSBuildProjectFullPath)&quot; package --vulnerable --include-transitive %3E &quot;$(MSBuildProjectDirectory)\NugetReport\$(TargetFramework)\PackageVulnerable.txt&quot;" IgnoreExitCode="true" />
+    <Exec Condition="$([MSBuild]::IsOSUnixLike())" Command="dotnet list &quot;$(MSBuildProjectFullPath)&quot; package --vulnerable --include-transitive %3E &quot;$(MSBuildProjectDirectory)/NugetReport/$(TargetFramework)/PackageVulnerable.txt&quot;" IgnoreExitCode="true" />
+    <Exec Condition="!$([MSBuild]::IsOSUnixLike())" Command="dotnet list &quot;$(MSBuildProjectFullPath)&quot; package %3E &quot;$(MSBuildProjectDirectory)\NugetReport\$(TargetFramework)\PackageList.txt&quot;" IgnoreExitCode="true" />
+    <Exec Condition="$([MSBuild]::IsOSUnixLike())" Command="dotnet list &quot;$(MSBuildProjectFullPath)&quot; package %3E &quot;$(MSBuildProjectDirectory)/NugetReport/$(TargetFramework)/PackageList.txt&quot;" IgnoreExitCode="true" />
+  </Target>
+
+  <!-- Keep both test TFMs and reference the matching Eigenverft.WebLib.RequestTrafficLogging TFM for each test build. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Eigenverft.WebLib.RequestTrafficLogging\Eigenverft.WebLib.RequestTrafficLogging.csproj">
+      <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
+    </ProjectReference>
+  </ItemGroup>
+
+</Project>

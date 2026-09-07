@@ -1,0 +1,4 @@
+Initial capability package extracted from Eigenverft.WebLib.Infrastructure.
+
+- ASP.NET Core health probe middleware with favicon-aware handling for lightweight service endpoints.
+- Public namespaces and behavior remain compatible with the original Infrastructure implementation.

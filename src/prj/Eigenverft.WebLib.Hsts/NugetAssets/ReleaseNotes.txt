@@ -1,0 +1,4 @@
+Initial capability package extracted from Eigenverft.WebLib.Infrastructure.
+
+- ASP.NET Core HSTS helpers with configuration binding and optional code overrides over the native HSTS middleware.
+- Public namespaces and behavior remain compatible with the original Infrastructure implementation.
