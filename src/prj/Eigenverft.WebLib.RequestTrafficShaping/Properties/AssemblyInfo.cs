@@ -1,3 +1,3 @@
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("Eigenverft.WebLib.RequestTrafficShaping.Tests.Hosting.RateLimiting")]
+[assembly: InternalsVisibleTo("Eigenverft.WebLib.RequestTrafficShaping.Tests")]
