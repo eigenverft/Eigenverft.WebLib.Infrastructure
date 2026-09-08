@@ -22,7 +22,7 @@
 
   <!-- Packaging and publish configuration -->
   <PropertyGroup>
-    <IsPackable>true</IsPackable>
+    <IsPackable>false</IsPackable>
     <IsPublishable>false</IsPublishable>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
