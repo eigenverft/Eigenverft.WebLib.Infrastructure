@@ -39,7 +39,7 @@ if ($PowerShellGalleryAvailable)
 Import-Module -Name 'Eigenverft.Manifested.Drydock' -Force -ErrorAction Stop
 $null = Test-ModuleAvailable -Name 'Eigenverft.Manifested.Drydock' -IncludePrerelease -ExitIfNotFound -Quiet
 
-function Get-DotnetProjectVersionInfo {
+function Restore-DotnetProjectProperties {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -56,15 +56,66 @@ function Get-DotnetProjectVersionInfo {
         [string]$GeneratedVersionSuffix
     )
 
-    # This is the first regular restore in the restore-clean-restore sequence. A configured
-    # GitVersionBaseDirectory is the opt-in marker used by the repository templates.
-    $GitVersionBaseDirectory = Invoke-ProcessTyped `
+    # This is the first regular restore in the restore-clean-restore sequence. It also
+    # evaluates the project state required by the remaining linear processing steps.
+    $ProjectPropertyOutput = Invoke-ProcessTyped `
         -Executable 'dotnet' `
-        -Arguments @('restore', $ProjectFileInfo.FullName, '-nologo', '-p:Stage=restore', '-getProperty:GitVersionBaseDirectory') `
+        -Arguments @(
+            'restore',
+            $ProjectFileInfo.FullName,
+            '-nologo',
+            '-p:Stage=restore',
+            '-getProperty:UsingMicrosoftNETSdk',
+            '-getProperty:TargetFrameworkVersion',
+            '-getProperty:TargetFramework',
+            '-getProperty:TargetFrameworks',
+            '-getProperty:IsTestProject',
+            '-getProperty:IsPackable',
+            '-getProperty:IsPublishable',
+            '-getProperty:GitVersionBaseDirectory'
+        ) `
         -CommonArguments $CommonArguments `
         -ReturnType Text `
         -CaptureOutput $true
 
+    try
+    {
+        $EvaluatedProperties = ($ProjectPropertyOutput | ConvertFrom-Json -ErrorAction Stop).Properties
+    }
+    catch
+    {
+        throw "dotnet restore returned invalid project properties for '$($ProjectFileInfo.FullName)': $($_.Exception.Message)"
+    }
+
+    $IsSDKProj = [string]::Equals([string]$EvaluatedProperties.UsingMicrosoftNETSdk, 'true', [System.StringComparison]::OrdinalIgnoreCase)
+    $IsNoneSDKProj = -not $IsSDKProj
+
+    $TargetFrameworks = @()
+    if (-not [string]::IsNullOrWhiteSpace([string]$EvaluatedProperties.TargetFramework))
+    {
+        $TargetFrameworks = @([string]$EvaluatedProperties.TargetFramework)
+    }
+    elseif (-not [string]::IsNullOrWhiteSpace([string]$EvaluatedProperties.TargetFrameworks))
+    {
+        $TargetFrameworks = @(([string]$EvaluatedProperties.TargetFrameworks).Split(';') | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    }
+
+    $IsSDKWithFramework = $false
+    foreach ($TargetFramework in $TargetFrameworks)
+    {
+        if ($TargetFramework.ToLowerInvariant() -in @('net20', 'net35', 'net40', 'net403', 'net45', 'net451', 'net452', 'net46', 'net461', 'net462', 'net47', 'net471', 'net472', 'net48', 'net481'))
+        {
+            $IsSDKWithFramework = $true
+            break
+        }
+    }
+
+    $IsTestProject = $IsSDKProj -and [string]::Equals([string]$EvaluatedProperties.IsTestProject, 'true', [System.StringComparison]::OrdinalIgnoreCase)
+    $IsPackable = $IsSDKProj -and [string]::Equals([string]$EvaluatedProperties.IsPackable, 'true', [System.StringComparison]::OrdinalIgnoreCase)
+    $IsPublishable = $IsSDKProj -and [string]::Equals([string]$EvaluatedProperties.IsPublishable, 'true', [System.StringComparison]::OrdinalIgnoreCase)
+
+    # A configured GitVersionBaseDirectory is the opt-in marker used by the repository templates.
+    $GitVersionBaseDirectory = [string]$EvaluatedProperties.GitVersionBaseDirectory
     $UsesNerdbankGitVersioning = -not [string]::IsNullOrWhiteSpace(([string]$GitVersionBaseDirectory).Trim())
 
     if ($UsesNerdbankGitVersioning)
@@ -101,29 +152,39 @@ function Get-DotnetProjectVersionInfo {
             throw "Nerdbank.GitVersioning did not calculate NuGetPackageVersion for '$($ProjectFileInfo.FullName)'."
         }
 
-        return [pscustomobject]@{
-            Source                       = 'Nerdbank.GitVersioning'
-            UsesNerdbankGitVersioning    = $true
-            OutputVersion                = $NuGetPackageVersion
-            NuGetPackageVersion          = $NuGetPackageVersion
-            AssemblyInformationalVersion = [string]$VersionProperties.AssemblyInformationalVersion
-            BuildVersionSimple           = [string]$VersionProperties.BuildVersionSimple
-        }
+        $VersionSource = 'Nerdbank.GitVersioning'
+        $OutputVersion = $NuGetPackageVersion
+        $AssemblyInformationalVersion = [string]$VersionProperties.AssemblyInformationalVersion
+        $BuildVersionSimple = [string]$VersionProperties.BuildVersionSimple
     }
-
-    $GeneratedNuGetPackageVersion = [string]$GeneratedVersion.VersionFull
-    if (-not [string]::IsNullOrWhiteSpace($GeneratedVersionSuffix))
+    else
     {
-        $GeneratedNuGetPackageVersion = "$GeneratedNuGetPackageVersion-$GeneratedVersionSuffix"
+        $VersionSource = 'GeneratedVersion'
+        $OutputVersion = [string]$GeneratedVersion.VersionFull
+        $NuGetPackageVersion = $OutputVersion
+        if (-not [string]::IsNullOrWhiteSpace($GeneratedVersionSuffix))
+        {
+            $NuGetPackageVersion = "$NuGetPackageVersion$GeneratedVersionSuffix"
+        }
+        $AssemblyInformationalVersion = $NuGetPackageVersion
+        $BuildVersionSimple = $OutputVersion
     }
 
     return [pscustomobject]@{
-        Source                       = 'GeneratedVersion'
-        UsesNerdbankGitVersioning    = $false
-        OutputVersion                = [string]$GeneratedVersion.VersionFull
-        NuGetPackageVersion          = $GeneratedNuGetPackageVersion
-        AssemblyInformationalVersion = $GeneratedNuGetPackageVersion
-        BuildVersionSimple           = [string]$GeneratedVersion.VersionFull
+        IsSDKProj                     = $IsSDKProj
+        IsNoneSDKProj                 = $IsNoneSDKProj
+        IsSDKWithFramework            = $IsSDKWithFramework
+        TargetFrameworkVersion        = [string]$EvaluatedProperties.TargetFrameworkVersion
+        TargetFrameworks              = $TargetFrameworks
+        IsTestProject                 = $IsTestProject
+        IsPackable                    = $IsPackable
+        IsPublishable                 = $IsPublishable
+        Source                        = $VersionSource
+        UsesNerdbankGitVersioning     = $UsesNerdbankGitVersioning
+        OutputVersion                 = $OutputVersion
+        NuGetPackageVersion           = $NuGetPackageVersion
+        AssemblyInformationalVersion  = $AssemblyInformationalVersion
+        BuildVersionSimple            = $BuildVersionSimple
     }
 }
 
@@ -261,8 +322,6 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
             "-v:minimal",
             "-p:Deterministic=true",
             "-p:ContinuousIntegrationBuild=true",
-            #"-p:BaseOutputPath=$($BuildBinDirectory)/",
-            #"-p:IntermediateOutputPath=$($BuildObjDirectory)/",
             "-p:UseSharedCompilation=false",
             "-m:1"
         )
@@ -275,60 +334,22 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
             "-p:VersionSuffix=$($BranchDeploymentConfig.Affix.Suffix)"
         )
 
-        Invoke-ProcessTyped -Executable "drydock.exe" -Arguments @("csproj", "--location", "$($ProjectFileInfo.FullName)", "--property", "TargetFrameworkVersion") -ReturnType Objects -AllowedExitCodes @(0,-1) -CaptureOutput $false -CaptureOutputDump $true
-
-        $IsSDKProj = $false
-        $IsNoneSDKProj = $false
-        $IsSDKWithFramework = $false
-
-        if ($LASTEXITCODE -eq -1) {
-            $IsSDKProj = $true
-        } else {
-            $IsNoneSDKProj = $true
-        }
-
-        # TargetFrameworkVersion not found assume sdk project style and get TargetFramework
-        if ($IsSDKProj) {
-            $TargetFramework = Invoke-ProcessTyped -Executable "drydock.exe" -Arguments @("csproj", "--location", "$($ProjectFileInfo.FullName)", "--property", "TargetFramework") -ReturnType Objects -AllowedExitCodes @(0,-1)
-            if ($LASTEXITCODE -eq -1)
-            {
-                $TargetFrameworks = Invoke-ProcessTyped -Executable "drydock.exe" -Arguments @("csproj", "--location", "$($ProjectFileInfo.FullName)", "--property", "TargetFrameworks") -ReturnType Objects -AllowedExitCodes @(0)
-                $TargetFrameworks = $TargetFrameworks.Split(';')
-                foreach ($TargetFrame in $TargetFrameworks)
-                {
-                    if ($TargetFrame.Trim().ToLowerInvariant() -in @('net20', 'net35', 'net40', 'net403', 'net45', 'net451', 'net452', 'net46', 'net461', 'net462', 'net47', 'net471', 'net472', 'net48', 'net481'))
-                    {
-                        $IsSDKWithFramework = $true
-                        break;
-                    }
-                }
-            } elseif ($LASTEXITCODE -eq 0) {
-                $TargetFrameworks = @($TargetFramework)
-                if ($TargetFramework -in @('net20', 'net35', 'net40', 'net403', 'net45', 'net451', 'net452', 'net46', 'net461', 'net462', 'net47', 'net471', 'net472', 'net48', 'net481'))
-                {
-                   $IsSDKWithFramework = $true
-                }
-            }
-        }
-
-        $ProjectVersionInfo = Get-DotnetProjectVersionInfo `
-            -ProjectFileInfo $ProjectFileInfo `
-            -CommonArguments $DotnetCommonParameters `
-            -GeneratedVersion $GeneratedVersion `
-            -GeneratedVersionSuffix ([string]$BranchDeploymentConfig.Affix.Suffix)
+        # Determine the project state and perform the first restore.
+        $ProjectProperties = Restore-DotnetProjectProperties -ProjectFileInfo $ProjectFileInfo -CommonArguments $DotnetCommonParameters -GeneratedVersion $GeneratedVersion -GeneratedVersionSuffix ([string]$BranchDeploymentConfig.Affix.Suffix)
 
         $ProjectVersionParameters = @()
-        if (-not $ProjectVersionInfo.UsesNerdbankGitVersioning)
+        if ((-not $ProjectProperties.UsesNerdbankGitVersioning) -and (-not $ProjectProperties.IsTestProject))
         {
             $ProjectVersionParameters = $GeneratedVersionParameters
-            $DotnetCommonParameters += $ProjectVersionParameters
         }
 
-        $ProjectVersionInfos[$ProjectFileInfo.FullName] = $ProjectVersionInfo
-        Write-Output "Version for '$($ProjectFileInfo.BaseName)': $($ProjectVersionInfo.NuGetPackageVersion) ($($ProjectVersionInfo.Source))."
+        $BuildPackPublishParameters = @($DotnetCommonParameters + $ProjectVersionParameters)
 
-        $ProjectBranchVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Branch.PathSegmentsSanitized,$ProjectVersionInfo.OutputVersion)
-        $ProjectChannelVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,$ProjectVersionInfo.OutputVersion)
+        $ProjectVersionInfos[$ProjectFileInfo.FullName] = $ProjectProperties
+        Write-Output "Version for '$($ProjectFileInfo.BaseName)': $($ProjectProperties.NuGetPackageVersion) ($($ProjectProperties.Source))."
+
+        $ProjectBranchVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Branch.PathSegmentsSanitized,$ProjectProperties.OutputVersion)
+        $ProjectChannelVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,$ProjectProperties.OutputVersion)
 
         # Create required output directories after resolving the project's effective version.
         New-Directory -Paths @($BuildRootPath)
@@ -351,34 +372,26 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
         Invoke-ProcessTyped -Executable "dotnet" -Arguments @("clean", "$($ProjectFileInfo.FullName)", "-p:Stage=clean") -ReturnType Objects -CommonArguments $DotnetCommonParameters
         Invoke-ProcessTyped -Executable "dotnet" -Arguments @("restore", "$($ProjectFileInfo.FullName)", "-p:Stage=restore") -ReturnType Objects -CommonArguments $DotnetCommonParameters
 
-        if ($IsNoneSDKProj)
+        # Non-SDK style build with frameworks requires msbuild to build the project, otherwise dotnet build is used for SDK style projects without frameworks
+        if ($ProjectProperties.IsNoneSDKProj)
         {
             Invoke-ProcessTyped -Executable "$MsBuildVs" -Arguments @("$($ProjectFileInfo.FullName)", "-p:Stage=build") -CommonArguments $NonSDKParameters -ReturnType Objects -CaptureOutput $true -CaptureOutputDump $false
         }
 
-        if ($IsSDKProj)
+        #SDK style build with frameworks requires msbuild to build the project, otherwise dotnet build is used for SDK style projects without frameworks
+        if ($ProjectProperties.IsSDKProj)
         {
-            if ($IsSDKWithFramework)
+            if ($ProjectProperties.IsSDKWithFramework)
             {
-                Invoke-ProcessTyped -Executable "$MsBuildVs" -Arguments @("/t:Build","$($ProjectFileInfo.FullName)", "-p:Stage=build")  -CommonArguments $DotnetCommonParameters -ReturnType Objects -CaptureOutput $true -CaptureOutputDump $false
+                Invoke-ProcessTyped -Executable "$MsBuildVs" -Arguments @("/t:Build","$($ProjectFileInfo.FullName)", "-p:Stage=build")  -CommonArguments $BuildPackPublishParameters -ReturnType Objects -CaptureOutput $true -CaptureOutputDump $false
             }
             else {
-                Invoke-ProcessTyped -Executable "dotnet" -Arguments @("build","$($ProjectFileInfo.FullName)", "-p:Stage=build")  -CommonArguments $DotnetCommonParameters -ReturnType Objects -CaptureOutput $true -CaptureOutputDump $false
+                Invoke-ProcessTyped -Executable "dotnet" -Arguments @("build","$($ProjectFileInfo.FullName)", "-p:Stage=build")  -CommonArguments $BuildPackPublishParameters -ReturnType Objects -CaptureOutput $true -CaptureOutputDump $false
             }
         }
 
-        $IsTestProject = $false
-        $IsPackable = $false
-        $IsPublishable = $false
-        if ($IsSDKProj)
-        {
-            $IsTestProject = Invoke-ProcessTyped -Executable "drydock.exe" -Arguments @("csproj", "--location", "$($ProjectFileInfo.FullName)", "--property", "IsTestProject") -ReturnType Objects
-            $IsPackable = Invoke-ProcessTyped -Executable "drydock.exe" -Arguments @("csproj", "--location", "$($ProjectFileInfo.FullName)", "--property", "IsPackable") -ReturnType Objects
-            $IsPublishable = Invoke-ProcessTyped -Executable "drydock.exe" -Arguments @("csproj", "--location", "$($ProjectFileInfo.FullName)", "--property", "IsPublishable") -ReturnType Objects
-        }
-
-        # Report generation and license validation is only relevant for packable or publishable projects.
-        if (($IsPackable -eq $true) -or ($IsPublishable -eq $true))
+        # Report generation and license validation is only relevant for packable or publishable projects. Reports are generated after the build step to ensure the project.assets.json file is available for analysis.
+        if (($ProjectProperties.IsPackable -eq $true) -or ($ProjectProperties.IsPublishable -eq $true))
         {
             $ReportsDirectory = New-Directory -Paths @($ReportsRootPath,$SolutionProjectPath.Sln.BaseName,$ProjectFileInfo.BaseName,$ProjectChannelVersionRelativePath)
 
@@ -411,28 +424,24 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
         }
 
         # Test only executes for SDK-style projects. Non-SDK projects are not supported by dotnet test.
-        if ($IsTestProject -eq $true)
+        if ($ProjectProperties.IsTestProject -eq $true)
         {
-            foreach ($TestTargetFramework in $TargetFrameworks)
-            {
-                $TestCommonParameters = $DotnetCommonParameters -replace '^-p:IntermediateOutputPath=.*$', "-p:IntermediateOutputPath=$($TestObjDirectory)/$($TestTargetFramework)/"
-                Invoke-ProcessTyped -Executable "dotnet" -Arguments @("test", "$($ProjectFileInfo.FullName)", "-c", "Release", "-f", "$TestTargetFramework", '-p:Stage=test' ) -CommonArguments $TestCommonParameters -CaptureOutput $false
-            }
+            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("test", "$($ProjectFileInfo.FullName)", "-c", "Release", '-p:Stage=test' ) -CommonArguments $DotnetCommonParameters -CaptureOutput $false
         }
 
-        if ($IsPackable -eq $true)
+        if ($ProjectProperties.IsPackable -eq $true)
         {
             $PackDirectory = New-Directory -Paths @($PackRootPath,$SolutionProjectPath.Sln.BaseName,$ProjectFileInfo.BaseName,$ProjectChannelVersionRelativePath)
-            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("pack", "$($ProjectFileInfo.FullName)", "-c", "Release","-p:""Stage=pack""","-p:""PackageOutputPath=$($PackDirectory)""")  -CommonArguments $DotnetCommonParameters -CaptureOutput $false
+            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("pack", "$($ProjectFileInfo.FullName)", "-c", "Release","-p:""Stage=pack""","-p:""PackageOutputPath=$($PackDirectory)""")  -CommonArguments $BuildPackPublishParameters -CaptureOutput $false
         }
 
-        if ($IsPublishable -eq $true)
+        if ($ProjectProperties.IsPublishable -eq $true)
         {
             $PublishDirectory = New-Directory -Paths @($PublishRootPath,$SolutionProjectPath.Sln.BaseName,$ProjectFileInfo.BaseName,$ProjectChannelVersionRelativePath)
-            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("publish", "$($ProjectFileInfo.FullName)", "-c", "Release","-p:""Stage=publish""","-p:""PublishDir=$($PublishDirectory)""")  -CommonArguments $DotnetCommonParameters -CaptureOutput $false
+            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("publish", "$($ProjectFileInfo.FullName)", "-c", "Release","-p:""Stage=publish""","-p:""PublishDir=$($PublishDirectory)""")  -CommonArguments $BuildPackPublishParameters -CaptureOutput $false
         }
 
-        if ($IsNoneSDKProj) {
+        if ($ProjectProperties.IsNoneSDKProj) {
             $PublishDirectory = New-Directory -Paths @($PublishRootPath,$SolutionProjectPath.Sln.BaseName,$ProjectFileInfo.BaseName,$ProjectChannelVersionRelativePath)
             Copy-FilesRecursively -SourceDirectory "$($BuildBinDirectory)" -DestinationDirectory "$($PublishDirectory)" -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true -CleanDestination MirrorTree
         }
@@ -440,7 +449,7 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     }
 }
 
-exit
+
 
 # Enrich every project publish tree before creating distributable drops.
 # A repository can contain multiple solutions and every solution can contain multiple projects.
@@ -491,6 +500,7 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     }
 }
 
+exit
 
 ### FILE DROP SECTION
 $Drop = "C:\temp\$GitRepositoryName-drops"
