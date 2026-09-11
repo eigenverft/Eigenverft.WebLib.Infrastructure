@@ -17,6 +17,7 @@
     <IsPackable>false</IsPackable>
     <IsPublishable>false</IsPublishable>
     <IsTestProject>false</IsTestProject>
+    <IsCicdEnabled>false</IsCicdEnabled>
   </PropertyGroup>
 
   <!-- Test package dependencies -->

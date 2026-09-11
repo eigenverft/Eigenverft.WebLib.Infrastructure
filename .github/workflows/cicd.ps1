@@ -72,6 +72,7 @@ function Restore-DotnetProjectProperties {
             '-getProperty:IsTestProject',
             '-getProperty:IsPackable',
             '-getProperty:IsPublishable',
+            '-getProperty:IsCicdEnabled',
             '-getProperty:GitVersionBaseDirectory'
         ) `
         -CommonArguments $CommonArguments `
@@ -113,6 +114,7 @@ function Restore-DotnetProjectProperties {
     $IsTestProject = $IsSDKProj -and [string]::Equals([string]$EvaluatedProperties.IsTestProject, 'true', [System.StringComparison]::OrdinalIgnoreCase)
     $IsPackable = $IsSDKProj -and [string]::Equals([string]$EvaluatedProperties.IsPackable, 'true', [System.StringComparison]::OrdinalIgnoreCase)
     $IsPublishable = $IsSDKProj -and [string]::Equals([string]$EvaluatedProperties.IsPublishable, 'true', [System.StringComparison]::OrdinalIgnoreCase)
+    $IsCicdEnabled = -not [string]::Equals([string]$EvaluatedProperties.IsCicdEnabled, 'false', [System.StringComparison]::OrdinalIgnoreCase)
 
     # A configured GitVersionBaseDirectory is the opt-in marker used by the repository templates.
     $GitVersionBaseDirectory = [string]$EvaluatedProperties.GitVersionBaseDirectory
@@ -179,6 +181,7 @@ function Restore-DotnetProjectProperties {
         IsTestProject                 = $IsTestProject
         IsPackable                    = $IsPackable
         IsPublishable                 = $IsPublishable
+        IsCicdEnabled                 = $IsCicdEnabled
         Source                        = $VersionSource
         UsesNerdbankGitVersioning     = $UsesNerdbankGitVersioning
         OutputVersion                 = $OutputVersion
@@ -277,6 +280,12 @@ New-Directory -Paths @($OutputRootPath)
 # Delete clean the outputfolder
 if (-not $($RunEnvironment.IsCI)) { Remove-FilesByPattern -Path "$OutputRootPath" -Pattern "*"  }
 
+# Drops are disposable run output. Clear them before processing so local runs do not
+# retain obsolete aggregate versions and failed runs cannot leave a mixed snapshot.
+$Drop = "C:\temp\$GitRepositoryName-drops"
+New-Directory -Paths @($Drop)
+Remove-FilesByPattern -Path "$Drop" -Pattern "*"
+
 # Repository- and solution-level drops can contain projects with different package versions.
 # Their existing generated run version remains the aggregate release-set identifier.
 $AggregateChannelVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,$GeneratedVersion.VersionFull)
@@ -286,7 +295,6 @@ $ChannelLatestRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.V
 $BuildRootPath = Get-Path -Paths @("$OutputRootPath","build")
 $BuildBinPath = Get-Path -Paths @("$BuildRootPath","bin")
 $BuildObjPath = Get-Path -Paths @("$BuildRootPath","obj")
-$TestObjPath = Get-Path -Paths @("$BuildRootPath","testobj")
 
 $PackRootPath = Get-Path -Paths @("$OutputRootPath","pack")
 $PublishRootPath = Get-Path -Paths @("$OutputRootPath","publish")
@@ -294,7 +302,6 @@ $RepoPublishRootPath = Get-Path -Paths @("$OutputRootPath","publish_repo")
 $SlnPublishRootPath = Get-Path -Paths @("$OutputRootPath","publish_sln")
 $ProjPublishRootPath = Get-Path -Paths @("$OutputRootPath","publish_proj")
 $ReportsRootPath =  Get-Path -Paths @("$OutputRootPath","reports")
-$DocsRootPath = Get-Path -Paths @("$OutputRootPath","docs")
 
 
 # Main pipeline preparation: discover every solution below src and resolve its projects.
@@ -348,24 +355,13 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
         $ProjectVersionInfos[$ProjectFileInfo.FullName] = $ProjectProperties
         Write-Output "Version for '$($ProjectFileInfo.BaseName)': $($ProjectProperties.NuGetPackageVersion) ($($ProjectProperties.Source))."
 
-        $ProjectBranchVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Branch.PathSegmentsSanitized,$ProjectProperties.OutputVersion)
+        if (-not $ProjectProperties.IsCicdEnabled)
+        {
+            Write-Output "Skipping '$($ProjectFileInfo.BaseName)' because IsCicdEnabled is false."
+            continue
+        }
+
         $ProjectChannelVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,$ProjectProperties.OutputVersion)
-
-        # Create required output directories after resolving the project's effective version.
-        New-Directory -Paths @($BuildRootPath)
-        $BuildBinDirectory = New-Directory -Paths @($BuildBinPath,$SolutionProjectPath.Sln.BaseName,$ProjectFileInfo.BaseName,$ProjectBranchVersionRelativePath)
-        $BuildObjDirectory = New-Directory -Paths @($BuildObjPath,$SolutionProjectPath.Sln.BaseName,$ProjectFileInfo.BaseName,$ProjectBranchVersionRelativePath)
-        $TestObjDirectory = New-Directory -Paths @($TestObjPath,$SolutionProjectPath.Sln.BaseName,$ProjectFileInfo.BaseName,$ProjectBranchVersionRelativePath)
-
-        $NonSDKParameters = @(
-            "-p:Configuration=Release",
-            "-p:Platform=AnyCPU",
-            "-v:minimal",
-            $ProjectVersionParameters
-            "-p:OutputPath=$($BuildBinDirectory)/",
-            "-p:BaseIntermediateOutputPath=$($BuildObjDirectory)/",
-            "-p:UseSharedCompilation=false"
-        )
 
         # The version-resolution step performed the first restore. Complete the established
         # restore-clean-restore sequence for a predictable incremental build state.
@@ -375,6 +371,19 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
         # Non-SDK style build with frameworks requires msbuild to build the project, otherwise dotnet build is used for SDK style projects without frameworks
         if ($ProjectProperties.IsNoneSDKProj)
         {
+            $ProjectBranchVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Branch.PathSegmentsSanitized,$ProjectProperties.OutputVersion)
+            New-Directory -Paths @($BuildRootPath)
+            $BuildBinDirectory = New-Directory -Paths @($BuildBinPath,$SolutionProjectPath.Sln.BaseName,$ProjectFileInfo.BaseName,$ProjectBranchVersionRelativePath)
+            $BuildObjDirectory = New-Directory -Paths @($BuildObjPath,$SolutionProjectPath.Sln.BaseName,$ProjectFileInfo.BaseName,$ProjectBranchVersionRelativePath)
+            $NonSDKParameters = @(
+                "-p:Configuration=Release",
+                "-p:Platform=AnyCPU",
+                "-v:minimal",
+                $ProjectVersionParameters
+                "-p:OutputPath=$($BuildBinDirectory)/",
+                "-p:BaseIntermediateOutputPath=$($BuildObjDirectory)/",
+                "-p:UseSharedCompilation=false"
+            )
             Invoke-ProcessTyped -Executable "$MsBuildVs" -Arguments @("$($ProjectFileInfo.FullName)", "-p:Stage=build") -CommonArguments $NonSDKParameters -ReturnType Objects -CaptureOutput $true -CaptureOutputDump $false
         }
 
@@ -449,6 +458,15 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     }
 }
 
+# Remove explicitly disabled projects from all report and drop aggregation passes.
+$SolutionProjectPaths = @($SolutionProjectPaths | ForEach-Object {
+    $EnabledProjects = @($_.Prj | Where-Object { $ProjectVersionInfos[$_.FullName].IsCicdEnabled })
+    if ($EnabledProjects.Count -gt 0)
+    {
+        [pscustomobject]@{ Sln = $_.Sln; Prj = $EnabledProjects }
+    }
+})
+
 
 
 # Enrich every project publish tree before creating distributable drops.
@@ -501,7 +519,6 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
 }
 
 ### FILE DROP SECTION
-$Drop = "C:\temp\$GitRepositoryName-drops"
 $RepositoryDropRootPath = "$Drop\rep"
 $SolutionsDropRootPath = "$Drop\sln"
 $ProjectsDropRootPath = "$Drop\prj"
