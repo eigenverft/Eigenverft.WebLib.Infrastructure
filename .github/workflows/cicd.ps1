@@ -458,12 +458,16 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     }
 }
 
-# Remove explicitly disabled projects from all report and drop aggregation passes.
+# Keep test projects in the build/test pipeline, but exclude them together with explicitly
+# disabled projects from distributable report and drop aggregation passes.
 $SolutionProjectPaths = @($SolutionProjectPaths | ForEach-Object {
-    $EnabledProjects = @($_.Prj | Where-Object { $ProjectVersionInfos[$_.FullName].IsCicdEnabled })
-    if ($EnabledProjects.Count -gt 0)
+    $DistributableProjects = @($_.Prj | Where-Object {
+        $ProjectProperties = $ProjectVersionInfos[$_.FullName]
+        $ProjectProperties.IsCicdEnabled -and (-not $ProjectProperties.IsTestProject)
+    })
+    if ($DistributableProjects.Count -gt 0)
     {
-        [pscustomobject]@{ Sln = $_.Sln; Prj = $EnabledProjects }
+        [pscustomobject]@{ Sln = $_.Sln; Prj = $DistributableProjects }
     }
 })
 
