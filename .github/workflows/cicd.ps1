@@ -500,8 +500,6 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     }
 }
 
-exit
-
 ### FILE DROP SECTION
 $Drop = "C:\temp\$GitRepositoryName-drops"
 $RepositoryDropRootPath = "$Drop\rep"
@@ -553,8 +551,6 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
             Compress-Directory -SourceDirectory "$ProjPublishDirectory" -DestinationFile "$(Get-Path -Paths @($ProjectsDropRootPath,$ProjectFileInfo.BaseName,"zipped","$nugetFileEmulation.zip"))"
     }
 }
-
-exit
 
 # Resolving deployment information for the current branch
 $DeploymentChannel = $BranchDeploymentConfig.Channel.Value
