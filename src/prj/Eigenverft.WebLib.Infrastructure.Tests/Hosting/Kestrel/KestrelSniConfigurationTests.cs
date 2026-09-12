@@ -373,7 +373,7 @@ public sealed class KestrelSniConfigurationTests
                 new Dictionary<string, string?>
                 {
                     ["KestrelSettings:HTTPS_PORT"] = port.ToString(),
-                    ["KestrelSettings:ListenScope"] = "AnyIP",
+                    ["KestrelSettings:ListenScope"] = "Localhost",
                     ["CertificatesDirectory"] = blockedCertificateDirectory,
                     ["CertificatesMappingSettings:0:SNI"] = "localhost",
                     ["CertificatesMappingSettings:0:FileName"] = "localhost.pfx",
@@ -567,7 +567,7 @@ public sealed class KestrelSniConfigurationTests
         var settings = new Dictionary<string, string?>(additionalSettings)
         {
             ["KestrelSettings:HTTPS_PORT"] = port.ToString(),
-            ["KestrelSettings:ListenScope"] = "AnyIP",
+            ["KestrelSettings:ListenScope"] = "Localhost",
             ["CertificatesDirectory"] = "certs"
         };
 

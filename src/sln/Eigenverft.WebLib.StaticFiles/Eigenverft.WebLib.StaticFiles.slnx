@@ -1,0 +1,13 @@
+<Solution>
+  <!-- Paths are relative to this file's final location.
+       PlaceSolutionInSolutionFolder true  → src/sln/Eigenverft.WebLib.StaticFiles/Eigenverft.WebLib.StaticFiles.slnx
+         (Readme.md beside this file; projects are ../../prj/).
+       PlaceSolutionInSolutionFolder false → repo root, so src/prj/ and src/sln/. -->
+  <Folder Name="/sln/Eigenverft.WebLib.StaticFiles/">
+    <File Path="Readme.md" />
+  </Folder>
+  <Folder Name="/prj/">
+    <Project Path="../../prj/Eigenverft.WebLib.StaticFiles.Tests/Eigenverft.WebLib.StaticFiles.Tests.csproj" />
+    <Project Path="../../prj/Eigenverft.WebLib.StaticFiles/Eigenverft.WebLib.StaticFiles.csproj" />
+  </Folder>
+</Solution>

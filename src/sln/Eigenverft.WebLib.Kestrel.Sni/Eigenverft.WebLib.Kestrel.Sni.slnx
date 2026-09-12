@@ -1,0 +1,13 @@
+<Solution>
+  <!-- Paths are relative to this file's final location.
+       PlaceSolutionInSolutionFolder true  → src/sln/Eigenverft.WebLib.Kestrel.Sni/Eigenverft.WebLib.Kestrel.Sni.slnx
+         (Readme.md beside this file; projects are ../../prj/).
+       PlaceSolutionInSolutionFolder false → repo root, so src/prj/ and src/sln/. -->
+  <Folder Name="/sln/Eigenverft.WebLib.Kestrel.Sni/">
+    <File Path="Readme.md" />
+  </Folder>
+  <Folder Name="/prj/">
+    <Project Path="../../prj/Eigenverft.WebLib.Kestrel.Sni.Tests/Eigenverft.WebLib.Kestrel.Sni.Tests.csproj" />
+    <Project Path="../../prj/Eigenverft.WebLib.Kestrel.Sni/Eigenverft.WebLib.Kestrel.Sni.csproj" />
+  </Folder>
+</Solution>
