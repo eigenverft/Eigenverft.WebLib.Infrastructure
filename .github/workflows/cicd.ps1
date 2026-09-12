@@ -286,9 +286,7 @@ $Drop = "C:\temp\$GitRepositoryName-drops"
 New-Directory -Paths @($Drop)
 Remove-FilesByPattern -Path "$Drop" -Pattern "*"
 
-# Repository- and solution-level drops can contain projects with different package versions.
-# Their existing generated run version remains the aggregate release-set identifier.
-$AggregateChannelVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,$GeneratedVersion.VersionFull)
+# The generated version remains available for legacy projects and aggregate file drops.
 $ChannelLatestRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,"latest")
 
 # All required output folders
@@ -363,12 +361,7 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
 
         $ProjectChannelVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,$ProjectProperties.OutputVersion)
 
-        # The version-resolution step performed the first restore. Complete the established
-        # restore-clean-restore sequence for a predictable incremental build state.
-        Invoke-ProcessTyped -Executable "dotnet" -Arguments @("clean", "$($ProjectFileInfo.FullName)", "-p:Stage=clean") -ReturnType Objects -CommonArguments $DotnetCommonParameters
-        Invoke-ProcessTyped -Executable "dotnet" -Arguments @("restore", "$($ProjectFileInfo.FullName)", "-p:Stage=restore") -ReturnType Objects -CommonArguments $DotnetCommonParameters
-
-        # Non-SDK style build with frameworks requires msbuild to build the project, otherwise dotnet build is used for SDK style projects without frameworks
+        # Prepare legacy output paths and parameters before executing build steps.
         if ($ProjectProperties.IsNoneSDKProj)
         {
             $ProjectBranchVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Branch.PathSegmentsSanitized,$ProjectProperties.OutputVersion)
@@ -384,6 +377,16 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
                 "-p:BaseIntermediateOutputPath=$($BuildObjDirectory)/",
                 "-p:UseSharedCompilation=false"
             )
+        }
+
+        # The version-resolution step performed the first restore. Complete the established
+        # restore-clean-restore sequence for a predictable incremental build state.
+        Invoke-ProcessTyped -Executable "dotnet" -Arguments @("clean", "$($ProjectFileInfo.FullName)", "-p:Stage=clean") -ReturnType Objects -CommonArguments $DotnetCommonParameters
+        Invoke-ProcessTyped -Executable "dotnet" -Arguments @("restore", "$($ProjectFileInfo.FullName)", "-p:Stage=restore") -ReturnType Objects -CommonArguments $DotnetCommonParameters
+
+        # Build Non-SDK projects with Visual Studio MSBuild.
+        if ($ProjectProperties.IsNoneSDKProj)
+        {
             Invoke-ProcessTyped -Executable "$MsBuildVs" -Arguments @("$($ProjectFileInfo.FullName)", "-p:Stage=build") -CommonArguments $NonSDKParameters -ReturnType Objects -CaptureOutput $true -CaptureOutputDump $false
         }
 
@@ -458,26 +461,25 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
     }
 }
 
-# Keep test projects in the build/test pipeline, but exclude them together with explicitly
-# disabled projects from distributable report and drop aggregation passes.
-$SolutionProjectPaths = @($SolutionProjectPaths | ForEach-Object {
-    $DistributableProjects = @($_.Prj | Where-Object {
-        $ProjectProperties = $ProjectVersionInfos[$_.FullName]
-        $ProjectProperties.IsCicdEnabled -and (-not $ProjectProperties.IsTestProject)
+# Select projects for file distribution. Pack-only projects keep their NuGet packages
+# and reports; they do not create publish trees or file drops.
+$PublishSolutionPaths = @()
+foreach ($SolutionProjectPath in $SolutionProjectPaths) {
+    $PublishProjects = @($SolutionProjectPath.Prj | Where-Object {
+        $Properties = $ProjectVersionInfos[$_.FullName]
+        $Properties.IsCicdEnabled -and (-not $Properties.IsTestProject) -and
+            ($Properties.IsPublishable -or $Properties.IsNoneSDKProj)
     })
-    if ($DistributableProjects.Count -gt 0)
-    {
-        [pscustomobject]@{ Sln = $_.Sln; Prj = $DistributableProjects }
+    if ($PublishProjects.Count -gt 0) {
+        $PublishSolutionPaths += [pscustomobject]@{ Sln = $SolutionProjectPath.Sln; Prj = $PublishProjects }
     }
-})
-
-
+}
 
 # Enrich every project publish tree before creating distributable drops.
 # A repository can contain multiple solutions and every solution can contain multiple projects.
 # Their publish trees remain isolated as publish/<solution>/<project>/<channel>/<version>.
 # Compliance files are copied next to the binaries.
-foreach ($SolutionProjectPath in $SolutionProjectPaths) {
+foreach ($SolutionProjectPath in $PublishSolutionPaths) {
     foreach ($ProjectFileInfo in $SolutionProjectPath.Prj) {
         $SolutionFileInfo = $SolutionProjectPath.Sln
             $ProjectChannelVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,$ProjectVersionInfos[$ProjectFileInfo.FullName].OutputVersion)
@@ -492,7 +494,7 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
 
 # Remove build-only symbol files from every enriched project publish tree.
 # All repository-, solution-, and project-level drops below are created from these cleaned trees.
-foreach ($SolutionProjectPath in $SolutionProjectPaths) {
+foreach ($SolutionProjectPath in $PublishSolutionPaths) {
     foreach ($ProjectFileInfo in $SolutionProjectPath.Prj) {
         $SolutionFileInfo = $SolutionProjectPath.Sln
             $ProjectChannelVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,$ProjectVersionInfos[$ProjectFileInfo.FullName].OutputVersion)
@@ -510,9 +512,12 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
 
 # Build the repository-level all-in-one drop by flattening the publish trees of every
 # project from every solution. Project output file names are therefore expected to be unique.
-$RepoPublishDirectory = New-Directory -Paths @($RepoPublishRootPath,$AggregateChannelVersionRelativePath)
+if ($PublishSolutionPaths.Count -gt 0) {
+    $AggregateChannelVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,$GeneratedVersion.VersionFull)
+    $RepoPublishDirectory = New-Directory -Paths @($RepoPublishRootPath,$AggregateChannelVersionRelativePath)
+}
 
-foreach ($SolutionProjectPath in $SolutionProjectPaths) {
+foreach ($SolutionProjectPath in $PublishSolutionPaths) {
     $SolutionFileInfo = $SolutionProjectPath.Sln
     foreach ($ProjectFileInfo in $SolutionProjectPath.Prj) {
             $ProjectChannelVersionRelativePath = Get-Path -Paths @($BranchDeploymentConfig.Channel.Value,$ProjectVersionInfos[$ProjectFileInfo.FullName].OutputVersion)
@@ -527,17 +532,18 @@ $RepositoryDropRootPath = "$Drop\rep"
 $SolutionsDropRootPath = "$Drop\sln"
 $ProjectsDropRootPath = "$Drop\prj"
 
-Copy-FilesRecursively -SourceDirectory "$RepoPublishDirectory" -DestinationDirectory (Get-Path -Paths @($RepositoryDropRootPath,$GitRepositoryName,$AggregateChannelVersionRelativePath)) -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true -CleanDestination MirrorTree
-Copy-FilesRecursively -SourceDirectory "$RepoPublishDirectory" -DestinationDirectory (Get-Path -Paths @($RepositoryDropRootPath,$GitRepositoryName,$ChannelLatestRelativePath)) -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true -CleanDestination MirrorTree
-Copy-FilesRecursively -SourceDirectory "$RepoPublishDirectory" -DestinationDirectory (Get-Path -Paths @($RepositoryDropRootPath,$GitRepositoryName,"distributed")) -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true -CleanDestination MirrorTree
-$nugetFilePart1 = Join-Text -InputObject @("$($GitRepositoryName)","$($GeneratedVersion.VersionFull)") -Separator '.' -Normalization Trim
-$nugetFileEmulation = Join-Text -InputObject @("$nugetFilePart1","$($BranchDeploymentConfig.Affix.Label)") -Separator '-' -Normalization Trim
-Compress-Directory -SourceDirectory "$RepoPublishDirectory" -DestinationFile "$(Get-Path -Paths @($RepositoryDropRootPath,$GitRepositoryName,"zipped","$nugetFileEmulation.zip"))"
-
+if ($PublishSolutionPaths.Count -gt 0) {
+    Copy-FilesRecursively -SourceDirectory "$RepoPublishDirectory" -DestinationDirectory (Get-Path -Paths @($RepositoryDropRootPath,$GitRepositoryName,$AggregateChannelVersionRelativePath)) -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true -CleanDestination MirrorTree
+    Copy-FilesRecursively -SourceDirectory "$RepoPublishDirectory" -DestinationDirectory (Get-Path -Paths @($RepositoryDropRootPath,$GitRepositoryName,$ChannelLatestRelativePath)) -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true -CleanDestination MirrorTree
+    Copy-FilesRecursively -SourceDirectory "$RepoPublishDirectory" -DestinationDirectory (Get-Path -Paths @($RepositoryDropRootPath,$GitRepositoryName,"distributed")) -Filter "*" -CopyEmptyDirs $false -ForceOverwrite $true -CleanDestination MirrorTree
+    $nugetFilePart1 = Join-Text -InputObject @("$($GitRepositoryName)","$($GeneratedVersion.VersionFull)") -Separator '.' -Normalization Trim
+    $nugetFileEmulation = Join-Text -InputObject @("$nugetFilePart1","$($BranchDeploymentConfig.Affix.Label)") -Separator '-' -Normalization Trim
+    Compress-Directory -SourceDirectory "$RepoPublishDirectory" -DestinationFile "$(Get-Path -Paths @($RepositoryDropRootPath,$GitRepositoryName,"zipped","$nugetFileEmulation.zip"))"
+}
 
 # Build one solution-level drop by flattening all project publish trees belonging to that
 # solution. The solution staging directory is cleared first to prevent stale artifacts.
-foreach ($SolutionProjectPath in $SolutionProjectPaths) {
+foreach ($SolutionProjectPath in $PublishSolutionPaths) {
     $SolutionFileInfo = $SolutionProjectPath.Sln
     $SolutionPublishDirectory = New-Directory -Paths @($SlnPublishRootPath,$SolutionFileInfo.BaseName,$AggregateChannelVersionRelativePath)
     Remove-FilesByPattern -Path "$SolutionPublishDirectory" -Pattern "*"
@@ -556,7 +562,7 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
 
 # Build one project-level drop for every solution/project association.
 # Project drops are keyed by project base name, which must be unique across the repository.
-foreach ($SolutionProjectPath in $SolutionProjectPaths) {
+foreach ($SolutionProjectPath in $PublishSolutionPaths) {
     $SolutionFileInfo = $SolutionProjectPath.Sln
     foreach ($ProjectFileInfo in $SolutionProjectPath.Prj) {
             $ProjectVersionInfo = $ProjectVersionInfos[$ProjectFileInfo.FullName]
