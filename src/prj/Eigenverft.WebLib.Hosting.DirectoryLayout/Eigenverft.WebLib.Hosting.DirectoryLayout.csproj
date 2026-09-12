@@ -68,7 +68,7 @@
 
   <!-- Capability and external dependencies -->
   <ItemGroup>
-    <PackageReference Include="Eigenverft.NetLib.Hosting.DirectoryLayout" Version="1.0.0" />
+    <PackageReference Include="Eigenverft.NetLib.Hosting.DirectoryLayout" Version="1.0.0.3" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MSBuildProjectDirectory)\NugetAssets\**\*" Pack="true" PackagePath="" />

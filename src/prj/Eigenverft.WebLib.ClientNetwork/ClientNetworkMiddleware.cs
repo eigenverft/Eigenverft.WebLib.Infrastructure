@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Net;
 using System.Threading.Tasks;
 
-using Eigenverft.NetLib.Infrastructure.Networking;
+using Eigenverft.NetLib.Networking;
 using Eigenverft.WebLib.Middleware.Primitives.Features;
 
 using Microsoft.AspNetCore.Http;

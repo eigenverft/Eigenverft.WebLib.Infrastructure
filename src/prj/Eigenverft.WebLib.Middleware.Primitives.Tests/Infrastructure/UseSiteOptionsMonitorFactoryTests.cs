@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-using Eigenverft.NetLib.Infrastructure.Hosting.Configuration.CollectionOverrides;
+using Eigenverft.NetLib.Configuration.Binding;
 using Eigenverft.WebLib.Middleware.Primitives.Infrastructure;
 
 using Microsoft.AspNetCore.Builder;

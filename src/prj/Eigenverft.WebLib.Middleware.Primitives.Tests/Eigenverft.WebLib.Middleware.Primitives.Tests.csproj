@@ -54,7 +54,7 @@
  <!-- Keep both test TFMs and reference the matching Eigenverft.WebLib.Middleware.Primitives TFM for each test build. -->
   <!-- Test-only integration dependencies -->
   <ItemGroup>
-    <PackageReference Include="Eigenverft.NetLib.Configuration.Binding" Version="1.0.0" />
+    <PackageReference Include="Eigenverft.NetLib.Configuration.Binding" Version="1.0.0.6" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Eigenverft.WebLib.Middleware.Primitives\Eigenverft.WebLib.Middleware.Primitives.csproj">

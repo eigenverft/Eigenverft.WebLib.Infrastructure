@@ -2,7 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/dotnet/Nerdbank.GitVersioning/main/src/NerdBank.GitVersioning/version.schema.json",
   "version": "1.0.0",
   "pathFilters": [
-    ".."
+    "..",
+    "../../Eigenverft.WebLib.Middleware.Primitives"
   ],
   "publicReleaseRefSpec": [
     "^refs/heads/main$",

@@ -68,7 +68,7 @@
 
   <!-- Capability and external dependencies -->
   <ItemGroup>
-    <PackageReference Include="Eigenverft.NetLib.Networking" Version="1.0.0" />
+    <PackageReference Include="Eigenverft.NetLib.Networking" Version="1.0.0.3" />
     <ProjectReference Include="..\Eigenverft.WebLib.Middleware.Primitives\Eigenverft.WebLib.Middleware.Primitives.csproj">
       <SetTargetFramework>TargetFramework=$(TargetFramework)</SetTargetFramework>
     </ProjectReference>
