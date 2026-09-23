@@ -1,4 +1,10 @@
-Added opt-in AllRaw request and response header capture for traffic diagnostics.
+Clarified traffic diagnostics fields for flat log output.
+
+- Renamed Outcome to PipelineOutcome and ResponseStarted to ResponseStartedAtCapture.
+- Renders ForwardedIpChain as readable text instead of an array type name.
+- These log-field changes require consumers of the previous field names to update their queries.
+
+Previously added opt-in AllRaw request and response header capture for traffic diagnostics.
 
 - Captures every header value, including unknown names and sensitive values, without framework redaction when enabled.
 - Keeps the existing allowlisted, redacted behavior as the default.

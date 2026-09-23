@@ -46,7 +46,7 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Completed", record.GetProperty("Outcome"));
+        Assert.AreEqual("Completed", record.GetProperty("PipelineOutcome"));
         Assert.AreEqual("GET", record.GetProperty("Method"));
         Assert.AreEqual("https", record.GetProperty("Scheme"));
         Assert.AreEqual("example.test:8443", record.GetProperty("Host"));
@@ -82,7 +82,7 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Completed", record.GetProperty("Outcome"));
+        Assert.AreEqual("Completed", record.GetProperty("PipelineOutcome"));
         Assert.AreEqual("203.0.113.7", record.GetProperty("RemoteIpAddress"));
         Assert.AreEqual("HEAD", record.GetProperty("Method"));
         Assert.AreEqual("example.test:8443", record.GetProperty("Host"));
@@ -111,7 +111,7 @@ public sealed class RequestTrafficLoggingTests
 
         Assert.IsNotNull(thrown, "The application exception must propagate out of traffic logging.");
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Faulted", record.GetProperty("Outcome"));
+        Assert.AreEqual("Faulted", record.GetProperty("PipelineOutcome"));
         Assert.AreEqual(typeof(InvalidOperationException).FullName, record.GetProperty("ExceptionType"));
     }
 
@@ -134,7 +134,7 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Faulted", record.GetProperty("Outcome"));
+        Assert.AreEqual("Faulted", record.GetProperty("PipelineOutcome"));
         Assert.AreEqual(StatusCodes.Status503ServiceUnavailable, record.GetProperty("StatusCode"));
         Assert.AreEqual(typeof(InvalidOperationException).FullName, record.GetProperty("ExceptionType"));
     }
@@ -165,7 +165,7 @@ public sealed class RequestTrafficLoggingTests
 
         Assert.IsNotNull(thrown);
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Aborted", record.GetProperty("Outcome"));
+        Assert.AreEqual("Aborted", record.GetProperty("PipelineOutcome"));
         Assert.AreEqual(true, record.GetProperty("Aborted"));
     }
 
@@ -202,9 +202,9 @@ public sealed class RequestTrafficLoggingTests
         }
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Aborted", record.GetProperty("Outcome"));
+        Assert.AreEqual("Aborted", record.GetProperty("PipelineOutcome"));
         Assert.AreEqual(StatusCodes.Status200OK, record.GetProperty("StatusCode"));
-        Assert.AreEqual(true, record.GetProperty("ResponseStarted"));
+        Assert.AreEqual(true, record.GetProperty("ResponseStartedAtCapture"));
         Assert.AreEqual(true, record.GetProperty("Aborted"));
     }
 
@@ -642,8 +642,7 @@ public sealed class RequestTrafficLoggingTests
 
         CapturedLogRecord record = host.SingleTrafficRecord();
         Assert.AreEqual("203.0.113.99", record.GetProperty("RemoteIpAddress"));
-        string[] chain = (string[])record.GetProperty("ForwardedIpChain")!;
-        CollectionAssert.AreEqual(new[] { "XForwardedFor:198.51.100.40" }, chain);
+        Assert.AreEqual("XForwardedFor:198.51.100.40", record.GetProperty("ForwardedIpChain"));
         Assert.AreEqual(false, record.GetProperty("HasMalformedForwardedIpInformation"));
     }
 
@@ -685,7 +684,7 @@ public sealed class RequestTrafficLoggingTests
 
         CapturedLogRecord record = host.SingleTrafficRecord();
         Assert.AreEqual("RequestTraffic", record.GetProperty("Event"));
-        Assert.AreEqual("Completed", record.GetProperty("Outcome"));
+        Assert.AreEqual("Completed", record.GetProperty("PipelineOutcome"));
         Assert.IsFalse(record.TryGetProperty("Method", out _));
         Assert.IsFalse(record.TryGetProperty("Path", out _));
         Assert.IsFalse(record.TryGetProperty("RemoteIpAddress", out _));

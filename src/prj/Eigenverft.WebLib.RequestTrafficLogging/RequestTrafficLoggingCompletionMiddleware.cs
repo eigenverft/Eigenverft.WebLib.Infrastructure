@@ -62,7 +62,7 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             bool requestAborted = context.RequestAborted.IsCancellationRequested;
             string outcome = ClassifyOutcome(caughtException, handledException, requestAborted);
 
-            state.LogContext.AddParameter("Outcome", outcome);
+            state.LogContext.AddParameter("PipelineOutcome", outcome);
 
             if ((fields & RequestTrafficLoggingFields.Core) != 0)
             {
@@ -72,7 +72,7 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
                 state.LogContext.AddParameter("RemoteIpAddress", remoteAddress?.ToString());
                 state.LogContext.AddParameter("ResponseContentType", context.Response.ContentType);
                 state.LogContext.AddParameter("ResponseContentLength", context.Response.ContentLength);
-                state.LogContext.AddParameter("ResponseStarted", context.Response.HasStarted);
+                state.LogContext.AddParameter("ResponseStartedAtCapture", context.Response.HasStarted);
                 state.LogContext.AddParameter("Aborted", requestAborted);
                 state.LogContext.AddParameter(
                     "DurationMs",
@@ -162,7 +162,7 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
                 values[i] = item.Source + ":" + (item.Address?.ToString() ?? item.RawValue);
             }
 
-            state.LogContext.AddParameter("ForwardedIpChain", values);
+            state.LogContext.AddParameter("ForwardedIpChain", string.Join(" -> ", values));
             state.LogContext.AddParameter(
                 "HasMalformedForwardedIpInformation",
                 feature.HasMalformedForwardedIpInformation);

@@ -4,6 +4,8 @@ ASP.NET Core request traffic logging middleware and HTTP logging field configura
 
 Request traffic logging preserves the original allowlisted behavior from Eigenverft.WebLib.Infrastructure by default. It produces one combined request/response record with completion status and bounded body capture.
 
+`PipelineOutcome` describes whether the middleware pipeline returned, faulted, or was aborted; it is not the HTTP success status. `ResponseStartedAtCapture` is sampled when the record completes. `ForwardedIpChain` is rendered as a readable ` -> `-separated chain.
+
 For a deliberate full-header diagnostic session, opt in to raw header capture:
 
 ```csharp
