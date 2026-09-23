@@ -268,7 +268,6 @@ $GitHubSourceUri = "https://nuget.pkg.github.com/$GitHubPackagesUser/index.json"
 $NuGetTestSourceUri = "https://apiint.nugettest.org/v3/index.json"
 $NuGetOrgSourceUri = "https://api.nuget.org/v3/index.json"
 Unregister-LocalNuGetDotNetPackageSource -SourceName "$GitHubSourceName"
-Invoke-ProcessTyped -Executable "dotnet" -Arguments @("nuget","add", "source", "--username", "$GitHubPackagesUser","--password","$GitHubToken","--store-password-in-clear-text","--name","$GitHubSourceName","$GitHubSourceUri") -CaptureOutput $false -CaptureOutputDump $false -HideValues @($GitHubToken)
 
 # Enable the .NET tools specified in the manifest file
 Enable-TempDotnetTools -ManifestFile "$DotNetToolsManifestPath" -NoReturn
@@ -438,7 +437,11 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
         # Test only executes for SDK-style projects. Non-SDK projects are not supported by dotnet test.
         if ($ProjectProperties.IsTestProject -eq $true)
         {
-            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("test", "$($ProjectFileInfo.FullName)", "-c", "Release", '-p:Stage=test' ) -CommonArguments $DotnetCommonParameters -CaptureOutput $false
+            # Coverlet 6.0.0 reports no instrumented modules with ContinuousIntegrationBuild=true.
+            # Keep the coverage gate active by building the test invocation without CI path mapping.
+            $TestCommonParameters = @($DotnetCommonParameters | Where-Object { $_ -ne '-p:ContinuousIntegrationBuild=true' })
+            $TestCommonParameters += '-p:ContinuousIntegrationBuild=false'
+            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("test", "$($ProjectFileInfo.FullName)", "-c", "Release", '-p:Stage=test' ) -CommonArguments $TestCommonParameters -CaptureOutput $false
         }
 
         if ($ProjectProperties.IsPackable -eq $true)
@@ -632,6 +635,8 @@ if ($PushToLocalSource -eq $true)
 
 if ($PushToGitHubSource -eq $true)
 {
+    Invoke-ProcessTyped -Executable "dotnet" -Arguments @("nuget","add", "source", "--username", "$GitHubPackagesUser","--password","$GitHubToken","--store-password-in-clear-text","--name","$GitHubSourceName","$GitHubSourceUri") -CaptureOutput $false -CaptureOutputDump $false -HideValues @($GitHubToken)
+
     $NuGetPackageFileInfos = Find-FilesByPattern -Path "$PackRootPath" -Pattern "*.nupkg"
     foreach ($NuGetPackageFileInfo in $NuGetPackageFileInfos)
     {
