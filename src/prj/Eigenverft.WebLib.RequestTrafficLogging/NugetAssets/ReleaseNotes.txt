@@ -1,4 +1,5 @@
-Initial capability package extracted from Eigenverft.WebLib.Infrastructure.
+Added opt-in AllRaw request and response header capture for traffic diagnostics.
 
-- ASP.NET Core request traffic logging middleware and HTTP logging field configuration with sensitive value controls.
-- Public namespaces and behavior remain compatible with the original Infrastructure implementation.
+- Captures every header value, including unknown names and sensitive values, without framework redaction when enabled.
+- Keeps the existing allowlisted, redacted behavior as the default.
+- Preserves multiple values separately and respects the existing header field flags.

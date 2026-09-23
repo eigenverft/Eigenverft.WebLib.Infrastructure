@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,8 +34,14 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             HttpContext httpContext = logContext.HttpContext;
             HttpRequest request = httpContext.Request;
             RequestTrafficLoggingFields fields = options.Fields;
+            bool captureRawHeaders = options.HeaderCaptureMode == HeaderCaptureMode.AllRaw;
 
             logContext.LoggingFields = ToHttpLoggingFields(fields);
+            if (captureRawHeaders)
+            {
+                logContext.LoggingFields &= ~(HttpLoggingFields.RequestHeaders | HttpLoggingFields.ResponseHeaders);
+            }
+
             logContext.RequestBodyLogLimit = options.RequestBodyLimit;
             logContext.ResponseBodyLogLimit = options.ResponseBodyLimit;
 
@@ -57,10 +65,16 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
                 logContext.AddParameter("UserAgent", request.Headers.UserAgent.ToString());
             }
 
-            if ((fields & RequestTrafficLoggingFields.RequestHeaders) != 0 &&
-                options.SensitiveValueMode == SensitiveValueMode.Hash)
+            if ((fields & RequestTrafficLoggingFields.RequestHeaders) != 0)
             {
-                AddSensitiveHeaderHashes(logContext, request.Headers, options.SensitiveHeaders, "RequestHeader.");
+                if (captureRawHeaders)
+                {
+                    AddRawHeaders(logContext, request.Headers, "RequestHeader.");
+                }
+                else if (options.SensitiveValueMode == SensitiveValueMode.Hash)
+                {
+                    AddSensitiveHeaderHashes(logContext, request.Headers, options.SensitiveHeaders, "RequestHeader.");
+                }
             }
 
             return ValueTask.CompletedTask;
@@ -76,14 +90,20 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
                 return ValueTask.CompletedTask;
             }
 
-            if ((state.Options.Fields & RequestTrafficLoggingFields.ResponseHeaders) != 0 &&
-                state.Options.SensitiveValueMode == SensitiveValueMode.Hash)
+            if ((state.Options.Fields & RequestTrafficLoggingFields.ResponseHeaders) != 0)
             {
-                AddSensitiveHeaderHashes(
-                    logContext,
-                    logContext.HttpContext.Response.Headers,
-                    state.Options.SensitiveHeaders,
-                    "ResponseHeader.");
+                if (state.Options.HeaderCaptureMode == HeaderCaptureMode.AllRaw)
+                {
+                    AddRawHeaders(logContext, logContext.HttpContext.Response.Headers, "ResponseHeader.");
+                }
+                else if (state.Options.SensitiveValueMode == SensitiveValueMode.Hash)
+                {
+                    AddSensitiveHeaderHashes(
+                        logContext,
+                        logContext.HttpContext.Response.Headers,
+                        state.Options.SensitiveHeaders,
+                        "ResponseHeader.");
+                }
             }
 
             return ValueTask.CompletedTask;
@@ -140,6 +160,29 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             }
 
             return context.TraceIdentifier;
+        }
+
+        private static void AddRawHeaders(
+            HttpLoggingInterceptorContext logContext,
+            IHeaderDictionary headers,
+            string propertyPrefix)
+        {
+            foreach (KeyValuePair<string, StringValues> header in headers)
+            {
+                string name = propertyPrefix + header.Key;
+                if (header.Value.Count <= 1)
+                {
+                    logContext.AddParameter(name, header.Value.Count == 0 ? string.Empty : header.Value[0] ?? string.Empty);
+                    continue;
+                }
+
+                for (var index = 0; index < header.Value.Count; index++)
+                {
+                    logContext.AddParameter(
+                        name + "[" + index.ToString(CultureInfo.InvariantCulture) + "]",
+                        header.Value[index] ?? string.Empty);
+                }
+            }
         }
 
         private static void AddSensitiveHeaderHashes(

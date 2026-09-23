@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace Eigenverft.WebLib.RequestTrafficLogging.Tests;
 
@@ -345,6 +346,80 @@ public sealed class RequestTrafficLoggingTests
         CapturedLogRecord record = host.SingleTrafficRecord();
         Assert.AreEqual("[Redacted]", record.GetProperty("Set-Cookie"));
         Assert.AreEqual(Hash(value), record.GetProperty("ResponseHeader.Set-CookieHash"));
+    }
+
+    [TestMethod]
+    public async Task AllRawHeaders_IncludeUnknownAndSensitiveValuesWithoutFrameworkRedaction()
+    {
+        using var host = new RequestTrafficLoggingTestHost(options =>
+        {
+            options.Fields |= RequestTrafficLoggingFields.RequestHeaders | RequestTrafficLoggingFields.ResponseHeaders;
+            options.HeaderCaptureMode = HeaderCaptureMode.AllRaw;
+        });
+        RequestDelegate pipeline = host.BuildPipeline(app => app.Run(context =>
+        {
+            context.Response.Headers.SetCookie = "session=secret";
+            context.Response.Headers["X-Unknown-Response"] = "response-value";
+            return Task.CompletedTask;
+        }));
+        DefaultHttpContext context = host.CreateContext();
+        context.Request.Headers.Authorization = "Bearer secret-token";
+        context.Request.Headers["X-Unknown-Request"] = "request-value";
+
+        await pipeline(context);
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("Bearer secret-token", record.GetProperty("RequestHeader.Authorization"));
+        Assert.AreEqual("request-value", record.GetProperty("RequestHeader.X-Unknown-Request"));
+        Assert.AreEqual("session=secret", record.GetProperty("ResponseHeader.Set-Cookie"));
+        Assert.AreEqual("response-value", record.GetProperty("ResponseHeader.X-Unknown-Response"));
+        Assert.IsTrue(record.Message.Contains("RequestHeader.Authorization: Bearer secret-token", StringComparison.Ordinal));
+        Assert.IsTrue(record.Message.Contains("ResponseHeader.Set-Cookie: session=secret", StringComparison.Ordinal));
+        Assert.IsFalse(record.Message.Contains("[Redacted]", StringComparison.Ordinal));
+        Assert.IsFalse(record.TryGetProperty("Authorization", out _));
+    }
+
+    [TestMethod]
+    public async Task AllRawHeaders_PreserveMultipleValuesAndRespectFieldFlags()
+    {
+        using (var host = new RequestTrafficLoggingTestHost(options =>
+               {
+                   options.Fields |= RequestTrafficLoggingFields.RequestHeaders | RequestTrafficLoggingFields.ResponseHeaders;
+                   options.HeaderCaptureMode = HeaderCaptureMode.AllRaw;
+               }))
+        {
+            RequestDelegate pipeline = host.BuildPipeline(app => app.Run(context =>
+            {
+                context.Response.Headers.SetCookie = new StringValues(new[] { "a=1", "b=2" });
+                return Task.CompletedTask;
+            }));
+            DefaultHttpContext context = host.CreateContext();
+            context.Request.Headers["X-Multiple"] = new StringValues(new[] { "first", "second" });
+
+            await pipeline(context);
+
+            CapturedLogRecord record = host.SingleTrafficRecord();
+            Assert.AreEqual("first", record.GetProperty("RequestHeader.X-Multiple[0]"));
+            Assert.AreEqual("second", record.GetProperty("RequestHeader.X-Multiple[1]"));
+            Assert.AreEqual("a=1", record.GetProperty("ResponseHeader.Set-Cookie[0]"));
+            Assert.AreEqual("b=2", record.GetProperty("ResponseHeader.Set-Cookie[1]"));
+        }
+
+        using (var host = new RequestTrafficLoggingTestHost(options =>
+               {
+                   options.Fields = RequestTrafficLoggingFields.Core;
+                   options.HeaderCaptureMode = HeaderCaptureMode.AllRaw;
+               }))
+        {
+            RequestDelegate pipeline = host.BuildPipeline(app => app.Run(static _ => Task.CompletedTask));
+            DefaultHttpContext context = host.CreateContext();
+            context.Request.Headers.Authorization = "Bearer secret-token";
+
+            await pipeline(context);
+
+            CapturedLogRecord record = host.SingleTrafficRecord();
+            Assert.IsFalse(record.TryGetProperty("RequestHeader.Authorization", out _));
+        }
     }
 
     [TestMethod]

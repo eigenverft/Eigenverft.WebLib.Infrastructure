@@ -18,7 +18,14 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             RequestTrafficLoggingFields.Routing;
 
         /// <summary>
-        /// Gets or sets how configured sensitive header values are represented.
+        /// Gets or sets whether header values use the configured allowlists or are all captured verbatim.
+        /// Header capture still requires the corresponding <see cref="RequestTrafficLoggingFields"/> flag.
+        /// </summary>
+        public HeaderCaptureMode HeaderCaptureMode { get; set; } = HeaderCaptureMode.AllowListed;
+
+        /// <summary>
+        /// Gets or sets how configured sensitive header values are represented in allowlisted mode.
+        /// <see cref="HeaderCaptureMode.AllRaw"/> captures all values regardless of this setting.
         /// </summary>
         public SensitiveValueMode SensitiveValueMode { get; set; } = SensitiveValueMode.Redact;
 

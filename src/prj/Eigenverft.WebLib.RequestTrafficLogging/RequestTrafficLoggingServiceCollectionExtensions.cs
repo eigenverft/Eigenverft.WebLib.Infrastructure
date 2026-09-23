@@ -43,6 +43,9 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
                     static options => (options.Fields & ~RequestTrafficLoggingFields.All) == 0,
                     "Fields contains unsupported request traffic logging flags.")
                 .Validate(
+                    static options => Enum.IsDefined(typeof(HeaderCaptureMode), options.HeaderCaptureMode),
+                    "HeaderCaptureMode is invalid.")
+                .Validate(
                     static options => Enum.IsDefined(typeof(SensitiveValueMode), options.SensitiveValueMode),
                     "SensitiveValueMode is invalid.")
                 .Validate(static options => options.RequestBodyLimit >= 0, "RequestBodyLimit cannot be negative.")
@@ -78,6 +81,14 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             options.LoggingFields = HttpLoggingFields.None;
             options.RequestBodyLogLimit = trafficOptions.RequestBodyLimit;
             options.ResponseBodyLogLimit = trafficOptions.ResponseBodyLimit;
+
+            if (trafficOptions.HeaderCaptureMode == HeaderCaptureMode.AllRaw)
+            {
+                // The interceptor emits prefixed raw header parameters instead of framework header fields.
+                options.RequestHeaders.Clear();
+                options.ResponseHeaders.Clear();
+                return;
+            }
 
             ConfigureAllowedHeaders(options.RequestHeaders, trafficOptions.RequestHeaders, trafficOptions);
             ConfigureAllowedHeaders(options.ResponseHeaders, trafficOptions.ResponseHeaders, trafficOptions);
