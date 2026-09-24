@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -82,42 +80,9 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             options.RequestBodyLogLimit = trafficOptions.RequestBodyLimit;
             options.ResponseBodyLogLimit = trafficOptions.ResponseBodyLimit;
 
-            if (trafficOptions.HeaderCaptureMode == HeaderCaptureMode.AllRaw)
-            {
-                // The interceptor emits prefixed raw header parameters instead of framework header fields.
-                options.RequestHeaders.Clear();
-                options.ResponseHeaders.Clear();
-                return;
-            }
-
-            ConfigureAllowedHeaders(options.RequestHeaders, trafficOptions.RequestHeaders, trafficOptions);
-            ConfigureAllowedHeaders(options.ResponseHeaders, trafficOptions.ResponseHeaders, trafficOptions);
-        }
-
-        private static void ConfigureAllowedHeaders(
-            ISet<string> frameworkHeaders,
-            ISet<string> configuredHeaders,
-            RequestTrafficLoggingOptions options)
-        {
-            frameworkHeaders.Clear();
-
-            foreach (string header in configuredHeaders)
-            {
-                if (options.SensitiveValueMode != SensitiveValueMode.Include && options.SensitiveHeaders.Contains(header))
-                {
-                    continue;
-                }
-
-                frameworkHeaders.Add(header);
-            }
-
-            if (options.SensitiveValueMode == SensitiveValueMode.Include)
-            {
-                foreach (string header in options.SensitiveHeaders)
-                {
-                    frameworkHeaders.Add(header);
-                }
-            }
+            // Header fields are emitted by the interceptor with Request.Header.* and Response.Header.* names.
+            options.RequestHeaders.Clear();
+            options.ResponseHeaders.Clear();
         }
     }
 }

@@ -234,4 +234,18 @@ internal sealed class CapturedLogRecord
         value = null;
         return false;
     }
+
+    internal int GetPropertyIndex(string name)
+    {
+        for (var i = 0; i < _properties.Count; i++)
+        {
+            if (string.Equals(_properties[i].Key, name, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+
+        Assert.Fail($"Structured log property '{name}' was not present. Message: {Message}");
+        return -1;
+    }
 }

@@ -1,4 +1,12 @@
-Clarified traffic diagnostics fields for flat log output.
+Introduced hierarchical traffic diagnostics fields as the default output contract.
+
+- Groups fields under Request.*, Connection.*, Identity.*, Routing.*, Response.*, and Pipeline.*.
+- Emits both allowlisted and raw headers under Request.Header.* and Response.Header.*.
+- Renames body length metadata to *.Body.DeclaredLength to reflect Content-Length semantics.
+- Orders the controlled fields from request input through response and final pipeline outcome.
+- This is a breaking field-name change for log queries and dashboards; framework body text remains RequestBody/ResponseBody.
+
+Previously clarified traffic diagnostics fields for flat log output.
 
 - Renamed Outcome to PipelineOutcome and ResponseStarted to ResponseStartedAtCapture.
 - Renders ForwardedIpChain as readable text instead of an array type name.

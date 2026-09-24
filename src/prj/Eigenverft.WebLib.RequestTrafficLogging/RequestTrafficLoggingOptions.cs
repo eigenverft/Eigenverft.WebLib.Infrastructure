@@ -31,16 +31,16 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
 
         /// <summary>
         /// Gets or sets the maximum request-body bytes retained by framework HTTP Logging.
-        /// When request-body metadata is enabled, <c>RequestBodyTotalBytes</c> uses the request
-        /// <c>Content-Length</c> when known and otherwise remains unknown; <c>RequestBodyTruncated</c>
+        /// When request-body metadata is enabled, <c>Request.Body.DeclaredLength</c> uses the request
+        /// <c>Content-Length</c> when known and otherwise remains unknown; <c>Request.Body.Truncated</c>
         /// is only classified when that total is known.
         /// </summary>
         public int RequestBodyLimit { get; set; } = DefaultBodyLimit;
 
         /// <summary>
         /// Gets or sets the maximum response-body bytes retained by framework HTTP Logging.
-        /// When response-body metadata is enabled, <c>ResponseBodyTotalBytes</c> uses the response
-        /// <c>Content-Length</c> when known and otherwise remains unknown; <c>ResponseBodyTruncated</c>
+        /// When response-body metadata is enabled, <c>Response.Body.DeclaredLength</c> uses the response
+        /// <c>Content-Length</c> when known and otherwise remains unknown; <c>Response.Body.Truncated</c>
         /// is only classified when that total is known.
         /// </summary>
         public int ResponseBodyLimit { get; set; } = DefaultBodyLimit;

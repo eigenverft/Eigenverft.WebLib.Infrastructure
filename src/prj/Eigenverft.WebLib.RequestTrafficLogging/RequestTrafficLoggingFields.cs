@@ -10,7 +10,7 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
     {
         /// <summary>
         /// Captures no optional HTTP field groups. The lifecycle envelope still emits one <c>RequestTraffic</c>
-        /// record containing at least <c>Event</c> and <c>PipelineOutcome</c> while information logging is enabled.
+        /// record containing at least <c>Event</c> and <c>Pipeline.Outcome</c> while information logging is enabled.
         /// </summary>
         None = 0,
 

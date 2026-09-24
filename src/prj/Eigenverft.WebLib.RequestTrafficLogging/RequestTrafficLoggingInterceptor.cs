@@ -34,14 +34,7 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             HttpContext httpContext = logContext.HttpContext;
             HttpRequest request = httpContext.Request;
             RequestTrafficLoggingFields fields = options.Fields;
-            bool captureRawHeaders = options.HeaderCaptureMode == HeaderCaptureMode.AllRaw;
-
             logContext.LoggingFields = ToHttpLoggingFields(fields);
-            if (captureRawHeaders)
-            {
-                logContext.LoggingFields &= ~(HttpLoggingFields.RequestHeaders | HttpLoggingFields.ResponseHeaders);
-            }
-
             logContext.RequestBodyLogLimit = options.RequestBodyLimit;
             logContext.ResponseBodyLogLimit = options.ResponseBodyLimit;
 
@@ -59,22 +52,45 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             {
                 logContext.AddParameter("TimestampUtc", state.TimestampUtc);
                 logContext.AddParameter("TraceId", ResolveTraceId(httpContext));
-                logContext.AddParameter("Host", request.Host.Value);
-                logContext.AddParameter("RequestContentType", request.ContentType);
-                logContext.AddParameter("RequestContentLength", request.ContentLength);
-                logContext.AddParameter("UserAgent", request.Headers.UserAgent.ToString());
+                logContext.AddParameter("Request.Protocol", request.Protocol);
+                logContext.AddParameter("Request.Method", request.Method);
+                logContext.AddParameter("Request.Scheme", request.Scheme);
+                logContext.AddParameter("Request.Host", request.Host.Value);
+                logContext.AddParameter("Request.PathBase", request.PathBase);
+                logContext.AddParameter("Request.Path", request.Path);
+            }
+
+            if ((fields & RequestTrafficLoggingFields.Query) != 0)
+            {
+                logContext.AddParameter("Request.QueryString", request.QueryString.Value);
+            }
+
+            if ((fields & RequestTrafficLoggingFields.Core) != 0)
+            {
+                logContext.AddParameter("Request.UserAgent", request.Headers.UserAgent.ToString());
             }
 
             if ((fields & RequestTrafficLoggingFields.RequestHeaders) != 0)
             {
-                if (captureRawHeaders)
-                {
-                    AddRawHeaders(logContext, request.Headers, "RequestHeader.");
-                }
-                else if (options.SensitiveValueMode == SensitiveValueMode.Hash)
-                {
-                    AddSensitiveHeaderHashes(logContext, request.Headers, options.SensitiveHeaders, "RequestHeader.");
-                }
+                AddHeaders(
+                    logContext,
+                    request.Headers,
+                    options.RequestHeaders,
+                    options,
+                    "Request.Header.");
+            }
+
+            if ((fields & RequestTrafficLoggingFields.Core) != 0)
+            {
+                logContext.AddParameter("Request.Body.ContentType", request.ContentType);
+                logContext.AddParameter("Request.Body.DeclaredLength", request.ContentLength);
+            }
+
+            if ((fields & RequestTrafficLoggingFields.RequestBody) != 0)
+            {
+                logContext.AddParameter(
+                    "Request.Body.Truncated",
+                    IsKnownBodyLargerThanCaptureLimit(request.ContentLength, options.RequestBodyLimit));
             }
 
             return ValueTask.CompletedTask;
@@ -84,59 +100,13 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
         {
             ArgumentNullException.ThrowIfNull(logContext);
 
-            RequestTrafficLoggingState? state = logContext.HttpContext.Features.Get<RequestTrafficLoggingState>();
-            if (state is null)
-            {
-                return ValueTask.CompletedTask;
-            }
-
-            if ((state.Options.Fields & RequestTrafficLoggingFields.ResponseHeaders) != 0)
-            {
-                if (state.Options.HeaderCaptureMode == HeaderCaptureMode.AllRaw)
-                {
-                    AddRawHeaders(logContext, logContext.HttpContext.Response.Headers, "ResponseHeader.");
-                }
-                else if (state.Options.SensitiveValueMode == SensitiveValueMode.Hash)
-                {
-                    AddSensitiveHeaderHashes(
-                        logContext,
-                        logContext.HttpContext.Response.Headers,
-                        state.Options.SensitiveHeaders,
-                        "ResponseHeader.");
-                }
-            }
-
+            // Response fields are emitted by the completion middleware so their order and final values are stable.
             return ValueTask.CompletedTask;
         }
 
         private static HttpLoggingFields ToHttpLoggingFields(RequestTrafficLoggingFields fields)
         {
             HttpLoggingFields result = HttpLoggingFields.None;
-
-            if ((fields & RequestTrafficLoggingFields.Core) != 0)
-            {
-                result |=
-                    HttpLoggingFields.RequestProtocol |
-                    HttpLoggingFields.RequestMethod |
-                    HttpLoggingFields.RequestScheme |
-                    HttpLoggingFields.RequestPath |
-                    HttpLoggingFields.ResponseStatusCode;
-            }
-
-            if ((fields & RequestTrafficLoggingFields.Query) != 0)
-            {
-                result |= HttpLoggingFields.RequestQuery;
-            }
-
-            if ((fields & RequestTrafficLoggingFields.RequestHeaders) != 0)
-            {
-                result |= HttpLoggingFields.RequestHeaders;
-            }
-
-            if ((fields & RequestTrafficLoggingFields.ResponseHeaders) != 0)
-            {
-                result |= HttpLoggingFields.ResponseHeaders;
-            }
 
             if ((fields & RequestTrafficLoggingFields.RequestBody) != 0)
             {
@@ -162,46 +132,71 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             return context.TraceIdentifier;
         }
 
-        private static void AddRawHeaders(
+        internal static void AddHeaders(
             HttpLoggingInterceptorContext logContext,
             IHeaderDictionary headers,
+            System.Collections.Generic.ISet<string> allowedHeaders,
+            RequestTrafficLoggingOptions options,
             string propertyPrefix)
         {
             foreach (KeyValuePair<string, StringValues> header in headers)
             {
                 string name = propertyPrefix + header.Key;
-                if (header.Value.Count <= 1)
+                bool sensitive = options.SensitiveHeaders.Contains(header.Key);
+                bool include = options.HeaderCaptureMode == HeaderCaptureMode.AllRaw ||
+                    (sensitive && options.SensitiveValueMode == SensitiveValueMode.Include) ||
+                    (!sensitive && allowedHeaders.Contains(header.Key));
+
+                if (include)
                 {
-                    logContext.AddParameter(name, header.Value.Count == 0 ? string.Empty : header.Value[0] ?? string.Empty);
-                    continue;
+                    AddHeaderValues(logContext, name, header.Value);
+                }
+                else
+                {
+                    logContext.AddParameter(name, "[Redacted]");
                 }
 
-                for (var index = 0; index < header.Value.Count; index++)
+                if (sensitive && options.SensitiveValueMode == SensitiveValueMode.Hash)
                 {
-                    logContext.AddParameter(
-                        name + "[" + index.ToString(CultureInfo.InvariantCulture) + "]",
-                        header.Value[index] ?? string.Empty);
+                    AddHeaderHash(logContext, name, header.Value);
                 }
             }
         }
 
-        private static void AddSensitiveHeaderHashes(
+        private static void AddHeaderValues(
             HttpLoggingInterceptorContext logContext,
-            IHeaderDictionary headers,
-            System.Collections.Generic.ISet<string> sensitiveHeaders,
-            string propertyPrefix)
+            string propertyName,
+            StringValues values)
         {
-            foreach (string headerName in sensitiveHeaders)
+            if (values.Count <= 1)
             {
-                if (!headers.TryGetValue(headerName, out StringValues values) || values.Count == 0)
-                {
-                    continue;
-                }
-
-                string value = values.ToString();
-                byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
-                logContext.AddParameter(propertyPrefix + headerName + "Hash", "SHA256:" + Convert.ToHexString(hash));
+                logContext.AddParameter(
+                    propertyName,
+                    values.Count == 0 ? string.Empty : values[0] ?? string.Empty);
+                return;
             }
+
+            for (var index = 0; index < values.Count; index++)
+            {
+                logContext.AddParameter(
+                    propertyName + "[" + index.ToString(CultureInfo.InvariantCulture) + "]",
+                    values[index] ?? string.Empty);
+            }
+        }
+
+        private static void AddHeaderHash(
+            HttpLoggingInterceptorContext logContext,
+            string propertyName,
+            StringValues values)
+        {
+            string value = values.ToString();
+            byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(value));
+            logContext.AddParameter(propertyName + ".Hash", "SHA256:" + Convert.ToHexString(hash));
+        }
+
+        private static bool? IsKnownBodyLargerThanCaptureLimit(long? declaredLength, int limit)
+        {
+            return declaredLength.HasValue ? declaredLength.Value > limit : null;
         }
     }
 

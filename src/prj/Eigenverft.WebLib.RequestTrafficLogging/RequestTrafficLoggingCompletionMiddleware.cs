@@ -62,46 +62,19 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             bool requestAborted = context.RequestAborted.IsCancellationRequested;
             string outcome = ClassifyOutcome(caughtException, handledException, requestAborted);
 
-            state.LogContext.AddParameter("PipelineOutcome", outcome);
-
             if ((fields & RequestTrafficLoggingFields.Core) != 0)
             {
                 IClientNetworkFeature? clientNetwork = context.Features.Get<IClientNetworkFeature>();
                 IPAddress? remoteAddress = clientNetwork?.RemoteIpAddress ?? context.Connection.RemoteIpAddress;
 
-                state.LogContext.AddParameter("RemoteIpAddress", remoteAddress?.ToString());
-                state.LogContext.AddParameter("ResponseContentType", context.Response.ContentType);
-                state.LogContext.AddParameter("ResponseContentLength", context.Response.ContentLength);
-                state.LogContext.AddParameter("ResponseStartedAtCapture", context.Response.HasStarted);
-                state.LogContext.AddParameter("Aborted", requestAborted);
-                state.LogContext.AddParameter(
-                    "DurationMs",
-                    state.TimeProvider.GetElapsedTime(state.StartTimestamp).TotalMilliseconds);
-                state.LogContext.AddParameter("ExceptionType", terminalException?.GetType().FullName);
-            }
-
-            if ((fields & RequestTrafficLoggingFields.Routing) != 0)
-            {
-                Endpoint? endpoint = context.GetEndpoint();
-                state.LogContext.AddParameter("Endpoint", endpoint?.DisplayName);
-                state.LogContext.AddParameter(
-                    "RoutePattern",
-                    endpoint is RouteEndpoint routeEndpoint ? routeEndpoint.RoutePattern.RawText : null);
-            }
-
-            if ((fields & RequestTrafficLoggingFields.Identity) != 0)
-            {
-                IIdentity? identity = context.User?.Identity;
-                state.LogContext.AddParameter("IdentityAuthenticated", identity?.IsAuthenticated ?? false);
-                state.LogContext.AddParameter("IdentityName", identity?.Name);
-                state.LogContext.AddParameter("IdentityAuthenticationType", identity?.AuthenticationType);
+                state.LogContext.AddParameter("Connection.Remote.IpAddress", remoteAddress?.ToString());
             }
 
             if ((fields & RequestTrafficLoggingFields.Connection) != 0)
             {
-                state.LogContext.AddParameter("LocalIpAddress", context.Connection.LocalIpAddress?.ToString());
-                state.LogContext.AddParameter("LocalPort", context.Connection.LocalPort);
-                state.LogContext.AddParameter("RemotePort", context.Connection.RemotePort);
+                state.LogContext.AddParameter("Connection.Remote.Port", context.Connection.RemotePort);
+                state.LogContext.AddParameter("Connection.Local.IpAddress", context.Connection.LocalIpAddress?.ToString());
+                state.LogContext.AddParameter("Connection.Local.Port", context.Connection.LocalPort);
             }
 
             if ((fields & RequestTrafficLoggingFields.ForwardedInformation) != 0)
@@ -109,14 +82,59 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
                 AddForwardedInformation(context, state);
             }
 
-            if ((fields & RequestTrafficLoggingFields.RequestBody) != 0)
+            if ((fields & RequestTrafficLoggingFields.Identity) != 0)
             {
-                AddRequestBodyMetadata(context, state);
+                IIdentity? identity = context.User?.Identity;
+                state.LogContext.AddParameter("Identity.Authenticated", identity?.IsAuthenticated ?? false);
+                state.LogContext.AddParameter("Identity.Name", identity?.Name);
+                state.LogContext.AddParameter("Identity.AuthenticationType", identity?.AuthenticationType);
+            }
+
+            if ((fields & RequestTrafficLoggingFields.Routing) != 0)
+            {
+                Endpoint? endpoint = context.GetEndpoint();
+                state.LogContext.AddParameter("Routing.Endpoint", endpoint?.DisplayName);
+                state.LogContext.AddParameter(
+                    "Routing.Pattern",
+                    endpoint is RouteEndpoint routeEndpoint ? routeEndpoint.RoutePattern.RawText : null);
+            }
+
+            if ((fields & RequestTrafficLoggingFields.Core) != 0)
+            {
+                state.LogContext.AddParameter("Response.StatusCode", context.Response.StatusCode);
+                state.LogContext.AddParameter("Response.Started", context.Response.HasStarted);
+            }
+
+            if ((fields & RequestTrafficLoggingFields.ResponseHeaders) != 0)
+            {
+                RequestTrafficLoggingInterceptor.AddHeaders(
+                    state.LogContext,
+                    context.Response.Headers,
+                    state.Options.ResponseHeaders,
+                    state.Options,
+                    "Response.Header.");
+            }
+
+            if ((fields & RequestTrafficLoggingFields.Core) != 0)
+            {
+                state.LogContext.AddParameter("Response.Body.ContentType", context.Response.ContentType);
+                state.LogContext.AddParameter("Response.Body.DeclaredLength", context.Response.ContentLength);
             }
 
             if ((fields & RequestTrafficLoggingFields.ResponseBody) != 0)
             {
                 AddResponseBodyMetadata(context, state);
+            }
+
+            state.LogContext.AddParameter("Pipeline.Outcome", outcome);
+
+            if ((fields & RequestTrafficLoggingFields.Core) != 0)
+            {
+                state.LogContext.AddParameter("Pipeline.Aborted", requestAborted);
+                state.LogContext.AddParameter(
+                    "Pipeline.DurationMs",
+                    state.TimeProvider.GetElapsedTime(state.StartTimestamp).TotalMilliseconds);
+                state.LogContext.AddParameter("Pipeline.ExceptionType", terminalException?.GetType().FullName);
             }
         }
 
@@ -149,8 +167,8 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             IClientNetworkFeature? feature = context.Features.Get<IClientNetworkFeature>();
             if (feature is null)
             {
-                state.LogContext.AddParameter("ForwardedIpChain", null);
-                state.LogContext.AddParameter("HasMalformedForwardedIpInformation", false);
+                state.LogContext.AddParameter("Connection.ForwardedIpChain", null);
+                state.LogContext.AddParameter("Connection.ForwardedIpMalformed", false);
                 return;
             }
 
@@ -162,28 +180,18 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
                 values[i] = item.Source + ":" + (item.Address?.ToString() ?? item.RawValue);
             }
 
-            state.LogContext.AddParameter("ForwardedIpChain", string.Join(" -> ", values));
+            state.LogContext.AddParameter("Connection.ForwardedIpChain", string.Join(" -> ", values));
             state.LogContext.AddParameter(
-                "HasMalformedForwardedIpInformation",
+                "Connection.ForwardedIpMalformed",
                 feature.HasMalformedForwardedIpInformation);
-        }
-
-        private static void AddRequestBodyMetadata(HttpContext context, RequestTrafficLoggingState state)
-        {
-            long? totalBytes = context.Request.ContentLength;
-            state.LogContext.AddParameter("RequestBodyTotalBytes", totalBytes);
-            state.LogContext.AddParameter(
-                "RequestBodyTruncated",
-                IsKnownBodyLargerThanCaptureLimit(totalBytes, state.Options.RequestBodyLimit));
         }
 
         private static void AddResponseBodyMetadata(HttpContext context, RequestTrafficLoggingState state)
         {
-            long? totalBytes = context.Response.ContentLength;
-            state.LogContext.AddParameter("ResponseBodyTotalBytes", totalBytes);
+            long? declaredLength = context.Response.ContentLength;
             state.LogContext.AddParameter(
-                "ResponseBodyTruncated",
-                IsKnownBodyLargerThanCaptureLimit(totalBytes, state.Options.ResponseBodyLimit));
+                "Response.Body.Truncated",
+                IsKnownBodyLargerThanCaptureLimit(declaredLength, state.Options.ResponseBodyLimit));
         }
 
         private static bool? IsKnownBodyLargerThanCaptureLimit(long? totalBytes, int limit)
