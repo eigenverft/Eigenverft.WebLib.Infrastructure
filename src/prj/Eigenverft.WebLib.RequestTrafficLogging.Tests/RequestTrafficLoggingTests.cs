@@ -169,6 +169,30 @@ public sealed class RequestTrafficLoggingTests
     }
 
     [TestMethod]
+    public async Task CancellationSignal_WhenPipelineReturnsNormally_IsCompletedAndPreserved()
+    {
+        using var host = new RequestTrafficLoggingTestHost();
+        using var cancellation = new CancellationTokenSource();
+        RequestDelegate pipeline = host.BuildPipeline(app =>
+            app.Run(context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                cancellation.Cancel();
+                return Task.CompletedTask;
+            }));
+        DefaultHttpContext context = host.CreateContext();
+        context.RequestAborted = cancellation.Token;
+
+        await pipeline(context);
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("Completed", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.AreEqual(StatusCodes.Status204NoContent, record.GetProperty("Response.StatusCode"));
+        Assert.IsNull(record.GetProperty("Pipeline.ExceptionType"));
+    }
+
+    [TestMethod]
     public async Task ClientAbort_IsAbortedAndCancellationStillPropagates()
     {
         using var host = new RequestTrafficLoggingTestHost();
@@ -196,6 +220,39 @@ public sealed class RequestTrafficLoggingTests
         CapturedLogRecord record = host.SingleTrafficRecord();
         Assert.AreEqual("Aborted", record.GetProperty("Pipeline.Outcome"));
         Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.AreEqual(false, record.GetProperty("Response.Started"));
+        Assert.AreEqual(typeof(OperationCanceledException).FullName, record.GetProperty("Pipeline.ExceptionType"));
+    }
+
+    [TestMethod]
+    public async Task ClientDisconnectIOException_WithCancellationSignal_IsAborted()
+    {
+        using var host = new RequestTrafficLoggingTestHost();
+        using var cancellation = new CancellationTokenSource();
+        RequestDelegate pipeline = host.BuildPipeline(app =>
+            app.Run(_ =>
+            {
+                cancellation.Cancel();
+                return Task.FromException(new IOException("The client disconnected."));
+            }));
+        DefaultHttpContext context = host.CreateContext();
+        context.RequestAborted = cancellation.Token;
+
+        IOException? thrown = null;
+        try
+        {
+            await pipeline(context);
+        }
+        catch (IOException exception)
+        {
+            thrown = exception;
+        }
+
+        Assert.IsNotNull(thrown);
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("Aborted", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.AreEqual(typeof(IOException).FullName, record.GetProperty("Pipeline.ExceptionType"));
     }
 
     [TestMethod]
@@ -235,6 +292,74 @@ public sealed class RequestTrafficLoggingTests
         Assert.AreEqual(StatusCodes.Status200OK, record.GetProperty("Response.StatusCode"));
         Assert.AreEqual(true, record.GetProperty("Response.Started"));
         Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.AreEqual(typeof(OperationCanceledException).FullName, record.GetProperty("Pipeline.ExceptionType"));
+    }
+
+    [TestMethod]
+    public async Task StartedResponse_WithLateCancellationSignal_IsCompleted()
+    {
+        using var host = new RequestTrafficLoggingTestHost();
+        using var cancellation = new CancellationTokenSource();
+        StartedResponseFeature? startedFeature = null;
+
+        RequestDelegate pipeline = host.BuildPipeline(app =>
+            app.Run(context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                startedFeature!.HasStartedValue = true;
+                cancellation.Cancel();
+                return Task.CompletedTask;
+            }));
+
+        DefaultHttpContext context = host.CreateContext();
+        context.RequestAborted = cancellation.Token;
+        startedFeature = new StartedResponseFeature(context.Features.GetRequiredFeature<IHttpResponseFeature>());
+        context.Features.Set<IHttpResponseFeature>(startedFeature);
+
+        await pipeline(context);
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("Completed", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(StatusCodes.Status200OK, record.GetProperty("Response.StatusCode"));
+        Assert.AreEqual(true, record.GetProperty("Response.Started"));
+        Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.IsNull(record.GetProperty("Pipeline.ExceptionType"));
+    }
+
+    [TestMethod]
+    public async Task CompletedSseResponse_WithLateCancellationSignal_IsCompleted()
+    {
+        using var host = new RequestTrafficLoggingTestHost(options =>
+            options.Fields |= RequestTrafficLoggingFields.ResponseBody);
+        using var cancellation = new CancellationTokenSource();
+        StartedResponseFeature? startedFeature = null;
+        const string responseBody = "event: message\ndata: {\"result\":{\"resultType\":\"complete\"}}\n\n";
+
+        RequestDelegate pipeline = host.BuildPipeline(app =>
+            app.Run(async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                context.Response.ContentType = "text/event-stream";
+                await context.Response.WriteAsync(responseBody);
+                startedFeature!.HasStartedValue = true;
+                cancellation.Cancel();
+            }));
+
+        DefaultHttpContext context = host.CreateContext("/mcp");
+        context.RequestAborted = cancellation.Token;
+        startedFeature = new StartedResponseFeature(context.Features.GetRequiredFeature<IHttpResponseFeature>());
+        context.Features.Set<IHttpResponseFeature>(startedFeature);
+
+        await pipeline(context);
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("Completed", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(StatusCodes.Status200OK, record.GetProperty("Response.StatusCode"));
+        Assert.AreEqual(true, record.GetProperty("Response.Started"));
+        Assert.AreEqual("text/event-stream", record.GetProperty("Response.Body.ContentType"));
+        Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.IsNull(record.GetProperty("Pipeline.ExceptionType"));
+        StringAssert.Contains(record.GetProperty("ResponseBody")?.ToString(), "\"resultType\":\"complete\"");
     }
 
     [TestMethod]

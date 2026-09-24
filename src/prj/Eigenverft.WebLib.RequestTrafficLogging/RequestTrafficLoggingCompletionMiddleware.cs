@@ -159,7 +159,7 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
                 return "Faulted";
             }
 
-            return requestAborted ? "Aborted" : "Completed";
+            return "Completed";
         }
 
         private static void AddForwardedInformation(HttpContext context, RequestTrafficLoggingState state)

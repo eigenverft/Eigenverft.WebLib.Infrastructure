@@ -1,3 +1,11 @@
+Corrected Pipeline.Outcome cancellation semantics.
+
+- Keeps Pipeline.Outcome=Completed when the downstream pipeline returned normally, even if RequestAborted is set at the final snapshot.
+- Reserves Pipeline.Outcome=Aborted for an escaping OperationCanceledException or IOException accompanied by the cancellation signal.
+- Keeps Pipeline.Aborted as the independent raw cancellation signal, so completed streaming and SSE responses can report Completed together with Pipeline.Aborted=true.
+- Preserves all hierarchical field names introduced in 1.0.0.7.
+- This is a breaking behavioral change for log queries or dashboards that treated every observed cancellation signal as Pipeline.Outcome=Aborted.
+
 Introduced hierarchical traffic diagnostics fields as the default output contract.
 
 - Groups fields under Request.*, Connection.*, Identity.*, Routing.*, Response.*, and Pipeline.*.

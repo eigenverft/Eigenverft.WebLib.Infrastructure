@@ -12,7 +12,13 @@ The default record uses hierarchical property names in a stable diagnostic order
 - response: `Response.*`, `Response.Header.*`, and `Response.Body.*`
 - pipeline result: `Pipeline.Outcome`, `Pipeline.Aborted`, `Pipeline.DurationMs`, and `Pipeline.ExceptionType`
 
-`Pipeline.Outcome` describes whether the middleware pipeline returned, faulted, or was aborted; it is not the HTTP success status. `Response.Started` is sampled when the record completes. `Connection.ForwardedIpChain` is rendered as a readable ` -> `-separated chain.
+`Pipeline.Outcome` describes how the middleware pipeline finished; it is independent of the HTTP status:
+
+- `Completed`: the downstream pipeline returned normally and no handled-exception feature remained. This can coexist with `Pipeline.Aborted: true` when the cancellation signal was observed only at the final snapshot, as commonly happens after a completed streaming or SSE response.
+- `Aborted`: an `OperationCanceledException` or `IOException` escaped while `RequestAborted` was set.
+- `Faulted`: another exception escaped, or the exception-handler feature reports an exception that was handled into a response.
+
+`Pipeline.Aborted` is the raw value of `RequestAborted.IsCancellationRequested` at completion and does not by itself determine `Pipeline.Outcome`. `Response.Started` is sampled at the same point. `Connection.ForwardedIpChain` is rendered as a readable ` -> `-separated chain.
 
 The body text itself remains the framework-owned `RequestBody` or `ResponseBody` field. Its related WebLib metadata uses `Request.Body.ContentType`, `Request.Body.DeclaredLength`, `Request.Body.Truncated` and the corresponding `Response.Body.*` names. `DeclaredLength` is the HTTP `Content-Length` when known, not a byte counter invented by the logger.
 
