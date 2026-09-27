@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -21,25 +21,51 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
 {
     /// <summary>
-    /// Exercises one concrete durable handler without making EF Core or SQLite part of the
-    /// receiver package. The host owns the DbContext/provider choice.
+    /// Exercises the product EF Core integration with SQLite as the concrete test provider.
+    /// Provider selection, connection configuration, and migrations remain host-owned.
     /// </summary>
     [TestClass]
-    public sealed class DurableEfCoreReferenceTests
+    public sealed class EntityFrameworkCorePersistenceTests
     {
         [TestMethod]
-        public async Task ReferenceHandlerPreservesRepeatedReceivesAndUsesServerLifetimeToken()
+        public void EntityFrameworkCorePublicGuardsRejectNullInfrastructure()
+        {
+            Assert.ThrowsExactly<ArgumentNullException>(
+                () => SerilogRelayReceiverEntityFrameworkCoreServiceCollectionExtensions
+                    .AddSerilogRelayReceiverEntityFrameworkCore<TestRelayDbContext>(null!));
+
+            Assert.ThrowsExactly<ArgumentNullException>(
+                () => SerilogRelayReceiverModelBuilderExtensions
+                    .ConfigureSerilogRelayReceiver(null!));
+
+            Assert.ThrowsExactly<ArgumentNullException>(
+                () => new EntityFrameworkCoreSerilogRelayBatchHandler<TestRelayDbContext>(null!));
+
+            Assert.ThrowsExactly<ArgumentNullException>(
+                () => SerilogRelayReceiverEntityFrameworkCoreEndpointRouteBuilderExtensions
+                    .MapSerilogRelayReceiverEntityFrameworkCore<TestRelayDbContext>(
+                        null!,
+                        "/logs"));
+        }
+
+        [TestMethod]
+        public async Task EntityFrameworkCoreReceiverPersistsCompleteBatchAndRepeatedReceives()
         {
             string databasePath = CreateDatabasePath();
-            var control = new ReferenceHandlerControl();
+            var control = new SaveControl();
             WebApplication app = await CreateApplicationAsync(databasePath, control);
 
             try
             {
                 using HttpClient client = await StartClientAsync(app);
                 SerilogRelayBatch batch = CreateBatch("App.One", "App.Two");
-                string repeatedEventId = batch.Logs![0].EventId;
+                batch.Logs![0].Exception = "exception-text";
+                batch.Logs[0].Properties = "{\"Property\":\"Value\"}";
+
+                string firstBatchId = batch.BatchId;
+                string repeatedEventId = batch.Logs[0].EventId;
                 string originalMessage = batch.Logs[0].RenderMessage;
+                DateTimeOffset beforeReceive = DateTimeOffset.UtcNow;
 
                 using HttpResponseMessage firstResponse =
                     await client.PostAsJsonAsync("/logs", batch);
@@ -52,12 +78,8 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                     await client.PostAsJsonAsync("/logs", batch);
                 Assert.AreEqual(HttpStatusCode.NoContent, secondResponse.StatusCode);
 
-                IHostApplicationLifetime lifetime =
-                    app.Services.GetRequiredService<IHostApplicationLifetime>();
-                Assert.AreEqual(lifetime.ApplicationStopping, control.LastCancellationToken);
-                Assert.IsFalse(control.LastCancellationToken.IsCancellationRequested);
-
-                List<ReferenceReceivedEvent> rows =
+                DateTimeOffset afterReceive = DateTimeOffset.UtcNow;
+                List<SerilogRelayReceivedEvent> rows =
                     await ReadRowsAsync(databasePath);
 
                 Assert.AreEqual(4, rows.Count);
@@ -65,15 +87,44 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                     new[] { "App.One", "App.Two" },
                     rows.Select(row => row.ApplicationId).Distinct().ToArray());
 
-                ReferenceReceivedEvent[] repeatedRows = rows
+                SerilogRelayReceivedEvent first = rows[0];
+                Assert.IsTrue(first.ReceiveId > 0);
+                Assert.AreEqual(1, first.ProtocolVersion);
+                Assert.AreEqual(firstBatchId, first.BatchId);
+                Assert.AreEqual(batch.Timestamp, first.BatchTimestamp);
+                Assert.AreEqual(2, first.BatchCount);
+                Assert.AreEqual(1L, first.SenderLocalId);
+                Assert.AreEqual(repeatedEventId, first.EventId);
+                Assert.AreEqual("App.One", first.ApplicationId);
+                Assert.AreEqual("machine", first.MachineId);
+                Assert.AreEqual(100, first.ProcessId);
+                Assert.AreEqual(batch.Logs[0].Timestamp, first.Timestamp);
+                Assert.AreEqual("Information", first.Level);
+                Assert.AreEqual(originalMessage, first.RenderMessage);
+                Assert.AreEqual("message {Index}", first.MessageTemplate);
+                Assert.AreEqual("trace", first.TraceId);
+                Assert.AreEqual("span", first.SpanId);
+                Assert.AreEqual("exception-text", first.Exception);
+                Assert.AreEqual("{\"Property\":\"Value\"}", first.Properties);
+                Assert.IsTrue(first.ReceivedAtUtc >= beforeReceive);
+                Assert.IsTrue(first.ReceivedAtUtc <= afterReceive);
+
+                SerilogRelayReceivedEvent[] repeatedRows = rows
                     .Where(row => row.EventId == repeatedEventId)
                     .OrderBy(row => row.ReceiveId)
                     .ToArray();
 
                 Assert.AreEqual(2, repeatedRows.Length);
                 Assert.AreEqual(originalMessage, repeatedRows[0].RenderMessage);
-                Assert.AreEqual("changed repeated receive", repeatedRows[1].RenderMessage);
-                Assert.AreNotEqual(repeatedRows[0].BatchId, repeatedRows[1].BatchId);
+                Assert.AreEqual(
+                    "changed repeated receive",
+                    repeatedRows[1].RenderMessage);
+                Assert.AreNotEqual(
+                    repeatedRows[0].BatchId,
+                    repeatedRows[1].BatchId);
+                Assert.AreNotEqual(
+                    repeatedRows[0].ReceiveId,
+                    repeatedRows[1].ReceiveId);
             }
             finally
             {
@@ -82,12 +133,12 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
         }
 
         [TestMethod]
-        public async Task ReferenceHandlerCommitsWholeBatchBeforeEndpointReturnsSuccess()
+        public async Task EntityFrameworkCoreReceiverCompletesSaveBeforeReturningSuccess()
         {
             string databasePath = CreateDatabasePath();
-            var control = new ReferenceHandlerControl
+            var control = new SaveControl
             {
-                PauseBeforeCommit = true,
+                PauseBeforeSave = true,
             };
             WebApplication app = await CreateApplicationAsync(databasePath, control);
 
@@ -96,35 +147,38 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                 using HttpClient client = await StartClientAsync(app);
 
                 Task<HttpResponseMessage> responseTask =
-                    client.PostAsJsonAsync("/logs", CreateBatch("App.One", "App.Two"));
+                    client.PostAsJsonAsync(
+                        "/logs",
+                        CreateBatch("App.One", "App.Two"));
 
-                await control.BeforeCommitReached.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                await control.BeforeSaveReached.Task.WaitAsync(TimeSpan.FromSeconds(5));
                 Assert.IsFalse(responseTask.IsCompleted);
 
-                control.ContinueCommit.TrySetResult(true);
+                control.ContinueSave.TrySetResult(true);
+                await control.Saved.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
                 using HttpResponseMessage response =
                     await responseTask.WaitAsync(TimeSpan.FromSeconds(5));
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
 
-                List<ReferenceReceivedEvent> rows =
+                List<SerilogRelayReceivedEvent> rows =
                     await ReadRowsAsync(databasePath);
                 Assert.AreEqual(2, rows.Count);
             }
             finally
             {
-                control.ContinueCommit.TrySetResult(true);
+                control.ContinueSave.TrySetResult(true);
                 await DisposeApplicationAndDatabaseAsync(app, databasePath);
             }
         }
 
         [TestMethod]
-        public async Task ClientCancellationAfterValidatedHandoffDoesNotCancelCommit()
+        public async Task ClientCancellationAfterValidatedHandoffDoesNotCancelEfCoreSave()
         {
             string databasePath = CreateDatabasePath();
-            var control = new ReferenceHandlerControl
+            var control = new SaveControl
             {
-                PauseBeforeCommit = true,
+                PauseBeforeSave = true,
             };
             WebApplication app = await CreateApplicationAsync(databasePath, control);
 
@@ -139,45 +193,40 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                         CreateBatch("App.One", "App.Two"),
                         clientCancellation.Token);
 
-                await control.BeforeCommitReached.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                await control.BeforeSaveReached.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
                 clientCancellation.Cancel();
 
-                bool clientObservedCancellation = false;
-                try
-                {
-                    using HttpResponseMessage ignored =
-                        await responseTask.WaitAsync(TimeSpan.FromSeconds(5));
-                }
-                catch (OperationCanceledException)
-                {
-                    clientObservedCancellation = true;
-                }
+                await Assert.ThrowsExactlyAsync<TaskCanceledException>(
+                    async () =>
+                    {
+                        using HttpResponseMessage ignored =
+                            await responseTask.WaitAsync(TimeSpan.FromSeconds(5));
+                    });
 
-                Assert.IsTrue(clientObservedCancellation);
-                Assert.IsFalse(control.LastCancellationToken.IsCancellationRequested);
+                Assert.IsFalse(control.LastSaveCancellationToken.IsCancellationRequested);
 
-                control.ContinueCommit.TrySetResult(true);
-                await control.Committed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                control.ContinueSave.TrySetResult(true);
+                await control.Saved.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
-                List<ReferenceReceivedEvent> rows =
+                List<SerilogRelayReceivedEvent> rows =
                     await ReadRowsAsync(databasePath);
                 Assert.AreEqual(2, rows.Count);
             }
             finally
             {
-                control.ContinueCommit.TrySetResult(true);
+                control.ContinueSave.TrySetResult(true);
                 await DisposeApplicationAndDatabaseAsync(app, databasePath);
             }
         }
 
         [TestMethod]
-        public async Task HostShutdownCancelsInFlightDurableHandlingAndRollsBack()
+        public async Task HostShutdownCancelsEfCoreSaveAndReturnsServiceUnavailable()
         {
             string databasePath = CreateDatabasePath();
-            var control = new ReferenceHandlerControl
+            var control = new SaveControl
             {
-                PauseBeforeCommit = true,
+                PauseBeforeSave = true,
             };
             WebApplication app = await CreateApplicationAsync(databasePath, control);
 
@@ -190,45 +239,40 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                         "/logs",
                         CreateBatch("App.One", "App.Two"));
 
-                await control.BeforeCommitReached.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                await control.BeforeSaveReached.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
                 IHostApplicationLifetime lifetime =
                     app.Services.GetRequiredService<IHostApplicationLifetime>();
                 lifetime.StopApplication();
-
-                await control.CancellationObserved.Task
-                    .WaitAsync(TimeSpan.FromSeconds(5));
 
                 using HttpResponseMessage response =
                     await responseTask.WaitAsync(TimeSpan.FromSeconds(5));
                 Assert.AreEqual(
                     HttpStatusCode.ServiceUnavailable,
                     response.StatusCode);
-                Assert.IsTrue(control.LastCancellationToken.IsCancellationRequested);
+                Assert.IsTrue(control.LastSaveCancellationToken.IsCancellationRequested);
 
-                List<ReferenceReceivedEvent> rows =
+                List<SerilogRelayReceivedEvent> rows =
                     await ReadRowsAsync(databasePath);
                 Assert.AreEqual(0, rows.Count);
             }
             finally
             {
-                control.ContinueCommit.TrySetResult(true);
+                control.ContinueSave.TrySetResult(true);
                 await DisposeApplicationAndDatabaseAsync(app, databasePath);
             }
         }
 
         [TestMethod]
-        public async Task ReferenceHandlerRollsBackWholeBatchWhenDurableHandlingFails()
+        public async Task EfCoreSaveFailureRollsBackTheWholeBatch()
         {
             string databasePath = CreateDatabasePath();
-            var control = new ReferenceHandlerControl
-            {
-                FailAfterSave = true,
-            };
+            var control = new SaveControl();
             WebApplication app = await CreateApplicationAsync(databasePath, control);
 
             try
             {
+                await InstallRejectSecondApplicationTriggerAsync(app);
                 using HttpClient client = await StartClientAsync(app);
 
                 using HttpResponseMessage response =
@@ -240,7 +284,7 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                     HttpStatusCode.InternalServerError,
                     response.StatusCode);
 
-                List<ReferenceReceivedEvent> rows =
+                List<SerilogRelayReceivedEvent> rows =
                     await ReadRowsAsync(databasePath);
                 Assert.AreEqual(0, rows.Count);
             }
@@ -252,27 +296,53 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
 
         private static async Task<WebApplication> CreateApplicationAsync(
             string databasePath,
-            ReferenceHandlerControl control)
+            SaveControl control)
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder();
             builder.WebHost.UseUrls("http://127.0.0.1:0");
 
-            builder.Services.AddSingleton(control);
-            builder.Services.AddDbContext<ReferenceDbContext>(
-                options => options.UseSqlite($"Data Source={databasePath}"));
-            builder.Services.AddSerilogRelayReceiver<ReferenceDurableHandler>();
+            builder.Services.AddDbContextFactory<TestRelayDbContext>(
+                options =>
+                {
+                    options.UseSqlite($"Data Source={databasePath}");
+                    options.AddInterceptors(
+                        new ControlledSaveChangesInterceptor(control));
+                });
+            builder.Services
+                .AddSerilogRelayReceiverEntityFrameworkCore<TestRelayDbContext>();
 
             WebApplication app = builder.Build();
 
-            using (IServiceScope scope = app.Services.CreateScope())
+            IDbContextFactory<TestRelayDbContext> databaseFactory =
+                app.Services.GetRequiredService<IDbContextFactory<TestRelayDbContext>>();
+            await using (TestRelayDbContext database =
+                await databaseFactory.CreateDbContextAsync())
             {
-                ReferenceDbContext database =
-                    scope.ServiceProvider.GetRequiredService<ReferenceDbContext>();
                 await database.Database.EnsureCreatedAsync();
             }
 
-            app.MapSerilogRelayReceiver<ReferenceDurableHandler>("/logs");
+            app.MapSerilogRelayReceiverEntityFrameworkCore<TestRelayDbContext>(
+                "/logs");
             return app;
+        }
+
+        private static async Task InstallRejectSecondApplicationTriggerAsync(
+            WebApplication app)
+        {
+            IDbContextFactory<TestRelayDbContext> databaseFactory =
+                app.Services.GetRequiredService<IDbContextFactory<TestRelayDbContext>>();
+            await using TestRelayDbContext database =
+                await databaseFactory.CreateDbContextAsync();
+
+            await database.Database.ExecuteSqlRawAsync(
+                """
+                CREATE TRIGGER RejectAppTwo
+                BEFORE INSERT ON "SerilogRelayReceivedEvents"
+                WHEN NEW."ApplicationId" = 'App.Two'
+                BEGIN
+                    SELECT RAISE(ABORT, 'App.Two rejected for rollback test');
+                END;
+                """);
         }
 
         private static async Task<HttpClient> StartClientAsync(WebApplication app)
@@ -291,15 +361,15 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
             };
         }
 
-        private static async Task<List<ReferenceReceivedEvent>> ReadRowsAsync(
+        private static async Task<List<SerilogRelayReceivedEvent>> ReadRowsAsync(
             string databasePath)
         {
-            var options = new DbContextOptionsBuilder<ReferenceDbContext>()
+            var options = new DbContextOptionsBuilder<TestRelayDbContext>()
                 .UseSqlite($"Data Source={databasePath}")
                 .Options;
 
-            await using var database = new ReferenceDbContext(options);
-            return await database.ReceivedEvents
+            await using var database = new TestRelayDbContext(options);
+            return await database.Set<SerilogRelayReceivedEvent>()
                 .AsNoTracking()
                 .OrderBy(row => row.ReceiveId)
                 .ToListAsync();
@@ -362,162 +432,75 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
             };
         }
 
-        private sealed class ReferenceHandlerControl
+        private sealed class SaveControl
         {
-            internal bool FailAfterSave { get; set; }
+            internal bool PauseBeforeSave { get; set; }
 
-            internal bool PauseBeforeCommit { get; set; }
+            internal CancellationToken LastSaveCancellationToken { get; set; }
 
-            internal CancellationToken LastCancellationToken { get; set; }
-
-            internal TaskCompletionSource<bool> BeforeCommitReached { get; } =
+            internal TaskCompletionSource<bool> BeforeSaveReached { get; } =
                 new TaskCompletionSource<bool>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
 
-            internal TaskCompletionSource<bool> ContinueCommit { get; } =
+            internal TaskCompletionSource<bool> ContinueSave { get; } =
                 new TaskCompletionSource<bool>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
 
-            internal TaskCompletionSource<bool> Committed { get; } =
+            internal TaskCompletionSource<bool> Saved { get; } =
                 new TaskCompletionSource<bool>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
 
-            internal TaskCompletionSource<bool> CancellationObserved { get; } =
-                new TaskCompletionSource<bool>(
-                    TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
-        private sealed class ReferenceDurableHandler : ISerilogRelayBatchHandler
+        private sealed class ControlledSaveChangesInterceptor : SaveChangesInterceptor
         {
-            private readonly ReferenceDbContext _database;
-            private readonly ReferenceHandlerControl _control;
+            private readonly SaveControl _control;
 
-            public ReferenceDurableHandler(
-                ReferenceDbContext database,
-                ReferenceHandlerControl control)
+            internal ControlledSaveChangesInterceptor(SaveControl control)
             {
-                _database = database;
                 _control = control;
             }
 
-            public async ValueTask HandleAsync(
-                SerilogRelayBatch batch,
-                CancellationToken cancellationToken)
+            public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(
+                DbContextEventData eventData,
+                InterceptionResult<int> result,
+                CancellationToken cancellationToken = default)
             {
-                _control.LastCancellationToken = cancellationToken;
-                using CancellationTokenRegistration cancellationRegistration =
-                    cancellationToken.Register(
-                        () => _control.CancellationObserved.TrySetResult(true));
+                _control.LastSaveCancellationToken = cancellationToken;
+                _control.BeforeSaveReached.TrySetResult(true);
 
-                await using IDbContextTransaction transaction =
-                    await _database.Database
-                        .BeginTransactionAsync(cancellationToken)
-                        .ConfigureAwait(false);
-
-                DateTimeOffset receivedAtUtc = DateTimeOffset.UtcNow;
-                foreach (SerilogRelayEvent logEvent in batch.Logs!)
+                if (_control.PauseBeforeSave)
                 {
-                    _database.ReceivedEvents.Add(
-                        new ReferenceReceivedEvent
-                        {
-                            BatchId = batch.BatchId,
-                            BatchTimestamp = batch.Timestamp,
-                            SenderLocalId = logEvent.Id,
-                            EventId = logEvent.EventId,
-                            ApplicationId = logEvent.ApplicationId,
-                            MachineId = logEvent.MachineId,
-                            ProcessId = logEvent.ProcessId,
-                            Timestamp = logEvent.Timestamp,
-                            Level = logEvent.Level,
-                            RenderMessage = logEvent.RenderMessage,
-                            MessageTemplate = logEvent.MessageTemplate,
-                            TraceId = logEvent.TraceId,
-                            SpanId = logEvent.SpanId,
-                            Exception = logEvent.Exception,
-                            Properties = logEvent.Properties,
-                            ReceivedAtUtc = receivedAtUtc,
-                        });
-                }
-
-                await _database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
-
-                if (_control.PauseBeforeCommit)
-                {
-                    _control.BeforeCommitReached.TrySetResult(true);
-                    await _control.ContinueCommit.Task
+                    await _control.ContinueSave.Task
                         .WaitAsync(cancellationToken)
                         .ConfigureAwait(false);
                 }
 
-                if (_control.FailAfterSave)
-                    throw new InvalidOperationException("Reference durable handling failure.");
+                return result;
+            }
 
-                await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
-                _control.Committed.TrySetResult(true);
+            public override ValueTask<int> SavedChangesAsync(
+                SaveChangesCompletedEventData eventData,
+                int result,
+                CancellationToken cancellationToken = default)
+            {
+                _control.Saved.TrySetResult(true);
+                return ValueTask.FromResult(result);
             }
         }
 
-        private sealed class ReferenceDbContext : DbContext
+        private sealed class TestRelayDbContext : DbContext
         {
-            public ReferenceDbContext(
-                DbContextOptions<ReferenceDbContext> options)
+            public TestRelayDbContext(
+                DbContextOptions<TestRelayDbContext> options)
                 : base(options)
             {
             }
 
-            internal DbSet<ReferenceReceivedEvent> ReceivedEvents
-                => Set<ReferenceReceivedEvent>();
-
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
-                modelBuilder.Entity<ReferenceReceivedEvent>(
-                    entity =>
-                    {
-                        entity.ToTable("ReceivedLogEvents");
-                        entity.HasKey(row => row.ReceiveId);
-                        entity.Property(row => row.ReceiveId).ValueGeneratedOnAdd();
-
-                        // Intentionally non-unique: a repeated EventId is another physical receive.
-                        entity.HasIndex(row => row.EventId);
-                    });
+                modelBuilder.ConfigureSerilogRelayReceiver();
             }
-        }
-
-        private sealed class ReferenceReceivedEvent
-        {
-            public long ReceiveId { get; set; }
-
-            public string BatchId { get; set; } = string.Empty;
-
-            public string BatchTimestamp { get; set; } = string.Empty;
-
-            public long SenderLocalId { get; set; }
-
-            public string EventId { get; set; } = string.Empty;
-
-            public string ApplicationId { get; set; } = string.Empty;
-
-            public string? MachineId { get; set; }
-
-            public int ProcessId { get; set; }
-
-            public string Timestamp { get; set; } = string.Empty;
-
-            public string Level { get; set; } = string.Empty;
-
-            public string RenderMessage { get; set; } = string.Empty;
-
-            public string MessageTemplate { get; set; } = string.Empty;
-
-            public string? TraceId { get; set; }
-
-            public string? SpanId { get; set; }
-
-            public string? Exception { get; set; }
-
-            public string? Properties { get; set; }
-
-            public DateTimeOffset ReceivedAtUtc { get; set; }
         }
     }
 }

@@ -2,17 +2,15 @@
 
 ## Status of this document
 
-This document records the current design direction for the first reusable
-`Eigenverft.WebLib.SerilogRelayReceiver` implementation and the storage/handler work that is
-expected to follow.
+This document records the design reasoning behind the reusable
+`Eigenverft.WebLib.SerilogRelayReceiver` and its 1.0 persistence direction.
 
-It is intentionally **non-normative**. These notes are not a frozen protocol specification and
-are not release requirements carved in stone. They capture the current reasoning so later
-implementation work can start from an explicit shared understanding instead of rediscovering
-the same trade-offs.
+The initial exploratory storage questions have now produced a concrete built-in EF Core path.
+The package README and public API are the user-facing contract; this document remains the
+non-normative rationale behind those choices.
 
-Where later implementation experience, operational evidence, or a simpler design suggests a
-better choice, this document should be updated.
+Where implementation experience, operational evidence, or a simpler design suggests a better
+choice, this document should be updated explicitly rather than letting behavior drift.
 
 ## Overall direction
 
@@ -331,48 +329,70 @@ The handler API continues to receive a `CancellationToken`, but the endpoint now
 - a disappearing client therefore does not by itself cancel durable work already accepted by the server;
 - host shutdown can still request cancellation of in-flight durable handling.
 
-This behavior is exercised together with the first durable reference handler rather than being tied to a particular storage provider.
+This behavior is exercised through the built-in EF Core persistence path while remaining independent from the concrete EF Core database provider selected by the host.
 
 The hardening tests exercise the ownership boundary with real Kestrel requests: cancelling the client after validated handoff does not cancel the transaction/commit, while signalling host shutdown cancels the in-flight handler and prevents a successful acknowledgement.
 
-## First durable reference exercise
+## Built-in EF Core 1.0 persistence
 
-The test project now contains a concrete EF Core + SQLite handler used only to exercise the receiver contract. It is intentionally not product storage code and does not make EF Core or SQLite dependencies of `Eigenverft.WebLib.SerilogRelayReceiver`.
+Entity Framework Core is now the built-in durable persistence integration of
+`Eigenverft.WebLib.SerilogRelayReceiver`.
 
-That reference demonstrates:
+That decision intentionally locks in EF Core as the package-supported storage path without locking
+in a concrete database provider:
 
-- one explicit transaction for the complete batch;
-- success only after commit;
-- rollback of the complete batch when handler processing fails;
-- repeated `EventId` values are physically accepted again rather than rejected or converted into a `409` protocol;
-- one batch can contain multiple applications;
-- storage provider selection remains owned by the consuming application/handler.
+- the receiver package references `Microsoft.EntityFrameworkCore`;
+- SQLite, SQL Server, PostgreSQL/Npgsql, or another provider is selected and configured by the host;
+- provider packages and connection strings remain outside the receiver package;
+- the host owns its DbContext type, `IDbContextFactory<TDbContext>`, migrations, schema deployment, retention, and querying;
+- custom `ISerilogRelayBatchHandler` implementations remain available for non-EF or multi-backend cases.
 
-The receiver hardening pass also verifies independent options across multiple mapped endpoints, JSON subtype media types, empty/malformed JSON rejection, unsupported charset handling, and rejection of `null` entries inside the `Logs` array before a handler is invoked.
+The product API now includes:
+
+- `SerilogRelayReceivedEvent` as the built-in physical receive entity;
+- `ConfigureSerilogRelayReceiver()` for adding the receiver model to a host-owned DbContext;
+- `AddSerilogRelayReceiverEntityFrameworkCore<TDbContext>()`, backed by a host-registered `IDbContextFactory<TDbContext>`;
+- `MapSerilogRelayReceiverEntityFrameworkCore<TDbContext>()`.
+
+The built-in handler creates one isolated DbContext from the host's factory for each accepted batch, creates one physical row for every event in that delivery, and calls `SaveChangesAsync` once for the complete batch. `EventId` is indexed but deliberately not unique,
+so repeat delivery preserves another physical receive rather than becoming a conflict.
+
+The model uses the stable relational table name `SerilogRelayReceivedEvents` and indexes
+`BatchId`, `EventId`, `ReceivedAtUtc`, and `(ApplicationId, ReceivedAtUtc)`.
+
+The receiver does not ship provider-specific migrations. Because the model is added to the host's
+DbContext, normal host EF Core migrations own schema creation and upgrades.
+
+SQLite remains the concrete integration-test provider. Those tests verify:
+
+- all current sender fields and batch metadata are persisted;
+- repeated `EventId` values are stored again;
+- success is not returned before `SaveChangesAsync` completes;
+- client cancellation after durable handoff does not cancel the save;
+- host shutdown cancels in-flight durable handling and returns `503`;
+- a database failure while persisting a later event leaves zero rows from the batch under normal
+  relational EF Core transaction semantics.
 
 ## Things deliberately not decided yet
 
-This document does not currently decide:
+The 1.0 receiver contract still does not decide:
 
-- concrete database technology or schema;
-- EF Core versus direct database access;
 - retention or cleanup rules;
 - request-body byte limits;
-- whether repeated receives are stored as independent rows, linked rows, or marked by a flag;
-- exact duplicate-query behavior in UI/reporting;
+- exact duplicate-query or deduplicated-view behavior in UI/reporting;
 - application allow-list API;
 - storage partitioning by application;
-- database-per-endpoint configuration API;
+- database-per-endpoint configuration helpers beyond selecting different host DbContexts;
 - multi-backend composition helpers;
 - server-side diagnostic table schema;
 - whether future handler APIs need cancellation semantics beyond the current host-application stopping token;
 - handler retry policy inside the receiver;
 - richer acknowledgement payloads.
 
-These should be shaped when their first real implementation gives enough information to make the
+These should be shaped when a real implementation need provides enough information to make the
 choice useful.
 
-## Working principles for the first storage implementation
+## 1.0 working principles
 
 The current direction can be summarized as:
 
@@ -381,11 +401,10 @@ The current direction can be summarized as:
 3. Treat success as completion of the endpoint's durable handling.
 4. Treat the batch as the sender-facing acceptance unit.
 5. Permit repeat delivery without making it an HTTP protocol error.
-6. Keep storage technology behind the application handler boundary.
-7. Allow 1:1, 1:n, and n:1 endpoint/storage topologies.
+6. Use EF Core as the built-in persistence path while leaving provider selection to the host.
+7. Keep custom handler support for queue, multi-backend, or non-EF scenarios.
 8. Keep one endpoint capable of receiving multiple applications.
 9. Do not let a disappearing HTTP client automatically erase already accepted durable work.
-10. Revisit these directions when the first real storage implementation exposes better evidence.
+10. Let the host own EF Core migrations, retention, and database lifecycle.
 
-The goal is not perfect exactly-once delivery. The goal is a durable, loss-resistant logging path
-whose client contract stays small enough to evolve the receiver independently.
+The goal remains a durable, loss-resistant logging path with a small sender contract. The built-in EF Core path gives 1.0 a concrete durable default without choosing the host's database provider or expanding the sink protocol.

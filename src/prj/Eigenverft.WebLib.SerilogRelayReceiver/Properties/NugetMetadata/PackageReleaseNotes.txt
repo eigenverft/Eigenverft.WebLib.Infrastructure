@@ -1,1 +1,12 @@
-Initial reusable ASP.NET Core SerilogRelay receiver API with endpoint-scoped bearer authentication and maximum batch-event limits, protocol validation, multi-application batch support, and a storage-neutral ISerilogRelayBatchHandler boundary. After validation, durable handler cancellation follows the host application lifetime rather than the client request lifetime. Receiver hardening additionally covers independent multi-endpoint options, null-event validation, JSON subtype and charset handling, client-disconnect durability, host-shutdown `503` semantics, and transactional rollback/reference coverage. Relay wire JSON deserialization is now isolated from global host `HttpJsonOptions` while retaining ASP.NET Web-compatible defaults.
+1.0.0 establishes the first stable SerilogRelay receiver contract.
+
+- Adds the built-in Entity Framework Core persistence path while keeping the concrete database provider host-owned.
+- Adds SerilogRelayReceivedEvent and ConfigureSerilogRelayReceiver() for host DbContext integration and host-owned migrations.
+- Adds AddSerilogRelayReceiverEntityFrameworkCore<TDbContext>() and MapSerilogRelayReceiverEntityFrameworkCore<TDbContext>(); the built-in handler uses a host-registered IDbContextFactory<TDbContext> to isolate one DbContext per batch.
+- Persists one physical row per received event, including batch metadata and receiver-side ReceivedAtUtc.
+- Keeps EventId non-unique so retry/repeat delivery is preserved instead of rejected as a conflict.
+- Saves each accepted batch with one SaveChangesAsync call and returns 204 only after that save completes.
+- Keeps durable work independent from client disconnect after validated handoff while allowing host shutdown to cancel in-flight persistence with 503.
+- Keeps provider packages, connection strings, retention, database lifecycle, and migrations outside the receiver package.
+- Retains the custom ISerilogRelayBatchHandler path for queue, multi-backend, or non-EF scenarios.
+- Keeps receiver-owned wire JSON behavior, endpoint-scoped bearer authentication and batch limits, multi-application batches, protocol validation, and hardened 400/401/415/503 semantics.

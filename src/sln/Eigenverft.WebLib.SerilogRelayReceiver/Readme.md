@@ -16,25 +16,31 @@ Package metadata, license, icon, and release notes live in `src/prj/Eigenverft.W
 
 ## Receiver shape
 
-The library maps a POST endpoint through `MapSerilogRelayReceiver<THandler>(...)`.
-Endpoint-specific options currently contain only:
+The 1.0 receiver has two persistence paths:
+
+- built-in EF Core persistence through `AddSerilogRelayReceiverEntityFrameworkCore<TDbContext>()`
+  and `MapSerilogRelayReceiverEntityFrameworkCore<TDbContext>()`;
+- custom `ISerilogRelayBatchHandler` implementations for queue, multi-backend, or non-EF cases.
+
+EF Core is a product dependency, while the concrete database provider remains host-owned. The host
+registers its own `IDbContextFactory<TDbContext>`/provider, calls `ConfigureSerilogRelayReceiver()` from `OnModelCreating`, and owns migrations, connection strings, retention, and querying. The built-in handler creates one isolated DbContext per batch.
+
+The built-in model persists physical receives as `SerilogRelayReceivedEvent` rows in
+`SerilogRelayReceivedEvents`. `EventId` is indexed but not unique, so repeat delivery preserves
+another physical receive instead of becoming a conflict.
+
+Endpoint-specific options remain intentionally small:
 
 - optional `BearerToken`;
 - `MaximumBatchEvents`, default `100`.
 
-Validated batches are forwarded to an application-provided `ISerilogRelayBatchHandler`. The
-receiver is not tied to one `ApplicationId` and deliberately does not own database/backend or
-retention policy.
+Once a complete batch has passed authentication and validation, durable cancellation is tied to the
+host application's stopping token rather than the client request lifetime. The EF Core integration
+tests use SQLite only as the concrete provider and verify commit-before-success, client disconnect,
+host shutdown, repeat delivery, and whole-batch rollback on database failure.
 
-Once a complete batch has passed authentication and validation, handler cancellation is tied to the host application's stopping token rather than the client request lifetime. The test project uses EF Core + SQLite only as a concrete durable reference; neither technology is part of the receiver package contract.
-
-The functional suite also covers independent per-endpoint options, JSON subtype/charset handling, malformed and null event input, real client cancellation after durable handoff, expected host-shutdown cancellation, handler rollback, and repeat delivery. Global host `HttpJsonOptions` are also deliberately overridden in a regression test to verify that SerilogRelay wire deserialization remains protocol-owned and sender-compatible.
-
-
-The current non-normative reasoning for durable acceptance, repeated delivery, endpoint/storage
-topologies, HTTP coupling, handler diagnostics, and request cancellation is recorded in
-[INITIAL-DESIGN-DIRECTION.md](INITIAL-DESIGN-DIRECTION.md). It is a working design note, not a
-frozen protocol specification or release-requirement document.
+The current design rationale is recorded in
+[INITIAL-DESIGN-DIRECTION.md](INITIAL-DESIGN-DIRECTION.md).
 
 
 `--tl:off` is optional. Without it the CLI shows the compact terminal logger. Add `--tl:off` for the classic per-project log. The commands work either way.

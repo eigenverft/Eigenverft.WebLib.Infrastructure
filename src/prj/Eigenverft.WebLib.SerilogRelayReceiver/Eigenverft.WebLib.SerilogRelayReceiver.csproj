@@ -71,6 +71,14 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- EF Core is the built-in durable persistence integration. The concrete provider remains host-owned. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.31" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+  </ItemGroup>
+
   <!-- Package metadata -->
   <!-- https://learn.microsoft.com/en-us/nuget/create-packages/package-authoring-best-practices -->
   <PropertyGroup>
@@ -79,12 +87,12 @@
     <Company></Company>
     <Copyright>Copyright © 2026 Eigenverft</Copyright>
     <PackageId>Eigenverft.WebLib.SerilogRelayReceiver</PackageId>
-    <PackageTags>dotnet;aspnet-core;web;logging;serilog;relay;receiver;eigenverft</PackageTags>
+    <PackageTags>dotnet;aspnet-core;web;logging;serilog;relay;receiver;entity-framework-core;ef-core;eigenverft</PackageTags>
     <PackageProjectUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</PackageProjectUrl>
     <RepositoryUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <!-- NuGet gallery blurb. CDATA is optional and keeps multiline text. -->
-    <Description><![CDATA[ASP.NET Core receiver integration for Eigenverft SerilogRelay log batches.]]></Description>
+    <Description><![CDATA[ASP.NET Core SerilogRelay receiver with built-in provider-neutral Entity Framework Core persistence integration.]]></Description>
     <PackageReadmeFile>Readme.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>Icon-128x128.png</PackageIcon>
