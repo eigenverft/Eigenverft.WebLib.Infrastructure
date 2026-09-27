@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace Eigenverft.WebLib.SerilogRelayReceiver
 {
@@ -86,9 +87,11 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
                     }
 
                     THandler handler = context.RequestServices.GetRequiredService<THandler>();
+                    IHostApplicationLifetime applicationLifetime = context.RequestServices
+                        .GetRequiredService<IHostApplicationLifetime>();
                     await handler.HandleAsync(
                         batch,
-                        context.RequestAborted).ConfigureAwait(false);
+                        applicationLifetime.ApplicationStopping).ConfigureAwait(false);
 
                     context.Response.StatusCode = StatusCodes.Status204NoContent;
                 });

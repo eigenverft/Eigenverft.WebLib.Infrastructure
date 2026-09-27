@@ -27,6 +27,8 @@ public sealed class MyRelayBatchHandler : ISerilogRelayBatchHandler
 
 The receiver package does not choose SQLite, EF Core, a queue, retention, or another storage backend.
 
+After a complete batch has been received and validated, the handler is invoked with the host application's stopping token rather than the HTTP request-abort token. A client disconnect therefore does not by itself cancel durable handler work that the server has already accepted.
+
 ## Endpoint
 
 Map one receiver endpoint:
@@ -66,3 +68,5 @@ The receiver currently validates:
 Successful handler completion returns HTTP `204 No Content`.
 
 Retention, database/backend configuration, request-body byte limits, and higher-level authentication models are intentionally outside this first receiver pass.
+
+The repository's tests include an EF Core + SQLite durable reference handler to exercise transaction, repeat-delivery, and rollback semantics. EF Core and SQLite are test-only here and are not dependencies or required backends of the receiver package.

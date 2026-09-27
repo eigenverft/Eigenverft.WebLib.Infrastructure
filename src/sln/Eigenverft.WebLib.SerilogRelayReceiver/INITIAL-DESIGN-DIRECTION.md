@@ -311,19 +311,29 @@ If storage then succeeds but the response is lost, the sink may send the same ev
 is an expected distributed-systems failure mode and is one reason repeated delivery must be
 tolerated.
 
-### Cancellation token still needs refinement
+### Implemented cancellation boundary
 
-The current handler API receives a `CancellationToken`, and the current endpoint passes
-`HttpContext.RequestAborted`.
+The handler API continues to receive a `CancellationToken`, but the endpoint now separates request ownership from durable-work ownership:
 
-That is **not considered a final requirement**.
+- body reading and request validation use `HttpContext.RequestAborted`;
+- after a complete batch has been validated, the handler receives `IHostApplicationLifetime.ApplicationStopping`;
+- a disappearing client therefore does not by itself cancel durable work already accepted by the server;
+- host shutdown can still request cancellation of in-flight durable handling.
 
-A likely refinement is to separate client/request cancellation from server-lifetime cancellation
-and let durable work use a server-controlled token such as application shutdown rather than the
-client connection lifetime.
+This behavior is exercised together with the first durable reference handler rather than being tied to a particular storage provider.
 
-The exact API should be decided during the first concrete durable-handler implementation, where
-the transaction/commit behavior can be tested rather than guessed.
+## First durable reference exercise
+
+The test project now contains a concrete EF Core + SQLite handler used only to exercise the receiver contract. It is intentionally not product storage code and does not make EF Core or SQLite dependencies of `Eigenverft.WebLib.SerilogRelayReceiver`.
+
+That reference demonstrates:
+
+- one explicit transaction for the complete batch;
+- success only after commit;
+- rollback of the complete batch when handler processing fails;
+- repeated `EventId` values are physically accepted again rather than rejected or converted into a `409` protocol;
+- one batch can contain multiple applications;
+- storage provider selection remains owned by the consuming application/handler.
 
 ## Things deliberately not decided yet
 
@@ -340,7 +350,7 @@ This document does not currently decide:
 - database-per-endpoint configuration API;
 - multi-backend composition helpers;
 - server-side diagnostic table schema;
-- final durable-handler cancellation API;
+- whether future handler APIs need cancellation semantics beyond the current host-application stopping token;
 - handler retry policy inside the receiver;
 - richer acknowledgement payloads.
 

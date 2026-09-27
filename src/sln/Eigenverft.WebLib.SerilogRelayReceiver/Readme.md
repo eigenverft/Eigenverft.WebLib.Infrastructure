@@ -26,6 +26,8 @@ Validated batches are forwarded to an application-provided `ISerilogRelayBatchHa
 receiver is not tied to one `ApplicationId` and deliberately does not own database/backend or
 retention policy.
 
+Once a complete batch has passed authentication and validation, handler cancellation is tied to the host application's stopping token rather than the client request lifetime. The test project uses EF Core + SQLite only as a concrete durable reference; neither technology is part of the receiver package contract.
+
 
 The current non-normative reasoning for durable acceptance, repeated delivery, endpoint/storage
 topologies, HTTP coupling, handler diagnostics, and request cancellation is recorded in
