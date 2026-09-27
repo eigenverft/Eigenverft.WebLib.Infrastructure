@@ -27,6 +27,12 @@ receiver is not tied to one `ApplicationId` and deliberately does not own databa
 retention policy.
 
 
+The current non-normative reasoning for durable acceptance, repeated delivery, endpoint/storage
+topologies, HTTP coupling, handler diagnostics, and request cancellation is recorded in
+[INITIAL-DESIGN-DIRECTION.md](INITIAL-DESIGN-DIRECTION.md). It is a working design note, not a
+frozen protocol specification or release-requirement document.
+
+
 `--tl:off` is optional. Without it the CLI shows the compact terminal logger. Add `--tl:off` for the classic per-project log. The commands work either way.
 
 ## Restore and build
