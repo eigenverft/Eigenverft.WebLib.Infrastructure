@@ -234,6 +234,16 @@ The working idea would be:
 
 This is only a possible future option, not a current requirement.
 
+## Wire JSON ownership
+
+The SerilogRelay HTTP payload is a protocol contract rather than an application-local JSON DTO contract.
+
+The receiver therefore uses its own `JsonSerializerOptions` based on ASP.NET's Web defaults instead of the host application's global `HttpJsonOptions`.
+
+This keeps the existing sender-compatible behavior while preventing unrelated host configuration such as snake-case naming or case-sensitive property matching from silently changing relay ingestion.
+
+The receiver's JSON settings are intentionally not exposed as endpoint options in this pass. Changing the wire serializer is a protocol decision, not ordinary host presentation configuration.
+
 ## HTTP result semantics
 
 ### Current direction

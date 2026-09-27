@@ -13,6 +13,8 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
     /// </summary>
     public static class SerilogRelayReceiverEndpointRouteBuilderExtensions
     {
+        private static readonly JsonSerializerOptions WireJsonOptions =
+            new JsonSerializerOptions(JsonSerializerDefaults.Web);
         /// <summary>
         /// Maps one POST endpoint that authenticates, validates, and forwards SerilogRelay batches
         /// to the selected handler.
@@ -59,7 +61,8 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
                     {
                         batch = await context.Request
                             .ReadFromJsonAsync<SerilogRelayBatch>(
-                                cancellationToken: context.RequestAborted)
+                                WireJsonOptions,
+                                context.RequestAborted)
                             .ConfigureAwait(false);
                     }
                     catch (JsonException)

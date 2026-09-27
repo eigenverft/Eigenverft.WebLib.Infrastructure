@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -359,6 +360,51 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
             Assert.AreEqual(
                 HttpStatusCode.UnsupportedMediaType,
                 invalidCharsetResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task ReceiverWireJsonIsIndependentFromGlobalHostJsonOptions()
+        {
+            BatchCapture capture = new BatchCapture();
+            WebApplicationBuilder builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseUrls("http://127.0.0.1:0");
+            builder.Services.AddSingleton(capture);
+            builder.Services.ConfigureHttpJsonOptions(
+                options =>
+                {
+                    options.SerializerOptions.PropertyNamingPolicy =
+                        JsonNamingPolicy.SnakeCaseLower;
+                    options.SerializerOptions.PropertyNameCaseInsensitive = false;
+                });
+            builder.Services.AddSerilogRelayReceiver<CapturingHandler>();
+
+            await using WebApplication app = builder.Build();
+            app.MapSerilogRelayReceiver<CapturingHandler>("/logs");
+
+            using HttpClient client = await StartClientAsync(app);
+
+            SerilogRelayBatch batch = CreateBatch("App.One", "App.Two");
+            string senderCompatibleJson = JsonSerializer.Serialize(
+                batch,
+                new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+            using var content =
+                new StringContent(
+                    senderCompatibleJson,
+                    Encoding.UTF8,
+                    "application/json");
+            using HttpResponseMessage response =
+                await client.PostAsync("/logs", content);
+
+            Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+
+            SerilogRelayBatch received =
+                await capture.Received.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.AreEqual(batch.BatchId, received.BatchId);
+            Assert.AreEqual(batch.Count, received.Count);
+            CollectionAssert.AreEqual(
+                new[] { "App.One", "App.Two" },
+                received.Logs!.Select(logEvent => logEvent.ApplicationId).ToArray());
         }
 
         private static WebApplication CreateApplication(

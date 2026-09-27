@@ -55,6 +55,8 @@ Endpoint options are independent even when multiple mappings select the same han
 
 A single endpoint is not tied to one application. Valid batches may contain events from different `ApplicationId`, `MachineId`, and `ProcessId` values.
 
+SerilogRelay wire JSON is deserialized with receiver-owned ASP.NET Web-compatible JSON settings. Global host `HttpJsonOptions` therefore cannot change the relay protocol's property naming/case behavior for this endpoint.
+
 ## Current protocol validation
 
 The receiver currently validates:
