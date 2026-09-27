@@ -13,6 +13,20 @@ The `.slnx` and this readme live in this folder. Open a terminal here for the co
 
 Package metadata, license, icon, and release notes live in `src/prj/Eigenverft.WebLib.SerilogRelayReceiver/Properties/NugetMetadata/`.
 
+
+## Receiver shape
+
+The library maps a POST endpoint through `MapSerilogRelayReceiver<THandler>(...)`.
+Endpoint-specific options currently contain only:
+
+- optional `BearerToken`;
+- `MaximumBatchEvents`, default `100`.
+
+Validated batches are forwarded to an application-provided `ISerilogRelayBatchHandler`. The
+receiver is not tied to one `ApplicationId` and deliberately does not own database/backend or
+retention policy.
+
+
 `--tl:off` is optional. Without it the CLI shows the compact terminal logger. Add `--tl:off` for the classic per-project log. The commands work either way.
 
 ## Restore and build

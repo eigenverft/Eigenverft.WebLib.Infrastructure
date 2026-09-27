@@ -1,3 +1,1 @@
-0.1.0 (2026-09-27)
-
- - Project creation.
+Initial reusable ASP.NET Core SerilogRelay receiver API with endpoint-scoped bearer authentication and maximum batch-event limits, protocol validation, multi-application batch support, and a storage-neutral ISerilogRelayBatchHandler boundary.
