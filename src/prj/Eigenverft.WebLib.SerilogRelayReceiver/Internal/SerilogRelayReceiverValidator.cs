@@ -31,6 +31,8 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
 
             foreach (SerilogRelayEvent logEvent in batch.Logs)
             {
+                if (logEvent is null)
+                    return "logs must not contain null entries.";
                 if (!Guid.TryParseExact(logEvent.EventId, "D", out _))
                     return "Every log event must contain a canonical eventId GUID.";
 

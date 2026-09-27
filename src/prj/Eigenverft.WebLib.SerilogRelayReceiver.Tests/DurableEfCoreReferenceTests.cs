@@ -119,6 +119,105 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
         }
 
         [TestMethod]
+        public async Task ClientCancellationAfterValidatedHandoffDoesNotCancelCommit()
+        {
+            string databasePath = CreateDatabasePath();
+            var control = new ReferenceHandlerControl
+            {
+                PauseBeforeCommit = true,
+            };
+            WebApplication app = await CreateApplicationAsync(databasePath, control);
+
+            try
+            {
+                using HttpClient client = await StartClientAsync(app);
+                using var clientCancellation = new CancellationTokenSource();
+
+                Task<HttpResponseMessage> responseTask =
+                    client.PostAsJsonAsync(
+                        "/logs",
+                        CreateBatch("App.One", "App.Two"),
+                        clientCancellation.Token);
+
+                await control.BeforeCommitReached.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+                clientCancellation.Cancel();
+
+                bool clientObservedCancellation = false;
+                try
+                {
+                    using HttpResponseMessage ignored =
+                        await responseTask.WaitAsync(TimeSpan.FromSeconds(5));
+                }
+                catch (OperationCanceledException)
+                {
+                    clientObservedCancellation = true;
+                }
+
+                Assert.IsTrue(clientObservedCancellation);
+                Assert.IsFalse(control.LastCancellationToken.IsCancellationRequested);
+
+                control.ContinueCommit.TrySetResult(true);
+                await control.Committed.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+                List<ReferenceReceivedEvent> rows =
+                    await ReadRowsAsync(databasePath);
+                Assert.AreEqual(2, rows.Count);
+            }
+            finally
+            {
+                control.ContinueCommit.TrySetResult(true);
+                await DisposeApplicationAndDatabaseAsync(app, databasePath);
+            }
+        }
+
+        [TestMethod]
+        public async Task HostShutdownCancelsInFlightDurableHandlingAndRollsBack()
+        {
+            string databasePath = CreateDatabasePath();
+            var control = new ReferenceHandlerControl
+            {
+                PauseBeforeCommit = true,
+            };
+            WebApplication app = await CreateApplicationAsync(databasePath, control);
+
+            try
+            {
+                using HttpClient client = await StartClientAsync(app);
+
+                Task<HttpResponseMessage> responseTask =
+                    client.PostAsJsonAsync(
+                        "/logs",
+                        CreateBatch("App.One", "App.Two"));
+
+                await control.BeforeCommitReached.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+                IHostApplicationLifetime lifetime =
+                    app.Services.GetRequiredService<IHostApplicationLifetime>();
+                lifetime.StopApplication();
+
+                await control.CancellationObserved.Task
+                    .WaitAsync(TimeSpan.FromSeconds(5));
+
+                using HttpResponseMessage response =
+                    await responseTask.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.AreEqual(
+                    HttpStatusCode.ServiceUnavailable,
+                    response.StatusCode);
+                Assert.IsTrue(control.LastCancellationToken.IsCancellationRequested);
+
+                List<ReferenceReceivedEvent> rows =
+                    await ReadRowsAsync(databasePath);
+                Assert.AreEqual(0, rows.Count);
+            }
+            finally
+            {
+                control.ContinueCommit.TrySetResult(true);
+                await DisposeApplicationAndDatabaseAsync(app, databasePath);
+            }
+        }
+
+        [TestMethod]
         public async Task ReferenceHandlerRollsBackWholeBatchWhenDurableHandlingFails()
         {
             string databasePath = CreateDatabasePath();
@@ -278,6 +377,14 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
             internal TaskCompletionSource<bool> ContinueCommit { get; } =
                 new TaskCompletionSource<bool>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
+
+            internal TaskCompletionSource<bool> Committed { get; } =
+                new TaskCompletionSource<bool>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
+
+            internal TaskCompletionSource<bool> CancellationObserved { get; } =
+                new TaskCompletionSource<bool>(
+                    TaskCreationOptions.RunContinuationsAsynchronously);
         }
 
         private sealed class ReferenceDurableHandler : ISerilogRelayBatchHandler
@@ -298,6 +405,9 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                 CancellationToken cancellationToken)
             {
                 _control.LastCancellationToken = cancellationToken;
+                using CancellationTokenRegistration cancellationRegistration =
+                    cancellationToken.Register(
+                        () => _control.CancellationObserved.TrySetResult(true));
 
                 await using IDbContextTransaction transaction =
                     await _database.Database
@@ -343,6 +453,7 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                     throw new InvalidOperationException("Reference durable handling failure.");
 
                 await transaction.CommitAsync(cancellationToken).ConfigureAwait(false);
+                _control.Committed.TrySetResult(true);
             }
         }
 

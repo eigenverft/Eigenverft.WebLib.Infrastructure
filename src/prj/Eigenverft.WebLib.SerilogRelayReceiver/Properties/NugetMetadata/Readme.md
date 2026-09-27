@@ -51,6 +51,8 @@ app.MapSerilogRelayReceiver<MyRelayBatchHandler>(
 
 Options belong to the mapped endpoint rather than to global receiver state. Multiple endpoints can therefore use different authentication/limits and different handler types.
 
+Endpoint options are independent even when multiple mappings select the same handler type.
+
 A single endpoint is not tied to one application. Valid batches may contain events from different `ApplicationId`, `MachineId`, and `ProcessId` values.
 
 ## Current protocol validation
@@ -61,11 +63,12 @@ The receiver currently validates:
 - canonical GUID `BatchId`;
 - `Count` matching the number of events;
 - the endpoint's `MaximumBatchEvents`;
+- no `null` entries inside `Logs`;
 - canonical GUID `EventId`;
 - non-empty `ApplicationId`;
 - positive `ProcessId`.
 
-Successful handler completion returns HTTP `204 No Content`.
+Successful handler completion returns HTTP `204 No Content`. Unsupported JSON media types or charsets return `415`, malformed/protocol-invalid payloads return `400`, authentication failures return `401`, and durable handling cancelled because the host is stopping returns `503`. Unexpected handler failures remain server errors and never produce a success response.
 
 Retention, database/backend configuration, request-body byte limits, and higher-level authentication models are intentionally outside this first receiver pass.
 

@@ -91,13 +91,21 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                 SerilogRelayReceiverValidator.Validate(valid, 100));
             valid.Logs[0].EventId = Guid.NewGuid().ToString("D");
 
-            valid.Logs[0].ApplicationId = " ";
+            valid.Logs[0] = null!;
+            Assert.AreEqual(
+                "logs must not contain null entries.",
+                SerilogRelayReceiverValidator.Validate(valid, 100));
+            List<SerilogRelayEvent> restoredLogs =
+                CreateBatch("App.One", "App.Two").Logs!;
+            valid.Logs = restoredLogs;
+
+            restoredLogs[0].ApplicationId = " ";
             Assert.AreEqual(
                 "Every log event must contain a non-empty applicationId.",
                 SerilogRelayReceiverValidator.Validate(valid, 100));
-            valid.Logs[0].ApplicationId = "App.One";
+            restoredLogs[0].ApplicationId = "App.One";
 
-            valid.Logs[0].ProcessId = 0;
+            restoredLogs[0].ProcessId = 0;
             Assert.AreEqual(
                 "Every log event must contain a positive processId.",
                 SerilogRelayReceiverValidator.Validate(valid, 100));
@@ -261,6 +269,96 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
             using HttpResponseMessage accepted =
                 await client.PostAsJsonAsync("/logs", CreateBatch("App.One"));
             Assert.AreEqual(HttpStatusCode.NoContent, accepted.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task EndpointOptionsRemainIsolatedAcrossMultipleMappings()
+        {
+            BatchCapture capture = new BatchCapture();
+            WebApplicationBuilder builder = WebApplication.CreateBuilder();
+            builder.WebHost.UseUrls("http://127.0.0.1:0");
+            builder.Services.AddSingleton(capture);
+            builder.Services.AddSerilogRelayReceiver<CapturingHandler>();
+
+            await using WebApplication app = builder.Build();
+            app.MapSerilogRelayReceiver<CapturingHandler>(
+                "/strict",
+                options =>
+                {
+                    options.BearerToken = "strict-secret";
+                    options.MaximumBatchEvents = 1;
+                });
+            app.MapSerilogRelayReceiver<CapturingHandler>(
+                "/open",
+                options => options.MaximumBatchEvents = 2);
+
+            using HttpClient client = await StartClientAsync(app);
+
+            using HttpResponseMessage strictUnauthorized =
+                await client.PostAsJsonAsync("/strict", CreateBatch("App.One"));
+            Assert.AreEqual(
+                HttpStatusCode.Unauthorized,
+                strictUnauthorized.StatusCode);
+
+            using HttpResponseMessage openAccepted =
+                await client.PostAsJsonAsync(
+                    "/open",
+                    CreateBatch("App.One", "App.Two"));
+            Assert.AreEqual(HttpStatusCode.NoContent, openAccepted.StatusCode);
+
+            using HttpRequestMessage strictTooLargeRequest =
+                new HttpRequestMessage(HttpMethod.Post, "/strict")
+                {
+                    Content = JsonContent.Create(
+                        CreateBatch("App.One", "App.Two")),
+                };
+            strictTooLargeRequest.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", "strict-secret");
+
+            using HttpResponseMessage strictTooLarge =
+                await client.SendAsync(strictTooLargeRequest);
+            Assert.AreEqual(HttpStatusCode.BadRequest, strictTooLarge.StatusCode);
+            StringAssert.Contains(
+                await strictTooLarge.Content.ReadAsStringAsync(),
+                "maximum is 1");
+        }
+
+        [TestMethod]
+        public async Task EndpointHandlesJsonMediaTypeEdgesAsProtocolInput()
+        {
+            BatchCapture capture = new BatchCapture();
+            await using WebApplication app = CreateApplication(
+                capture,
+                bearerToken: null,
+                maximumBatchEvents: 100);
+            using HttpClient client = await StartClientAsync(app);
+
+            SerilogRelayBatch batch = CreateBatch("App.One");
+            string json = System.Text.Json.JsonSerializer.Serialize(batch);
+
+            using var subtypeContent =
+                new StringContent(
+                    json,
+                    Encoding.UTF8,
+                    "application/vnd.eigenverft.serilogrelay+json");
+            using HttpResponseMessage subtypeResponse =
+                await client.PostAsync("/logs", subtypeContent);
+            Assert.AreEqual(HttpStatusCode.NoContent, subtypeResponse.StatusCode);
+
+            using var emptyJson =
+                new StringContent(string.Empty, Encoding.UTF8, "application/json");
+            using HttpResponseMessage emptyResponse =
+                await client.PostAsync("/logs", emptyJson);
+            Assert.AreEqual(HttpStatusCode.BadRequest, emptyResponse.StatusCode);
+
+            using var invalidCharset =
+                new StringContent(json, Encoding.UTF8, "application/json");
+            invalidCharset.Headers.ContentType!.CharSet = "does-not-exist";
+            using HttpResponseMessage invalidCharsetResponse =
+                await client.PostAsync("/logs", invalidCharset);
+            Assert.AreEqual(
+                HttpStatusCode.UnsupportedMediaType,
+                invalidCharsetResponse.StatusCode);
         }
 
         private static WebApplication CreateApplication(

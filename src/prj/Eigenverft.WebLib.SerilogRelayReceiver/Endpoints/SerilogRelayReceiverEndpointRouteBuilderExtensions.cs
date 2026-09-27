@@ -68,6 +68,12 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
                         return;
                     }
 
+                    catch (InvalidOperationException)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;
+                        return;
+                    }
+
                     if (batch is null)
                     {
                         context.Response.StatusCode = StatusCodes.Status400BadRequest;
@@ -89,9 +95,18 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
                     THandler handler = context.RequestServices.GetRequiredService<THandler>();
                     IHostApplicationLifetime applicationLifetime = context.RequestServices
                         .GetRequiredService<IHostApplicationLifetime>();
-                    await handler.HandleAsync(
-                        batch,
-                        applicationLifetime.ApplicationStopping).ConfigureAwait(false);
+                    try
+                    {
+                        await handler.HandleAsync(
+                            batch,
+                            applicationLifetime.ApplicationStopping).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                        when (applicationLifetime.ApplicationStopping.IsCancellationRequested)
+                    {
+                        context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                        return;
+                    }
 
                     context.Response.StatusCode = StatusCodes.Status204NoContent;
                 });

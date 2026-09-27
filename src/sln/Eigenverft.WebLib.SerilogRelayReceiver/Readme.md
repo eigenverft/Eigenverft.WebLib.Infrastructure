@@ -28,6 +28,8 @@ retention policy.
 
 Once a complete batch has passed authentication and validation, handler cancellation is tied to the host application's stopping token rather than the client request lifetime. The test project uses EF Core + SQLite only as a concrete durable reference; neither technology is part of the receiver package contract.
 
+The functional suite also covers independent per-endpoint options, JSON subtype/charset handling, malformed and null event input, real client cancellation after durable handoff, expected host-shutdown cancellation, handler rollback, and repeat delivery.
+
 
 The current non-normative reasoning for durable acceptance, repeated delivery, endpoint/storage
 topologies, HTTP coupling, handler diagnostics, and request cancellation is recorded in

@@ -245,8 +245,9 @@ Existing receiver responses such as the following remain useful:
 
 - `401`: authentication failed;
 - `400`: request/protocol validation failed;
-- `415`: unsupported request content type;
-- `5xx`: a valid request could not currently be completed by receiver/handler processing;
+- `415`: unsupported JSON request content type or unsupported JSON charset;
+- `503`: durable handling was cancelled because the receiver host is stopping;
+- other `5xx`: a valid request could not currently be completed by receiver/handler processing;
 - `2xx`: the batch has completed the endpoint's durable handling.
 
 The sink should primarily care about whether delivery succeeded or did not succeed. It should not
@@ -322,6 +323,8 @@ The handler API continues to receive a `CancellationToken`, but the endpoint now
 
 This behavior is exercised together with the first durable reference handler rather than being tied to a particular storage provider.
 
+The hardening tests exercise the ownership boundary with real Kestrel requests: cancelling the client after validated handoff does not cancel the transaction/commit, while signalling host shutdown cancels the in-flight handler and prevents a successful acknowledgement.
+
 ## First durable reference exercise
 
 The test project now contains a concrete EF Core + SQLite handler used only to exercise the receiver contract. It is intentionally not product storage code and does not make EF Core or SQLite dependencies of `Eigenverft.WebLib.SerilogRelayReceiver`.
@@ -334,6 +337,8 @@ That reference demonstrates:
 - repeated `EventId` values are physically accepted again rather than rejected or converted into a `409` protocol;
 - one batch can contain multiple applications;
 - storage provider selection remains owned by the consuming application/handler.
+
+The receiver hardening pass also verifies independent options across multiple mapped endpoints, JSON subtype media types, empty/malformed JSON rejection, unsupported charset handling, and rejection of `null` entries inside the `Logs` array before a handler is invoked.
 
 ## Things deliberately not decided yet
 
