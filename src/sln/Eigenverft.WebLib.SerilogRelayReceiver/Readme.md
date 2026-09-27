@@ -62,6 +62,8 @@ dotnet test
 
 MSTest is explicitly configured for method-level parallel execution within one test assembly. Tests must therefore not share mutable global state.
 
+The 1.0 release contract is additionally guarded by `ReleaseContractTests`. These tests freeze the exported public types, developer-facing method signatures, durable entity member shape, EF Core table/key/index/max-length model, provider-neutral product assembly references, and the ability of a host-selected relational provider to generate the expected schema. A future intentional breaking change must therefore update the release contract explicitly instead of drifting in accidentally.
+
 After a test run, the links below point to generated reports. Each selected target framework writes its own files (`net8.0`, `net10.0`, …).
 
 [Test results (trx)](../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/MSTestResults/Eigenverft.WebLib.SerilogRelayReceiver.Tests-net10.0.trx)
