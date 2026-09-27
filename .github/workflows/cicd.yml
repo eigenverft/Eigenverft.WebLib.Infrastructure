@@ -22,14 +22,12 @@ on:
       - 'release'
       - 'develop'
       - 'bugfix'
-      - 'feature'
       - 'master/**'
       - 'main/**'
       - 'hotfix/**'
       - 'release/**'
       - 'develop/**'
       - 'bugfix/**'
-      - 'feature/**'
   repository_dispatch:
     types: 
       - builddispatch
