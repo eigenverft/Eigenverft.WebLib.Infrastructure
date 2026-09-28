@@ -1,0 +1,37 @@
+name: SerilogRelay CI diagnostic
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnostic:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout diagnostic control files
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: control
+          fetch-depth: 1
+
+      - name: Checkout develop under test
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          path: source
+          fetch-depth: 0
+
+      - name: Setup .NET 8 and 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Run targeted Coverlet diagnostic
+        shell: pwsh
+        run: control/.github/workflows/cicd-diagnostic.ps1 -RepositoryRoot "${{ github.workspace }}/source" -TestProject "src/prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/Eigenverft.WebLib.SerilogRelayReceiver.Tests.csproj"
