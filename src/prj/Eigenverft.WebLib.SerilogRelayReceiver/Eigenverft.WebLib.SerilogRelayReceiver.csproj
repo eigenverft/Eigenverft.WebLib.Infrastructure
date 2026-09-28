@@ -84,6 +84,7 @@
   <PropertyGroup>
     <Authors>Eigenverft</Authors>
     <Owners>Eigenverft</Owners>
+    <Copyright>Copyright © 2026 Eigenverft</Copyright>
     <PackageId>Eigenverft.WebLib.SerilogRelayReceiver</PackageId>
     <PackageTags>dotnet;aspnet-core;web;logging;serilog;relay;receiver;entity-framework-core;ef-core;eigenverft</PackageTags>
     <PackageProjectUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</PackageProjectUrl>
