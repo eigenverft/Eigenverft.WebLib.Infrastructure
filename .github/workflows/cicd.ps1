@@ -438,7 +438,11 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
         # Test only executes for SDK-style projects. Non-SDK projects are not supported by dotnet test.
         if ($ProjectProperties.IsTestProject -eq $true)
         {
-            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("test", "$($ProjectFileInfo.FullName)", "-c", "Release", '-p:Stage=test' ) -CommonArguments $DotnetCommonParameters -CaptureOutput $false
+            # Coverlet reports no instrumented modules with ContinuousIntegrationBuild=true.
+            # Keep the coverage gate active by building the test invocation without CI path mapping.
+            $TestCommonParameters = @($DotnetCommonParameters | Where-Object { $_ -ne '-p:ContinuousIntegrationBuild=true' })
+            $TestCommonParameters += '-p:ContinuousIntegrationBuild=false'
+            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("test", "$($ProjectFileInfo.FullName)", "-c", "Release", '-p:Stage=test' ) -CommonArguments $TestCommonParameters -CaptureOutput $false
         }
 
         if ($ProjectProperties.IsPackable -eq $true)
