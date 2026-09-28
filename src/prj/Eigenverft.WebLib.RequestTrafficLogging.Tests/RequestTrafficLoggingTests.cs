@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace Eigenverft.WebLib.RequestTrafficLogging.Tests;
 
@@ -45,22 +46,22 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Completed", record.GetProperty("Outcome"));
-        Assert.AreEqual("GET", record.GetProperty("Method"));
-        Assert.AreEqual("https", record.GetProperty("Scheme"));
-        Assert.AreEqual("example.test:8443", record.GetProperty("Host"));
-        Assert.AreEqual("/api", record.GetProperty("PathBase")?.ToString());
-        Assert.AreEqual("/items/42", record.GetProperty("Path")?.ToString());
-        Assert.AreEqual("HTTP/1.1", record.GetProperty("Protocol"));
-        Assert.AreEqual(StatusCodes.Status204NoContent, record.GetProperty("StatusCode"));
-        Assert.AreEqual("203.0.113.7", record.GetProperty("RemoteIpAddress"));
-        Assert.AreEqual(false, record.GetProperty("Aborted"));
-        Assert.IsTrue((double)record.GetProperty("DurationMs")! >= 0D);
+        Assert.AreEqual("Completed", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual("GET", record.GetProperty("Request.Method"));
+        Assert.AreEqual("https", record.GetProperty("Request.Scheme"));
+        Assert.AreEqual("example.test:8443", record.GetProperty("Request.Host"));
+        Assert.AreEqual("/api", record.GetProperty("Request.PathBase")?.ToString());
+        Assert.AreEqual("/items/42", record.GetProperty("Request.Path")?.ToString());
+        Assert.AreEqual("HTTP/1.1", record.GetProperty("Request.Protocol"));
+        Assert.AreEqual(StatusCodes.Status204NoContent, record.GetProperty("Response.StatusCode"));
+        Assert.AreEqual("203.0.113.7", record.GetProperty("Connection.Remote.IpAddress"));
+        Assert.AreEqual(false, record.GetProperty("Pipeline.Aborted"));
+        Assert.IsTrue((double)record.GetProperty("Pipeline.DurationMs")! >= 0D);
         Assert.IsInstanceOfType<DateTimeOffset>(record.GetProperty("TimestampUtc"));
         Assert.AreEqual("trace-test-123", record.GetProperty("TraceId"));
-        Assert.AreEqual("GET /items/{id}", record.GetProperty("Endpoint"));
-        Assert.AreEqual("/items/{id}", record.GetProperty("RoutePattern"));
-        Assert.IsNull(record.GetProperty("ExceptionType"));
+        Assert.AreEqual("GET /items/{id}", record.GetProperty("Routing.Endpoint"));
+        Assert.AreEqual("/items/{id}", record.GetProperty("Routing.Pattern"));
+        Assert.IsNull(record.GetProperty("Pipeline.ExceptionType"));
     }
 
     [TestMethod]
@@ -81,13 +82,42 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Completed", record.GetProperty("Outcome"));
-        Assert.AreEqual("203.0.113.7", record.GetProperty("RemoteIpAddress"));
-        Assert.AreEqual("HEAD", record.GetProperty("Method"));
-        Assert.AreEqual("example.test:8443", record.GetProperty("Host"));
-        Assert.AreEqual("/.env", record.GetProperty("Path")?.ToString());
-        Assert.AreEqual("scanner/1.0", record.GetProperty("UserAgent"));
-        Assert.AreEqual(StatusCodes.Status404NotFound, record.GetProperty("StatusCode"));
+        Assert.AreEqual("Completed", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual("203.0.113.7", record.GetProperty("Connection.Remote.IpAddress"));
+        Assert.AreEqual("HEAD", record.GetProperty("Request.Method"));
+        Assert.AreEqual("example.test:8443", record.GetProperty("Request.Host"));
+        Assert.AreEqual("/.env", record.GetProperty("Request.Path")?.ToString());
+        Assert.AreEqual("scanner/1.0", record.GetProperty("Request.UserAgent"));
+        Assert.AreEqual(StatusCodes.Status404NotFound, record.GetProperty("Response.StatusCode"));
+    }
+
+    [TestMethod]
+    public async Task DefaultRecord_UsesHierarchicalSectionsInDiagnosticOrder()
+    {
+        using var host = new RequestTrafficLoggingTestHost();
+        RequestDelegate pipeline = host.BuildPipeline(app =>
+            app.Run(context =>
+            {
+                context.Response.ContentType = "text/plain";
+                return Task.CompletedTask;
+            }));
+
+        await pipeline(host.CreateContext("/ordered"));
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.IsTrue(record.GetPropertyIndex("Event") < record.GetPropertyIndex("Request.Protocol"));
+        Assert.IsTrue(record.GetPropertyIndex("Request.Body.DeclaredLength") <
+            record.GetPropertyIndex("Connection.Remote.IpAddress"));
+        Assert.IsTrue(record.GetPropertyIndex("Connection.Remote.IpAddress") <
+            record.GetPropertyIndex("Routing.Endpoint"));
+        Assert.IsTrue(record.GetPropertyIndex("Routing.Pattern") <
+            record.GetPropertyIndex("Response.StatusCode"));
+        Assert.IsTrue(record.GetPropertyIndex("Response.Body.DeclaredLength") <
+            record.GetPropertyIndex("Pipeline.Outcome"));
+        Assert.IsFalse(record.TryGetProperty("Method", out _));
+        Assert.IsFalse(record.TryGetProperty("RemoteIpAddress", out _));
+        Assert.IsFalse(record.TryGetProperty("StatusCode", out _));
+        Assert.IsFalse(record.TryGetProperty("PipelineOutcome", out _));
     }
 
     [TestMethod]
@@ -110,8 +140,8 @@ public sealed class RequestTrafficLoggingTests
 
         Assert.IsNotNull(thrown, "The application exception must propagate out of traffic logging.");
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Faulted", record.GetProperty("Outcome"));
-        Assert.AreEqual(typeof(InvalidOperationException).FullName, record.GetProperty("ExceptionType"));
+        Assert.AreEqual("Faulted", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(typeof(InvalidOperationException).FullName, record.GetProperty("Pipeline.ExceptionType"));
     }
 
     [TestMethod]
@@ -133,9 +163,33 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Faulted", record.GetProperty("Outcome"));
-        Assert.AreEqual(StatusCodes.Status503ServiceUnavailable, record.GetProperty("StatusCode"));
-        Assert.AreEqual(typeof(InvalidOperationException).FullName, record.GetProperty("ExceptionType"));
+        Assert.AreEqual("Faulted", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(StatusCodes.Status503ServiceUnavailable, record.GetProperty("Response.StatusCode"));
+        Assert.AreEqual(typeof(InvalidOperationException).FullName, record.GetProperty("Pipeline.ExceptionType"));
+    }
+
+    [TestMethod]
+    public async Task CancellationSignal_WhenPipelineReturnsNormally_IsCompletedAndPreserved()
+    {
+        using var host = new RequestTrafficLoggingTestHost();
+        using var cancellation = new CancellationTokenSource();
+        RequestDelegate pipeline = host.BuildPipeline(app =>
+            app.Run(context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status204NoContent;
+                cancellation.Cancel();
+                return Task.CompletedTask;
+            }));
+        DefaultHttpContext context = host.CreateContext();
+        context.RequestAborted = cancellation.Token;
+
+        await pipeline(context);
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("Completed", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.AreEqual(StatusCodes.Status204NoContent, record.GetProperty("Response.StatusCode"));
+        Assert.IsNull(record.GetProperty("Pipeline.ExceptionType"));
     }
 
     [TestMethod]
@@ -164,8 +218,41 @@ public sealed class RequestTrafficLoggingTests
 
         Assert.IsNotNull(thrown);
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Aborted", record.GetProperty("Outcome"));
-        Assert.AreEqual(true, record.GetProperty("Aborted"));
+        Assert.AreEqual("Aborted", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.AreEqual(false, record.GetProperty("Response.Started"));
+        Assert.AreEqual(typeof(OperationCanceledException).FullName, record.GetProperty("Pipeline.ExceptionType"));
+    }
+
+    [TestMethod]
+    public async Task ClientDisconnectIOException_WithCancellationSignal_IsAborted()
+    {
+        using var host = new RequestTrafficLoggingTestHost();
+        using var cancellation = new CancellationTokenSource();
+        RequestDelegate pipeline = host.BuildPipeline(app =>
+            app.Run(_ =>
+            {
+                cancellation.Cancel();
+                return Task.FromException(new IOException("The client disconnected."));
+            }));
+        DefaultHttpContext context = host.CreateContext();
+        context.RequestAborted = cancellation.Token;
+
+        IOException? thrown = null;
+        try
+        {
+            await pipeline(context);
+        }
+        catch (IOException exception)
+        {
+            thrown = exception;
+        }
+
+        Assert.IsNotNull(thrown);
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("Aborted", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.AreEqual(typeof(IOException).FullName, record.GetProperty("Pipeline.ExceptionType"));
     }
 
     [TestMethod]
@@ -201,10 +288,78 @@ public sealed class RequestTrafficLoggingTests
         }
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Aborted", record.GetProperty("Outcome"));
-        Assert.AreEqual(StatusCodes.Status200OK, record.GetProperty("StatusCode"));
-        Assert.AreEqual(true, record.GetProperty("ResponseStarted"));
-        Assert.AreEqual(true, record.GetProperty("Aborted"));
+        Assert.AreEqual("Aborted", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(StatusCodes.Status200OK, record.GetProperty("Response.StatusCode"));
+        Assert.AreEqual(true, record.GetProperty("Response.Started"));
+        Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.AreEqual(typeof(OperationCanceledException).FullName, record.GetProperty("Pipeline.ExceptionType"));
+    }
+
+    [TestMethod]
+    public async Task StartedResponse_WithLateCancellationSignal_IsCompleted()
+    {
+        using var host = new RequestTrafficLoggingTestHost();
+        using var cancellation = new CancellationTokenSource();
+        StartedResponseFeature? startedFeature = null;
+
+        RequestDelegate pipeline = host.BuildPipeline(app =>
+            app.Run(context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                startedFeature!.HasStartedValue = true;
+                cancellation.Cancel();
+                return Task.CompletedTask;
+            }));
+
+        DefaultHttpContext context = host.CreateContext();
+        context.RequestAborted = cancellation.Token;
+        startedFeature = new StartedResponseFeature(context.Features.GetRequiredFeature<IHttpResponseFeature>());
+        context.Features.Set<IHttpResponseFeature>(startedFeature);
+
+        await pipeline(context);
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("Completed", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(StatusCodes.Status200OK, record.GetProperty("Response.StatusCode"));
+        Assert.AreEqual(true, record.GetProperty("Response.Started"));
+        Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.IsNull(record.GetProperty("Pipeline.ExceptionType"));
+    }
+
+    [TestMethod]
+    public async Task CompletedSseResponse_WithLateCancellationSignal_IsCompleted()
+    {
+        using var host = new RequestTrafficLoggingTestHost(options =>
+            options.Fields |= RequestTrafficLoggingFields.ResponseBody);
+        using var cancellation = new CancellationTokenSource();
+        StartedResponseFeature? startedFeature = null;
+        const string responseBody = "event: message\ndata: {\"result\":{\"resultType\":\"complete\"}}\n\n";
+
+        RequestDelegate pipeline = host.BuildPipeline(app =>
+            app.Run(async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status200OK;
+                context.Response.ContentType = "text/event-stream";
+                await context.Response.WriteAsync(responseBody);
+                startedFeature!.HasStartedValue = true;
+                cancellation.Cancel();
+            }));
+
+        DefaultHttpContext context = host.CreateContext("/mcp");
+        context.RequestAborted = cancellation.Token;
+        startedFeature = new StartedResponseFeature(context.Features.GetRequiredFeature<IHttpResponseFeature>());
+        context.Features.Set<IHttpResponseFeature>(startedFeature);
+
+        await pipeline(context);
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("Completed", record.GetProperty("Pipeline.Outcome"));
+        Assert.AreEqual(StatusCodes.Status200OK, record.GetProperty("Response.StatusCode"));
+        Assert.AreEqual(true, record.GetProperty("Response.Started"));
+        Assert.AreEqual("text/event-stream", record.GetProperty("Response.Body.ContentType"));
+        Assert.AreEqual(true, record.GetProperty("Pipeline.Aborted"));
+        Assert.IsNull(record.GetProperty("Pipeline.ExceptionType"));
+        StringAssert.Contains(record.GetProperty("ResponseBody")?.ToString(), "\"resultType\":\"complete\"");
     }
 
     [TestMethod]
@@ -216,7 +371,7 @@ public sealed class RequestTrafficLoggingTests
             DefaultHttpContext context = host.CreateContext();
             context.Request.QueryString = new QueryString("?token=secret");
             await pipeline(context);
-            Assert.IsFalse(host.SingleTrafficRecord().TryGetProperty("QueryString", out _));
+            Assert.IsFalse(host.SingleTrafficRecord().TryGetProperty("Request.QueryString", out _));
         }
 
         using (var host = new RequestTrafficLoggingTestHost(options =>
@@ -226,7 +381,7 @@ public sealed class RequestTrafficLoggingTests
             DefaultHttpContext context = host.CreateContext();
             context.Request.QueryString = new QueryString("?token=secret");
             await pipeline(context);
-            Assert.AreEqual("?token=secret", host.SingleTrafficRecord().GetProperty("QueryString"));
+            Assert.AreEqual("?token=secret", host.SingleTrafficRecord().GetProperty("Request.QueryString"));
         }
     }
 
@@ -239,7 +394,7 @@ public sealed class RequestTrafficLoggingTests
             DefaultHttpContext context = host.CreateContext();
             context.Request.Headers["X-Correlation"] = "abc";
             await pipeline(context);
-            Assert.IsFalse(host.SingleTrafficRecord().TryGetProperty("X-Correlation", out _));
+            Assert.IsFalse(host.SingleTrafficRecord().TryGetProperty("Request.Header.X-Correlation", out _));
         }
 
         using (var host = new RequestTrafficLoggingTestHost(options =>
@@ -249,7 +404,7 @@ public sealed class RequestTrafficLoggingTests
             DefaultHttpContext context = host.CreateContext();
             context.Request.Headers["X-Correlation"] = "abc";
             await pipeline(context);
-            Assert.AreEqual("[Redacted]", host.SingleTrafficRecord().GetProperty("X-Correlation"));
+            Assert.AreEqual("[Redacted]", host.SingleTrafficRecord().GetProperty("Request.Header.X-Correlation"));
         }
     }
 
@@ -264,7 +419,7 @@ public sealed class RequestTrafficLoggingTests
                 return Task.CompletedTask;
             }));
             await pipeline(host.CreateContext());
-            Assert.IsFalse(host.SingleTrafficRecord().TryGetProperty("X-Node", out _));
+            Assert.IsFalse(host.SingleTrafficRecord().TryGetProperty("Response.Header.X-Node", out _));
         }
 
         using (var host = new RequestTrafficLoggingTestHost(options =>
@@ -276,7 +431,7 @@ public sealed class RequestTrafficLoggingTests
                 return Task.CompletedTask;
             }));
             await pipeline(host.CreateContext());
-            Assert.AreEqual("[Redacted]", host.SingleTrafficRecord().GetProperty("X-Node"));
+            Assert.AreEqual("[Redacted]", host.SingleTrafficRecord().GetProperty("Response.Header.X-Node"));
         }
     }
 
@@ -291,8 +446,8 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("[Redacted]", record.GetProperty("Authorization"));
-        Assert.IsFalse(record.TryGetProperty("RequestHeader.AuthorizationHash", out _));
+        Assert.AreEqual("[Redacted]", record.GetProperty("Request.Header.Authorization"));
+        Assert.IsFalse(record.TryGetProperty("Request.Header.Authorization.Hash", out _));
     }
 
     [TestMethod]
@@ -307,8 +462,8 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("[Redacted]", record.GetProperty("Authorization"));
-        Assert.AreEqual(Hash(value), record.GetProperty("RequestHeader.AuthorizationHash"));
+        Assert.AreEqual("[Redacted]", record.GetProperty("Request.Header.Authorization"));
+        Assert.AreEqual(Hash(value), record.GetProperty("Request.Header.Authorization.Hash"));
     }
 
     [TestMethod]
@@ -322,7 +477,7 @@ public sealed class RequestTrafficLoggingTests
 
         await pipeline(context);
 
-        Assert.AreEqual(value, host.SingleTrafficRecord().GetProperty("Authorization"));
+        Assert.AreEqual(value, host.SingleTrafficRecord().GetProperty("Request.Header.Authorization"));
     }
 
     [TestMethod]
@@ -343,8 +498,82 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(host.CreateContext());
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("[Redacted]", record.GetProperty("Set-Cookie"));
-        Assert.AreEqual(Hash(value), record.GetProperty("ResponseHeader.Set-CookieHash"));
+        Assert.AreEqual("[Redacted]", record.GetProperty("Response.Header.Set-Cookie"));
+        Assert.AreEqual(Hash(value), record.GetProperty("Response.Header.Set-Cookie.Hash"));
+    }
+
+    [TestMethod]
+    public async Task AllRawHeaders_IncludeUnknownAndSensitiveValuesWithoutFrameworkRedaction()
+    {
+        using var host = new RequestTrafficLoggingTestHost(options =>
+        {
+            options.Fields |= RequestTrafficLoggingFields.RequestHeaders | RequestTrafficLoggingFields.ResponseHeaders;
+            options.HeaderCaptureMode = HeaderCaptureMode.AllRaw;
+        });
+        RequestDelegate pipeline = host.BuildPipeline(app => app.Run(context =>
+        {
+            context.Response.Headers.SetCookie = "session=secret";
+            context.Response.Headers["X-Unknown-Response"] = "response-value";
+            return Task.CompletedTask;
+        }));
+        DefaultHttpContext context = host.CreateContext();
+        context.Request.Headers.Authorization = "Bearer secret-token";
+        context.Request.Headers["X-Unknown-Request"] = "request-value";
+
+        await pipeline(context);
+
+        CapturedLogRecord record = host.SingleTrafficRecord();
+        Assert.AreEqual("Bearer secret-token", record.GetProperty("Request.Header.Authorization"));
+        Assert.AreEqual("request-value", record.GetProperty("Request.Header.X-Unknown-Request"));
+        Assert.AreEqual("session=secret", record.GetProperty("Response.Header.Set-Cookie"));
+        Assert.AreEqual("response-value", record.GetProperty("Response.Header.X-Unknown-Response"));
+        Assert.IsTrue(record.Message.Contains("Request.Header.Authorization: Bearer secret-token", StringComparison.Ordinal));
+        Assert.IsTrue(record.Message.Contains("Response.Header.Set-Cookie: session=secret", StringComparison.Ordinal));
+        Assert.IsFalse(record.Message.Contains("[Redacted]", StringComparison.Ordinal));
+        Assert.IsFalse(record.TryGetProperty("Authorization", out _));
+    }
+
+    [TestMethod]
+    public async Task AllRawHeaders_PreserveMultipleValuesAndRespectFieldFlags()
+    {
+        using (var host = new RequestTrafficLoggingTestHost(options =>
+               {
+                   options.Fields |= RequestTrafficLoggingFields.RequestHeaders | RequestTrafficLoggingFields.ResponseHeaders;
+                   options.HeaderCaptureMode = HeaderCaptureMode.AllRaw;
+               }))
+        {
+            RequestDelegate pipeline = host.BuildPipeline(app => app.Run(context =>
+            {
+                context.Response.Headers.SetCookie = new StringValues(new[] { "a=1", "b=2" });
+                return Task.CompletedTask;
+            }));
+            DefaultHttpContext context = host.CreateContext();
+            context.Request.Headers["X-Multiple"] = new StringValues(new[] { "first", "second" });
+
+            await pipeline(context);
+
+            CapturedLogRecord record = host.SingleTrafficRecord();
+            Assert.AreEqual("first", record.GetProperty("Request.Header.X-Multiple[0]"));
+            Assert.AreEqual("second", record.GetProperty("Request.Header.X-Multiple[1]"));
+            Assert.AreEqual("a=1", record.GetProperty("Response.Header.Set-Cookie[0]"));
+            Assert.AreEqual("b=2", record.GetProperty("Response.Header.Set-Cookie[1]"));
+        }
+
+        using (var host = new RequestTrafficLoggingTestHost(options =>
+               {
+                   options.Fields = RequestTrafficLoggingFields.Core;
+                   options.HeaderCaptureMode = HeaderCaptureMode.AllRaw;
+               }))
+        {
+            RequestDelegate pipeline = host.BuildPipeline(app => app.Run(static _ => Task.CompletedTask));
+            DefaultHttpContext context = host.CreateContext();
+            context.Request.Headers.Authorization = "Bearer secret-token";
+
+            await pipeline(context);
+
+            CapturedLogRecord record = host.SingleTrafficRecord();
+            Assert.IsFalse(record.TryGetProperty("Request.Header.Authorization", out _));
+        }
     }
 
     [TestMethod]
@@ -370,8 +599,8 @@ public sealed class RequestTrafficLoggingTests
 
         CapturedLogRecord record = host.SingleTrafficRecord();
         Assert.AreEqual("abcd", record.GetProperty("RequestBody"));
-        Assert.AreEqual(8L, record.GetProperty("RequestBodyTotalBytes"));
-        Assert.AreEqual(true, record.GetProperty("RequestBodyTruncated"));
+        Assert.AreEqual(8L, record.GetProperty("Request.Body.DeclaredLength"));
+        Assert.AreEqual(true, record.GetProperty("Request.Body.Truncated"));
         Assert.IsFalse(record.TryGetProperty("RequestBodyCapturedBytes", out _));
     }
 
@@ -399,8 +628,8 @@ public sealed class RequestTrafficLoggingTests
             await pipeline(context);
 
             CapturedLogRecord record = host.SingleTrafficRecord();
-            Assert.AreEqual((long)size, record.GetProperty("RequestBodyTotalBytes"));
-            Assert.AreEqual(expectedTruncated, record.GetProperty("RequestBodyTruncated"));
+            Assert.AreEqual((long)size, record.GetProperty("Request.Body.DeclaredLength"));
+            Assert.AreEqual(expectedTruncated, record.GetProperty("Request.Body.Truncated"));
         }
     }
 
@@ -427,8 +656,8 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.IsNull(record.GetProperty("RequestBodyTotalBytes"));
-        Assert.IsNull(record.GetProperty("RequestBodyTruncated"));
+        Assert.IsNull(record.GetProperty("Request.Body.DeclaredLength"));
+        Assert.IsNull(record.GetProperty("Request.Body.Truncated"));
     }
 
     [TestMethod]
@@ -455,8 +684,8 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual(100L, record.GetProperty("RequestBodyTotalBytes"));
-        Assert.AreEqual(false, record.GetProperty("RequestBodyTruncated"));
+        Assert.AreEqual(100L, record.GetProperty("Request.Body.DeclaredLength"));
+        Assert.AreEqual(false, record.GetProperty("Request.Body.Truncated"));
     }
 
     [TestMethod]
@@ -478,8 +707,8 @@ public sealed class RequestTrafficLoggingTests
 
         CapturedLogRecord record = host.SingleTrafficRecord();
         Assert.AreEqual("abcd", record.GetProperty("ResponseBody"));
-        Assert.AreEqual(8L, record.GetProperty("ResponseBodyTotalBytes"));
-        Assert.AreEqual(true, record.GetProperty("ResponseBodyTruncated"));
+        Assert.AreEqual(8L, record.GetProperty("Response.Body.DeclaredLength"));
+        Assert.AreEqual(true, record.GetProperty("Response.Body.Truncated"));
         Assert.IsFalse(record.TryGetProperty("ResponseBodyCapturedBytes", out _));
     }
 
@@ -504,8 +733,8 @@ public sealed class RequestTrafficLoggingTests
             await pipeline(host.CreateContext());
 
             CapturedLogRecord record = host.SingleTrafficRecord();
-            Assert.AreEqual((long)size, record.GetProperty("ResponseBodyTotalBytes"));
-            Assert.AreEqual(expectedTruncated, record.GetProperty("ResponseBodyTruncated"));
+            Assert.AreEqual((long)size, record.GetProperty("Response.Body.DeclaredLength"));
+            Assert.AreEqual(expectedTruncated, record.GetProperty("Response.Body.Truncated"));
         }
     }
 
@@ -527,8 +756,8 @@ public sealed class RequestTrafficLoggingTests
 
         CapturedLogRecord record = host.SingleTrafficRecord();
         Assert.AreEqual("abcd", record.GetProperty("ResponseBody"));
-        Assert.IsNull(record.GetProperty("ResponseBodyTotalBytes"));
-        Assert.IsNull(record.GetProperty("ResponseBodyTruncated"));
+        Assert.IsNull(record.GetProperty("Response.Body.DeclaredLength"));
+        Assert.IsNull(record.GetProperty("Response.Body.Truncated"));
     }
 
     [TestMethod]
@@ -542,8 +771,8 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("Orders.Get", record.GetProperty("Endpoint"));
-        Assert.AreEqual("/orders/{id:int}", record.GetProperty("RoutePattern"));
+        Assert.AreEqual("Orders.Get", record.GetProperty("Routing.Endpoint"));
+        Assert.AreEqual("/orders/{id:int}", record.GetProperty("Routing.Pattern"));
     }
 
     [TestMethod]
@@ -566,10 +795,9 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual("203.0.113.99", record.GetProperty("RemoteIpAddress"));
-        string[] chain = (string[])record.GetProperty("ForwardedIpChain")!;
-        CollectionAssert.AreEqual(new[] { "XForwardedFor:198.51.100.40" }, chain);
-        Assert.AreEqual(false, record.GetProperty("HasMalformedForwardedIpInformation"));
+        Assert.AreEqual("203.0.113.99", record.GetProperty("Connection.Remote.IpAddress"));
+        Assert.AreEqual("XForwardedFor:198.51.100.40", record.GetProperty("Connection.ForwardedIpChain"));
+        Assert.AreEqual(false, record.GetProperty("Connection.ForwardedIpMalformed"));
     }
 
     [TestMethod]
@@ -586,12 +814,12 @@ public sealed class RequestTrafficLoggingTests
         await pipeline(context);
 
         CapturedLogRecord record = host.SingleTrafficRecord();
-        Assert.AreEqual(true, record.GetProperty("IdentityAuthenticated"));
-        Assert.AreEqual("alice", record.GetProperty("IdentityName"));
-        Assert.AreEqual("test", record.GetProperty("IdentityAuthenticationType"));
-        Assert.AreEqual("127.0.0.1", record.GetProperty("LocalIpAddress"));
-        Assert.AreEqual(8443, record.GetProperty("LocalPort"));
-        Assert.AreEqual(52341, record.GetProperty("RemotePort"));
+        Assert.AreEqual(true, record.GetProperty("Identity.Authenticated"));
+        Assert.AreEqual("alice", record.GetProperty("Identity.Name"));
+        Assert.AreEqual("test", record.GetProperty("Identity.AuthenticationType"));
+        Assert.AreEqual("127.0.0.1", record.GetProperty("Connection.Local.IpAddress"));
+        Assert.AreEqual(8443, record.GetProperty("Connection.Local.Port"));
+        Assert.AreEqual(52341, record.GetProperty("Connection.Remote.Port"));
         Assert.IsFalse(record.TryGetProperty("secret-claim", out _));
     }
 
@@ -610,11 +838,11 @@ public sealed class RequestTrafficLoggingTests
 
         CapturedLogRecord record = host.SingleTrafficRecord();
         Assert.AreEqual("RequestTraffic", record.GetProperty("Event"));
-        Assert.AreEqual("Completed", record.GetProperty("Outcome"));
-        Assert.IsFalse(record.TryGetProperty("Method", out _));
-        Assert.IsFalse(record.TryGetProperty("Path", out _));
-        Assert.IsFalse(record.TryGetProperty("RemoteIpAddress", out _));
-        Assert.IsFalse(record.TryGetProperty("StatusCode", out _));
+        Assert.AreEqual("Completed", record.GetProperty("Pipeline.Outcome"));
+        Assert.IsFalse(record.TryGetProperty("Request.Method", out _));
+        Assert.IsFalse(record.TryGetProperty("Request.Path", out _));
+        Assert.IsFalse(record.TryGetProperty("Connection.Remote.IpAddress", out _));
+        Assert.IsFalse(record.TryGetProperty("Response.StatusCode", out _));
     }
 
     [TestMethod]
@@ -649,12 +877,8 @@ public sealed class RequestTrafficLoggingTests
         Assert.AreEqual(HttpLoggingFields.None, options.LoggingFields);
         Assert.AreEqual(31, options.RequestBodyLogLimit);
         Assert.AreEqual(37, options.ResponseBodyLogLimit);
-        Assert.IsFalse(options.RequestHeaders.Contains("X-Existing-Request"));
-        Assert.IsFalse(options.ResponseHeaders.Contains("X-Existing-Response"));
-        Assert.IsTrue(options.RequestHeaders.Contains("User-Agent"));
-        Assert.IsTrue(options.RequestHeaders.Contains("X-A4-Request"));
-        Assert.IsTrue(options.ResponseHeaders.Contains("Content-Type"));
-        Assert.IsTrue(options.ResponseHeaders.Contains("X-A4-Response"));
+        Assert.AreEqual(0, options.RequestHeaders.Count);
+        Assert.AreEqual(0, options.ResponseHeaders.Count);
     }
 
     [TestMethod]

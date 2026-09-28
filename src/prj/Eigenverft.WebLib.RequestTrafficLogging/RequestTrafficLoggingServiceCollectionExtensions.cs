@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -43,6 +41,9 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
                     static options => (options.Fields & ~RequestTrafficLoggingFields.All) == 0,
                     "Fields contains unsupported request traffic logging flags.")
                 .Validate(
+                    static options => Enum.IsDefined(typeof(HeaderCaptureMode), options.HeaderCaptureMode),
+                    "HeaderCaptureMode is invalid.")
+                .Validate(
                     static options => Enum.IsDefined(typeof(SensitiveValueMode), options.SensitiveValueMode),
                     "SensitiveValueMode is invalid.")
                 .Validate(static options => options.RequestBodyLimit >= 0, "RequestBodyLimit cannot be negative.")
@@ -79,34 +80,9 @@ namespace Eigenverft.WebLib.RequestTrafficLogging
             options.RequestBodyLogLimit = trafficOptions.RequestBodyLimit;
             options.ResponseBodyLogLimit = trafficOptions.ResponseBodyLimit;
 
-            ConfigureAllowedHeaders(options.RequestHeaders, trafficOptions.RequestHeaders, trafficOptions);
-            ConfigureAllowedHeaders(options.ResponseHeaders, trafficOptions.ResponseHeaders, trafficOptions);
-        }
-
-        private static void ConfigureAllowedHeaders(
-            ISet<string> frameworkHeaders,
-            ISet<string> configuredHeaders,
-            RequestTrafficLoggingOptions options)
-        {
-            frameworkHeaders.Clear();
-
-            foreach (string header in configuredHeaders)
-            {
-                if (options.SensitiveValueMode != SensitiveValueMode.Include && options.SensitiveHeaders.Contains(header))
-                {
-                    continue;
-                }
-
-                frameworkHeaders.Add(header);
-            }
-
-            if (options.SensitiveValueMode == SensitiveValueMode.Include)
-            {
-                foreach (string header in options.SensitiveHeaders)
-                {
-                    frameworkHeaders.Add(header);
-                }
-            }
+            // Header fields are emitted by the interceptor with Request.Header.* and Response.Header.* names.
+            options.RequestHeaders.Clear();
+            options.ResponseHeaders.Clear();
         }
     }
 }

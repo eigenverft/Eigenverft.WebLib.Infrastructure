@@ -1,4 +1,27 @@
-Initial capability package extracted from Eigenverft.WebLib.Infrastructure.
+Corrected Pipeline.Outcome cancellation semantics.
 
-- ASP.NET Core request traffic logging middleware and HTTP logging field configuration with sensitive value controls.
-- Public namespaces and behavior remain compatible with the original Infrastructure implementation.
+- Keeps Pipeline.Outcome=Completed when the downstream pipeline returned normally, even if RequestAborted is set at the final snapshot.
+- Reserves Pipeline.Outcome=Aborted for an escaping OperationCanceledException or IOException accompanied by the cancellation signal.
+- Keeps Pipeline.Aborted as the independent raw cancellation signal, so completed streaming and SSE responses can report Completed together with Pipeline.Aborted=true.
+- Preserves all hierarchical field names introduced in 1.0.0.7.
+- This is a breaking behavioral change for log queries or dashboards that treated every observed cancellation signal as Pipeline.Outcome=Aborted.
+
+Introduced hierarchical traffic diagnostics fields as the default output contract.
+
+- Groups fields under Request.*, Connection.*, Identity.*, Routing.*, Response.*, and Pipeline.*.
+- Emits both allowlisted and raw headers under Request.Header.* and Response.Header.*.
+- Renames body length metadata to *.Body.DeclaredLength to reflect Content-Length semantics.
+- Orders the controlled fields from request input through response and final pipeline outcome.
+- This is a breaking field-name change for log queries and dashboards; framework body text remains RequestBody/ResponseBody.
+
+Previously clarified traffic diagnostics fields for flat log output.
+
+- Renamed Outcome to PipelineOutcome and ResponseStarted to ResponseStartedAtCapture.
+- Renders ForwardedIpChain as readable text instead of an array type name.
+- These log-field changes require consumers of the previous field names to update their queries.
+
+Previously added opt-in AllRaw request and response header capture for traffic diagnostics.
+
+- Captures every header value, including unknown names and sensitive values, without framework redaction when enabled.
+- Keeps the existing allowlisted, redacted behavior as the default.
+- Preserves multiple values separately and respects the existing header field flags.

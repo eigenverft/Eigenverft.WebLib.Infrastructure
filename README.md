@@ -1,18 +1,37 @@
 # 🧱 Eigenverft.WebLib.Infrastructure
 
-<!-- Maintenance note: Keep README.NUGET.md aligned with this README for shared prose, examples, headings, badges, and feature descriptions. Use absolute NuGet/GitHub URLs there where this README can use repository-relative links; otherwise keep shared content in sync. -->
+<!-- Maintenance note: Keep README.NUGET.md aligned with this README for the shared landing, package table, badges, and historical monolith examples. README.NUGET.md must use absolute GitHub URLs for repository links. -->
 
-[![NuGet Version](https://img.shields.io/nuget/v/Eigenverft.WebLib.Infrastructure?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure) [![NuGet Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.Infrastructure?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure) [![Build Status](https://img.shields.io/github/actions/workflow/status/eigenverft/Eigenverft.WebLib.Infrastructure/cicd.yml?branch=main&label=build)](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/actions/workflows/cicd.yml) [![Targets](https://img.shields.io/badge/targets-.NET%208%20%7C%2010-512BD4?logo=dotnet&logoColor=white)](#-target-frameworks) [![License](https://img.shields.io/github/license/eigenverft/Eigenverft.WebLib.Infrastructure?logo=mit)](LICENSE)
+[![Repository CI](https://img.shields.io/github/actions/workflow/status/eigenverft/Eigenverft.WebLib.Infrastructure/cicd.yml?branch=main&label=repository%20CI)](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/actions/workflows/cicd.yml) [![Targets: net8.0 | net10.0](https://img.shields.io/badge/targets-net8.0%20%7C%20net10.0-512BD4?logo=dotnet&logoColor=white)](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure#-target-frameworks) [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?logo=mit)](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/LICENSE)
 
-Production-oriented ASP.NET Core adapters built on
-[`Eigenverft.NetLib.Infrastructure`](https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure).
-WebLib turns configuration, certificate files, and the shared application directory layout into a
-reload-safe Kestrel/SNI setup. It also connects ASP.NET Core Data Protection to NetLib's composable
-configuration-value protection without duplicating host-independent infrastructure.
+> [!IMPORTANT]
+> `Eigenverft.WebLib.Infrastructure` is a frozen legacy monolith retained for compatibility. New development and new installations should use the individually versioned capability packages below. This repository and the split packages remain actively maintained.
 
----
+## 🧩 Active capability packages
 
-## ✨ At a glance
+Choose only the capabilities your application needs. Each package guide documents its API, dependencies, and behavior.
+Some capabilities use shared host-independent services from [Eigenverft.NetLib.Infrastructure](https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure); each guide lists its package-specific dependencies.
+
+| Capability package | Problem it solves / when to use it | NuGet | Current version / downloads | Guide |
+| --- | --- | --- | --- | --- |
+| `Eigenverft.WebLib.Hosting.DirectoryLayout` | An ASP.NET Core app needs content root, web root, wwwroot, and writable application directories to agree on one executable-rooted layout. | [NuGet](https://www.nuget.org/packages/Eigenverft.WebLib.Hosting.DirectoryLayout) | [![NuGet](https://img.shields.io/nuget/v/Eigenverft.WebLib.Hosting.DirectoryLayout?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Hosting.DirectoryLayout) [![Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.Hosting.DirectoryLayout?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Hosting.DirectoryLayout) | [Package guide](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/sln/Eigenverft.WebLib.Hosting.DirectoryLayout/Readme.md) |
+| `Eigenverft.WebLib.CanonicalHostRedirect` | Public URLs must converge to one host and HTTPS target in a single redirect, including reverse-proxy deployments. | [NuGet](https://www.nuget.org/packages/Eigenverft.WebLib.CanonicalHostRedirect) | [![NuGet](https://img.shields.io/nuget/v/Eigenverft.WebLib.CanonicalHostRedirect?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.CanonicalHostRedirect) [![Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.CanonicalHostRedirect?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.CanonicalHostRedirect) | [Package guide](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/sln/Eigenverft.WebLib.CanonicalHostRedirect/Readme.md) |
+| `Eigenverft.WebLib.HealthProbes` | A service needs a tiny liveness endpoint that bypasses later middleware and suppresses browser favicon noise. | [NuGet](https://www.nuget.org/packages/Eigenverft.WebLib.HealthProbes) | [![NuGet](https://img.shields.io/nuget/v/Eigenverft.WebLib.HealthProbes?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.HealthProbes) [![Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.HealthProbes?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.HealthProbes) | [Package guide](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/sln/Eigenverft.WebLib.HealthProbes/Readme.md) |
+| `Eigenverft.WebLib.Hsts` | Applications need consistent native HSTS defaults and configuration while keeping Development free of HSTS middleware. | [NuGet](https://www.nuget.org/packages/Eigenverft.WebLib.Hsts) | [![NuGet](https://img.shields.io/nuget/v/Eigenverft.WebLib.Hsts?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Hsts) [![Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.Hsts?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Hsts) | [Package guide](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/sln/Eigenverft.WebLib.Hsts/Readme.md) |
+| `Eigenverft.WebLib.Middleware.Primitives` | Reusable middleware needs isolated non-rejoining branches, use-site options, typed features, and explicit short-circuit responses. | [NuGet](https://www.nuget.org/packages/Eigenverft.WebLib.Middleware.Primitives) | [![NuGet](https://img.shields.io/nuget/v/Eigenverft.WebLib.Middleware.Primitives?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Middleware.Primitives) [![Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.Middleware.Primitives?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Middleware.Primitives) | [Package guide](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/sln/Eigenverft.WebLib.Middleware.Primitives/Readme.md) |
+| `Eigenverft.WebLib.ClientNetwork` | Diagnostics need normalized peer and forwarded-IP observations without confusing those facts with trust decisions. | [NuGet](https://www.nuget.org/packages/Eigenverft.WebLib.ClientNetwork) | [![NuGet](https://img.shields.io/nuget/v/Eigenverft.WebLib.ClientNetwork?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.ClientNetwork) [![Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.ClientNetwork?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.ClientNetwork) | [Package guide](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/sln/Eigenverft.WebLib.ClientNetwork/Readme.md) |
+| `Eigenverft.WebLib.Kestrel.Sni` | Kestrel listeners and SNI certificates must be configuration-driven, reload-safe, and recoverable without losing the last good generation. | [NuGet](https://www.nuget.org/packages/Eigenverft.WebLib.Kestrel.Sni) | [![NuGet](https://img.shields.io/nuget/v/Eigenverft.WebLib.Kestrel.Sni?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Kestrel.Sni) [![Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.Kestrel.Sni?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Kestrel.Sni) | [Package guide](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/sln/Eigenverft.WebLib.Kestrel.Sni/Readme.md) |
+| `Eigenverft.WebLib.RequestTrafficLogging` | Each request needs one bounded, structured request/response record with clear completion semantics and configurable sensitive-data handling. | [NuGet](https://www.nuget.org/packages/Eigenverft.WebLib.RequestTrafficLogging) | [![NuGet](https://img.shields.io/nuget/v/Eigenverft.WebLib.RequestTrafficLogging?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.RequestTrafficLogging) [![Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.RequestTrafficLogging?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.RequestTrafficLogging) | [Package guide](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/sln/Eigenverft.WebLib.RequestTrafficLogging/Readme.md) |
+| `Eigenverft.WebLib.RequestTrafficShaping` | A service needs layered per-client and server-wide rate limits plus optional concurrency protection using native ASP.NET Core primitives. | [NuGet](https://www.nuget.org/packages/Eigenverft.WebLib.RequestTrafficShaping) | [![NuGet](https://img.shields.io/nuget/v/Eigenverft.WebLib.RequestTrafficShaping?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.RequestTrafficShaping) [![Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.RequestTrafficShaping?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.RequestTrafficShaping) | [Package guide](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/sln/Eigenverft.WebLib.RequestTrafficShaping/Readme.md) |
+| `Eigenverft.WebLib.StaticFiles` | Applications must serve additional MIME types without replacing the existing ASP.NET Core content-type mappings. | [NuGet](https://www.nuget.org/packages/Eigenverft.WebLib.StaticFiles) | [![NuGet](https://img.shields.io/nuget/v/Eigenverft.WebLib.StaticFiles?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.StaticFiles) [![Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.StaticFiles?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.StaticFiles) | [Package guide](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/src/sln/Eigenverft.WebLib.StaticFiles/Readme.md) |
+
+## 🕰️ Legacy monolith reference
+
+The examples below document the frozen `Eigenverft.WebLib.Infrastructure` monolith for existing consumers and migration work. They are not a current package map or a recommendation for new installations. The current split-package APIs are linked in the table above.
+
+### ✨ Historical monolith capabilities
+
+This snapshot describes features of the frozen monolith only; use the active package table above to select current packages.
 
 | Capability | Problem solved | Starting point |
 | --- | --- | --- |
@@ -24,18 +43,22 @@ configuration-value protection without duplicating host-independent infrastructu
 | Health probe | Short-circuit GET/HEAD `/health` before later filters and suppress probe-originated `/favicon.ico` noise | `UseHealthProbeFaviconAware()` |
 | HTML status responses | Write a small explicit HTML status response for middleware short-circuits using ASP.NET Core reason phrases | `WriteHtmlStatusResponseAsync(...)` |
 
-WebLib targets .NET 8 and .NET 10. Installing it also brings in
+The historical monolith targeted .NET 8 and .NET 10. Installing it also brought in
 `Eigenverft.NetLib.Infrastructure` as the shared foundation.
 
-## 📦 Installation
+### 📦 Legacy installation
+
+> **Compatibility only:** This command installs the frozen monolith. New applications should install the required capability packages from the table above instead.
 
 ```shell
 dotnet add package Eigenverft.WebLib.Infrastructure
 ```
 
-## 🚀 Quick start
+### 🚀 Historical monolith quick start
 
-### Executable-rooted web application
+> The namespaces and APIs in this sample belong to the frozen monolith. For current APIs, use the linked package guides above.
+
+#### Executable-rooted web application
 
 `WebApplicationBuilderFactory.CreateWithDefaultDirectory(...)` creates an ASP.NET Core
 `WebApplicationBuilder` from NetLib's shared directory layout. WebLib adds the web-specific
@@ -57,7 +80,9 @@ app.MapGet("/", () => $"Web root: {webRoot}");
 app.Run();
 ```
 
-## 🔥 Optional self-HTTP startup warmup
+### 🔥 Optional self-HTTP startup warmup — legacy-only
+
+> **Migration:** Self-HTTP warmup was extracted to [Eigenverft.NetLib.Hosting.SelfHttpWarmup on NuGet](https://www.nuget.org/packages/Eigenverft.NetLib.Hosting.SelfHttpWarmup) ([package guide](https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure/blob/main/src/sln/Eigenverft.NetLib.Hosting.SelfHttpWarmup/Readme.md)). Use that NetLib package for new warmup integrations; the example below shows the historical WebLib API.
 
 `AddSelfHttpWarmup(...)` can issue one pass of HTTP requests to the running application after startup
 has completed. This is useful when a deployment should pay first-use costs such as JIT compilation,
@@ -115,7 +140,9 @@ targets from being attempted. Redirects are not followed. Standard platform cert
 remains enabled; self-HTTP warmup intentionally bypasses proxies so the request connects directly to
 the configured target.
 
-## 🔐 ASP.NET Core Data Protection adapter
+### 🔐 ASP.NET Core Data Protection adapter — legacy-only
+
+> **Migration:** The ASP.NET Core Data Protection adapter was extracted to [Eigenverft.NetLib.Security.DataProtection on NuGet](https://www.nuget.org/packages/Eigenverft.NetLib.Security.DataProtection) ([package guide](https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure/blob/main/src/sln/Eigenverft.NetLib.Security.DataProtection/Readme.md)). Use that NetLib package for current transforms and configuration-value codecs; the example below shows the historical WebLib API.
 
 `AspNetDataProtectionStringTransforms.DataProtection(...)` adapts an ASP.NET Core
 `IDataProtectionProvider` to NetLib's `ReversibleStringTransform` abstraction while keeping
@@ -128,12 +155,14 @@ only the application-specific purpose to the caller. The result is a normal
 `ConfigurationValueCodec` and can be used independently or at any position in
 `ConfigurationValueCodecs.Compose(...)`.
 
-## 🧰 Small request-pipeline helpers
+### 🧰 Small request-pipeline helpers
+
+> These examples use monolith APIs. Current capabilities are separated across the packages in the overview; consult the relevant package guide before adopting a helper.
 
 WebLib includes a few intentionally small ASP.NET Core helpers that are useful outside the larger
 RequestFilters stack.
 
-### Canonical host and HTTPS redirect
+#### Canonical host and HTTPS redirect
 
 The normal case needs one registration and one middleware call:
 
@@ -173,7 +202,7 @@ query. Incoming HTTP ports are never copied to HTTPS. When a reverse proxy suppl
 or host, configure ASP.NET Core Forwarded Headers normally and call `UseForwardedHeaders()` before
 `UseCanonicalHostRedirect()`.
 
-### Public use-site options monitor
+#### Public use-site options monitor
 
 Reusable middleware libraries can expose a local `UseX(Action<TOptions>)` override without replacing ASP.NET Core's options architecture. Build an isolated monitor from the concrete application pipeline:
 
@@ -190,14 +219,14 @@ IOptionsMonitor<MyOptions> localOptions =
 
 The monitor starts from normal registered options configuration and configuration binding, runs registered `PostConfigure` steps, applies the local use-site override afterwards, and then runs registered validation. It uses the registered change-token sources, so configuration reload rebuilds the current baseline and reapplies the same local override; `OnChange` receives that rebuilt locally overridden value. The monitor has its own cache and fresh options instances, so local mutable changes do not alter the application's global options monitor.
 
-### Health probe and favicon suppression
+#### Health probe and favicon suppression
 
 `UseHealthProbeFaviconAware()` handles only GET and HEAD for `/health`, returns `200 OK` with `OK`
 for GET, and short-circuits the rest of the pipeline. A GET or HEAD for `/favicon.ico` returns
 `204 No Content` only when its `Referer` points to `/health`. Keep this middleware before filters that
 a health probe must bypass.
 
-### Explicit HTML status response
+#### Explicit HTML status response
 
 For a middleware that intentionally terminates a request with an HTML response, use:
 
@@ -212,14 +241,14 @@ The helper uses `ReasonPhrases.GetReasonPhrase(...)`; WebLib does not maintain i
 code description table. General application error handling remains the responsibility of ASP.NET
 Core Status Code Pages or Problem Details.
 
-### Host filtering remains framework-owned
+#### Host filtering remains framework-owned
 
 WebLib intentionally does not provide an `AddAllowedHosts` replacement. `WebApplication.CreateBuilder()`
 already wires ASP.NET Core host filtering to the live configuration object. Clearing
 `builder.Configuration.Sources` and adding replacement sources does not remove that wiring, so a
 rebuilt `AllowedHosts` value is still consumed by the built-in host-filtering options.
 
-### HSTS
+#### HSTS
 
 WebLib keeps HSTS framework-owned and adds a small registration/use-site wrapper with a 180-day default. Configuration binds from the `Hsts` section and an optional code callback is applied last:
 
@@ -236,7 +265,7 @@ WebApplication app = builder.Build();
 app.UseWebLibHsts(); // no HSTS middleware in Development
 ```
 
-### Request traffic shaping
+#### Request traffic shaping
 
 Register WebLib's native rate-limiter composition and activate ASP.NET Core rate limiting:
 
@@ -287,7 +316,7 @@ The same options bind at startup from `RequestTrafficShaping`; class defaults ar
 
 The limiter chain is per-client token bucket, then the shared server-wide token bucket, then the optional `GlobalConcurrencyLimit`. Both token buckets use the native .NET implementation with bounded oldest-first queues. `PerClient.Enabled` and `ServerWide.Enabled` both default to `true`; disabling either token-bucket layer skips only that layer. Server-wide `BurstSize`, `RequestsPerSecond`, and `QueueLimit` each default to `10,000` as generous WebLib infrastructure starting values, not as a capacity guarantee. Tune them after representative load tests for the consuming application. Both token-bucket option groups require positive burst/rate values, a non-negative queue, and `BurstSize >= RequestsPerSecond` because the current native mapping replenishes once per second. Retry timing remains based on native lease metadata. These settings configure limiter construction at startup; they do not live-reconfigure already running token buckets. If a trusted reverse proxy supplies the client IP, run Forwarded Headers before rate limiting.
 
-### Request traffic logging
+#### Request traffic logging
 
 Request traffic logging builds on ASP.NET Core HTTP Logging but keeps one combined, structured traffic event per request with explicit completion semantics:
 
@@ -301,7 +330,9 @@ app.UseRequestTrafficLogging();
 ```
 
 The completion layer distinguishes completed, aborted, and faulted requests while framework HTTP Logging owns request/response capture. Sensitive header values are redacted by default, and body capture is bounded. Register `UseRequestTrafficLogging()` before exception-handling middleware when handled exceptions should still be classified as faulted with their final handled response status.
-## 🌐 Kestrel and SNI
+### 🌐 Kestrel and SNI
+
+> For new applications, use `Eigenverft.WebLib.Kestrel.Sni` from the table above. The Data Protection adapter in this historical setup moved to [Eigenverft.NetLib.Security.DataProtection on NuGet](https://www.nuget.org/packages/Eigenverft.NetLib.Security.DataProtection) ([package guide](https://github.com/eigenverft/Eigenverft.NetLib.Infrastructure/blob/main/src/sln/Eigenverft.NetLib.Security.DataProtection/Readme.md)); it is a separate NetLib package and is not included in `Eigenverft.WebLib.Kestrel.Sni`.
 
 `ConfigureKestrelSniFromConfiguration(...)` is the top-level entry point for
 configuration-driven HTTP/HTTPS listeners and reload-safe SNI certificate selection. It combines
@@ -322,7 +353,7 @@ The complete setup uses this application-owned layout:
 └── wwwroot/                                ← ASP.NET Core web root
 ```
 
-### Register configuration and protect certificate passwords
+#### Register configuration and protect certificate passwords
 
 Add the configuration sources before the application is built:
 
@@ -407,7 +438,7 @@ example re-adds environment variables and command-line arguments. The explicit J
 registered afterwards and therefore have higher precedence for overlapping keys. The two files
 separate startup-fixed server policy from reloadable certificate mappings.
 
-### Configure Kestrel and run
+#### Configure Kestrel and run
 
 The top-level WebLib extension consumes those sources and configures the complete server:
 
@@ -437,7 +468,7 @@ configuration. Here, `nameof(certificatePasswordCodec)` is the persisted purpose
 variable name as a compatibility contract. Back up and retain the complete key ring while protected
 values may still depend on it.
 
-### Defense in depth and limits
+#### Defense in depth and limits
 
 The persisted certificate password passes through the codecs in order:
 
@@ -579,7 +610,9 @@ Earlier copies of this helper used a single `SanNames` array. When migrating, sp
 the `Eigenverft.WebLib.Infrastructure.Hosting.Kestrel` namespace instead of an application-local
 or `Eigenverft.Routed.RequestFilters` implementation.
 
-## 📁 Isolated static and PWA hosting
+### 📁 Isolated static and PWA hosting
+
+> This historical example combines monolith APIs. Current static-file MIME mappings and isolated pipeline primitives are available in the separate `Eigenverft.WebLib.StaticFiles` and `Eigenverft.WebLib.Middleware.Primitives` packages; see their guides above.
 
 WebLib provides thin pipeline partitioning and static-file conveniences without introducing a separate
 routing or mount system. `MapIsolated(...)` delegates to native ASP.NET Core `Map`, preserves the matched
@@ -638,7 +671,7 @@ Use `MapIsolated` + normal ASP.NET Core middleware for owned subtrees, then `Map
 
 ## 🎯 Target frameworks
 
-The package ships dedicated assets for:
+All ten capability packages in the overview ship dedicated assets for:
 
 - `net8.0`
 - `net10.0`
@@ -663,17 +696,13 @@ dotnet test src/Eigenverft.WebLib.Infrastructure.slnx
 
 ## 🚢 Releases
 
-`main` is the production channel. Package releases are built, tested, documented, packed, and
-published by the repository CI/CD workflow.
-
-Package versions follow the Eigenverft Drydock timestamp-based versioning scheme. Published versions
-and download history are available on [NuGet.org](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure).
+The repository workflow validates and publishes the active capability packages as separate package versions. Use the package-specific NuGet links and badges in the overview for their current version and download history. The frozen monolith listing is retained only for compatibility and does not represent active feature development.
 
 ## 🤝 Contributing and support
 
 - 🐛 [Open an issue](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/issues)
 - 🔧 [Submit a pull request](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/pulls)
-- 📦 [View the package on NuGet.org](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure)
+- 📦 [Legacy monolith NuGet page (compatibility only)](https://www.nuget.org/packages/Eigenverft.WebLib.Infrastructure)
 
 ## 📄 License
 

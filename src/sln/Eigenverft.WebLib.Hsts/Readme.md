@@ -1,68 +1,36 @@
 # Eigenverft.WebLib.Hsts
 
-The `.slnx` and this readme live in this folder. Open a terminal here for the commands below. The CLI finds the one solution in this directory; you do not pass a `.slnx` or `.csproj` path. Other libraries keep their own `.slnx` under `src/sln/<name>/`, so `dotnet` does not ask you to specify a solution.
+[![NuGet Version](https://img.shields.io/nuget/v/Eigenverft.WebLib.Hsts?label=NuGet&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Hsts) [![NuGet Downloads](https://img.shields.io/nuget/dt/Eigenverft.WebLib.Hsts?label=Downloads&logo=nuget)](https://www.nuget.org/packages/Eigenverft.WebLib.Hsts) [![Repository CI](https://img.shields.io/github/actions/workflow/status/eigenverft/Eigenverft.WebLib.Infrastructure/cicd.yml?branch=main&label=repository%20CI)](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/actions/workflows/cicd.yml) [![Targets](https://img.shields.io/badge/targets-net8.0%20%7C%20net10.0-512BD4?logo=dotnet&logoColor=white)](https://www.nuget.org/packages/Eigenverft.WebLib.Hsts) [![License](https://img.shields.io/badge/license-MIT-blue.svg?logo=mit)](https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure/blob/main/LICENSE)
 
-```text
-./                         you are here (this readme + Eigenverft.WebLib.Hsts.slnx)
-../../prj/Eigenverft.WebLib.Hsts/    packable class library
-../../prj/Eigenverft.WebLib.Hsts.Tests/  tests (not packed)
+An environment-aware registration and activation wrapper around ASP.NET Core's native HSTS middleware.
+
+## Use
+
+```csharp
+using System;
+using Eigenverft.WebLib.Hsts;
+using Microsoft.AspNetCore.Builder;
+
+builder.Services.AddWebLibHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(180);
+});
+
+WebApplication app = builder.Build();
+app.UseWebLibHsts();
+app.Run();
 ```
 
-Package metadata, license, icon, and release notes live in `src/prj/Eigenverft.WebLib.Hsts/NugetAssets/`.
+The wrapper uses a 180-day max-age baseline and skips HSTS in Development. Native ASP.NET Core defaults for included subdomains, preload, and excluded hosts remain in effect unless configured. Place it early enough to cover short-circuit responses.
 
-`--tl:off` is optional. Without it the CLI shows the compact terminal logger. Add `--tl:off` for the classic per-project log. The commands work either way.
+See the [package usage guide](../../prj/Eigenverft.WebLib.Hsts/NugetAssets/Readme.md) for configuration precedence and activation behavior.
 
-## Restore and build
+## Development
+
+This directory contains the solution; the library and tests are under `../../prj/Eigenverft.WebLib.Hsts/` and `../../prj/Eigenverft.WebLib.Hsts.Tests/`.
 
 ```bash
 dotnet restore
 dotnet build
-```
-
-## Test
-
-The test project explicitly allows target frameworks to run in parallel. Test results and vulnerability reports are isolated per target framework. No parallelism switch is needed on the command line:
-
-```bash
 dotnet test
-```
-
-MSTest is explicitly configured for method-level parallel execution within one test assembly. Tests must therefore not share mutable global state.
-
-After a test run, the links below point to generated reports. Each selected target framework writes its own files (`net8.0`, `net10.0`, …).
-
-[Test results (trx)](../../prj/Eigenverft.WebLib.Hsts.Tests/MSTestResults/Eigenverft.WebLib.Hsts.Tests-net10.0.trx)
-[Test results (html)](../../prj/Eigenverft.WebLib.Hsts.Tests/MSTestResults/result-net10.0.html)
-
-## Pack
-
-```bash
-dotnet pack
-```
-
-Creates one `.nupkg` in `src/prj/Eigenverft.WebLib.Hsts/bin/Pack/` containing the library for all selected target frameworks. Test and optional benchmark projects are not packed.
-
-Optional: copy the package to a local feed by setting `LocalPackagesDir` in the library project, or:
-
-```bash
-dotnet pack -p:LocalPackagesDir="path/to/local/packages"
-```
-
-## Publish
-
-```bash
-dotnet publish
-```
-
-Writes library output to `src/prj/Eigenverft.WebLib.Hsts/bin/Publish/` for the highest selected target framework. This is a class library, not an executable.
-
-## CI
-
-Use `-m:1` for the build so a pipeline does not depend on machine load. It avoids occasional file locks when the library is built as a solution project and as a test `ProjectReference` at the same time. Multi-target test execution is already configured as parallel in the test project. Run these commands from this folder so each library has exactly one `.slnx` in the working directory.
-
-```bash
-dotnet restore
-dotnet build --no-restore -m:1
-dotnet test --no-build
-dotnet pack
 ```
