@@ -1,104 +1,145 @@
 # Eigenverft.WebLib.SerilogRelayReceiver
 
-This folder is the per-library area under `src/sln/` for solution-level or cross-project files that should not sit next to a single `.csproj`.
-The `.slnx` lives here; keep the folder while that is true. You can still add extra solution items here.
+Maintainer documentation for the SerilogRelay receiver package and its test suite.
 
-The `.slnx` and this readme live in this folder. Open a terminal here for the commands below. The CLI finds the one solution in this directory; you do not pass a `.slnx` or `.csproj` path. Other libraries keep their own `.slnx` under `src/sln/<name>/`, so `dotnet` does not ask you to specify a solution.
+The package targets `net8.0` and `net10.0`, provides the HTTP receiver contract, and includes a provider-neutral Entity Framework Core persistence path. Concrete EF Core providers remain host-owned.
+
+## Repository layout
 
 ```text
-./                         you are here (this readme + Eigenverft.WebLib.SerilogRelayReceiver.slnx)
-../../prj/Eigenverft.WebLib.SerilogRelayReceiver/    packable class library
-../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/  tests (not packed)
+src/sln/Eigenverft.WebLib.SerilogRelayReceiver/
+  Eigenverft.WebLib.SerilogRelayReceiver.slnx
+  Readme.md
+  INITIAL-DESIGN-DIRECTION.md
+
+src/prj/Eigenverft.WebLib.SerilogRelayReceiver/
+  Eigenverft.WebLib.SerilogRelayReceiver.csproj
+  Properties/version.json
+  Properties/NugetMetadata/
+
+src/prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/
+  Eigenverft.WebLib.SerilogRelayReceiver.Tests.csproj
 ```
 
-Package metadata, license, icon, and release notes live in `src/prj/Eigenverft.WebLib.SerilogRelayReceiver/Properties/NugetMetadata/`.
+Consumer-facing package metadata lives under `Properties/NugetMetadata/`:
 
+- `Readme.md`: NuGet package README;
+- `PackageReleaseNotes.txt`: NuGet release notes;
+- `Icon-128x128.png`: package icon.
 
-## Receiver shape
+The package version is defined in `Properties/version.json` using Nerdbank.GitVersioning. The 1.0 release line is `1.0.0`; public releases are produced from `main`.
 
-The 1.0 receiver has two persistence paths:
+The design rationale is recorded in [INITIAL-DESIGN-DIRECTION.md](INITIAL-DESIGN-DIRECTION.md). It is non-normative; the public API, package README, release notes, and tests define the shipped contract.
 
-- built-in EF Core persistence through `AddSerilogRelayReceiverEntityFrameworkCore<TDbContext>()`
-  and `MapSerilogRelayReceiverEntityFrameworkCore<TDbContext>()`;
-- custom `ISerilogRelayBatchHandler` implementations for queue, multi-backend, or non-EF cases.
+## 1.0 receiver contract
 
-EF Core is a product dependency, while the concrete database provider remains host-owned. The host
-registers its own `IDbContextFactory<TDbContext>`/provider, calls `ConfigureSerilogRelayReceiver()` from `OnModelCreating`, and owns migrations, connection strings, retention, and querying. The built-in handler creates one isolated DbContext per batch.
+The receiver supports two persistence paths:
 
-The built-in model persists physical receives as `SerilogRelayReceivedEvent` rows in
-`SerilogRelayReceivedEvents`. `EventId` is indexed but not unique, so repeat delivery preserves
-another physical receive instead of becoming a conflict.
+- built-in EF Core persistence through `AddSerilogRelayReceiverEntityFrameworkCore<TDbContext>()` and `MapSerilogRelayReceiverEntityFrameworkCore<TDbContext>()`;
+- custom `ISerilogRelayBatchHandler` implementations for queue, multi-backend, or non-EF scenarios.
 
-Endpoint-specific options remain intentionally small:
+The built-in path requires a host-registered `IDbContextFactory<TDbContext>`. The handler creates one isolated DbContext per accepted batch.
 
-- optional `BearerToken`;
-- `MaximumBatchEvents`, default `100`.
+`ConfigureSerilogRelayReceiver()` adds `SerilogRelayReceivedEvent` to the host model. `EventId` is indexed but not unique, so repeat delivery remains a physical receive instead of becoming a conflict.
 
-Once a complete batch has passed authentication and validation, durable cancellation is tied to the
-host application's stopping token rather than the client request lifetime. The EF Core integration
-tests use SQLite only as the concrete provider and verify commit-before-success, client disconnect,
-host shutdown, repeat delivery, and whole-batch rollback on database failure.
+A receiver endpoint may contain events from multiple applications. Endpoint options are scoped per mapping and currently contain only bearer-token authentication and the maximum batch event count.
 
-The current design rationale is recorded in
-[INITIAL-DESIGN-DIRECTION.md](INITIAL-DESIGN-DIRECTION.md).
+## Prerequisites
 
+For the full local test matrix, install runtimes capable of executing both target frameworks:
 
-`--tl:off` is optional. Without it the CLI shows the compact terminal logger. Add `--tl:off` for the classic per-project log. The commands work either way.
+- .NET 8 runtime;
+- .NET 10 runtime.
+
+A newer SDK can compile both target frameworks, but executing a `net8.0` test assembly still requires an appropriate .NET 8 runtime.
+
+Run commands from this solution directory.
 
 ## Restore and build
 
 ```bash
 dotnet restore
-dotnet build
+dotnet build -c Release --no-restore -m:1
 ```
+
+`-m:1` avoids unnecessary concurrent builds of the library through both the solution and the test-project reference.
 
 ## Test
 
-The test project explicitly allows target frameworks to run in parallel. Test results and other per-target-framework reports next to the test project are isolated. No parallelism switch is needed on the command line:
+Full matrix:
 
 ```bash
-dotnet test
+dotnet test -c Release --no-build
 ```
 
-MSTest is explicitly configured for method-level parallel execution within one test assembly. Tests must therefore not share mutable global state.
+Individual framework runs:
 
-The 1.0 release contract is additionally guarded by `ReleaseContractTests`. These tests freeze the exported public types, developer-facing method signatures, durable entity member shape, EF Core table/key/index/max-length model, provider-neutral product assembly references, and the ability of a host-selected relational provider to generate the expected schema. A future intentional breaking change must therefore update the release contract explicitly instead of drifting in accidentally.
+```bash
+dotnet test -c Release --no-build -f net8.0
+dotnet test -c Release --no-build -f net10.0
+```
 
-After a test run, the links below point to generated reports. Each selected target framework writes its own files (`net8.0`, `net10.0`, …).
+The test project isolates generated reports per target framework and allows TFM-level parallel execution.
 
-[Test results (trx)](../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/MSTestResults/Eigenverft.WebLib.SerilogRelayReceiver.Tests-net10.0.trx)
-[Test results (html)](../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/MSTestResults/result-net10.0.html)
-[Coverlet output](../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/CoverletOutput/coverage.net10.0.opencover.xml)
+Coverage measures only `Eigenverft.WebLib.SerilogRelayReceiver` and fails the test run if total line, branch, or method coverage falls below 100%.
 
-Coverlet measures only the class library (`[Eigenverft.WebLib.SerilogRelayReceiver]*`) and fails `dotnet test` if line, branch, or method coverage is under 100%.
+The permanent `ReleaseContractTests` protect the 1.0 contract by freezing:
+
+- exported public types;
+- public entry-point and handler signatures;
+- public batch/event/persistence member shapes;
+- EF Core table, key, nullability, length, and index metadata;
+- provider neutrality of the product assembly;
+- relational schema generation through a host-selected provider.
+
+An intentional breaking change must update those tests explicitly.
+
+Generated outputs:
+
+- [net10 TRX](../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/MSTestResults/Eigenverft.WebLib.SerilogRelayReceiver.Tests-net10.0.trx)
+- [net10 HTML](../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/MSTestResults/result-net10.0.html)
+- [net10 coverage](../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/CoverletOutput/coverage.net10.0.opencover.xml)
+
+The same directories contain per-TFM outputs when the corresponding framework is executed.
+
+## Dependency and vulnerability reports
+
+Building the test project generates package inventory and vulnerability reports for the packable receiver project under:
+
+```text
+src/prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/NugetReport/
+```
+
+Restore treats high (`NU1903`) and critical (`NU1904`) vulnerable packages as errors. Low and moderate findings remain warnings. The generated reports are diagnostic output and do not replace restore-time enforcement.
 
 ## Pack
 
 ```bash
-dotnet pack
+dotnet pack -c Release --no-build
 ```
 
-Creates one `.nupkg` in `src/prj/Eigenverft.WebLib.SerilogRelayReceiver/bin/Pack/` containing the library for all selected target frameworks. Test and optional benchmark projects are not packed.
+The package is written to:
 
-Restore fails this class library on high (`NU1903`) and critical (`NU1904`) vulnerable packages. Low and moderate stay warnings. `NugetReport` next to the tests lists that library's packages (txt/json) and is still info-only.
-
-## Publish
-
-The class library sets `IsPublishable` to `false`. Distribution is `dotnet pack`. To write output to `src/prj/Eigenverft.WebLib.SerilogRelayReceiver/bin/Publish/` for the default selected target framework, set `IsPublishable` to `true` and run. The default is defined in `src/prj/Eigenverft.WebLib.SerilogRelayReceiver/Properties/Build/SharedProject.props`:
-
-```bash
-dotnet publish
+```text
+src/prj/Eigenverft.WebLib.SerilogRelayReceiver/bin/Pack/
 ```
 
-This is a class library, not an executable.
+The package must contain both supported TFMs, the NuGet README/icon/release notes metadata, and only provider-neutral EF Core product dependencies. Concrete database provider packages belong to consuming hosts.
 
-## CI
+`EnablePackageValidation` is enabled. After the first stable package is published, a package-validation baseline can be set deliberately for future compatibility checks.
 
-Use `-m:1` for the build so a pipeline does not depend on machine load. It avoids occasional file locks when the library is built as a solution project and as a test `ProjectReference` at the same time. Multi-target test execution is already configured as parallel in the test project. Run these commands from this folder so each library has exactly one `.slnx` in the working directory.
+## Release readiness
 
-```bash
-dotnet restore
-dotnet build --no-restore -m:1
-dotnet test --no-build
-dotnet pack
-```
+Before promoting the package to a stable 1.0 release:
+
+1. restore succeeds without high/critical vulnerability errors;
+2. Release build succeeds for `net8.0` and `net10.0` with no warnings/errors;
+3. tests pass for both target frameworks;
+4. 100% line/branch/method coverage remains satisfied;
+5. `ReleaseContractTests` pass unchanged unless a contract change is intentional;
+6. `dotnet pack -c Release --no-build` succeeds;
+7. inspect the generated `.nuspec`/package to confirm EF Core is present but no concrete database provider is pulled into the product;
+8. verify the package README and release notes describe the same public behavior as the code;
+9. promote through the repository's normal branch/release flow.
+
+This project is a packable class library. Its distribution artifact is the NuGet package; application deployment/publishing belongs to consuming hosts.

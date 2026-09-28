@@ -1,10 +1,7 @@
 <Solution>
-  <!-- Paths are relative to this file's final location.
-       PlaceSolution SlnFolder      → src/sln/Eigenverft.WebLib.SerilogRelayReceiver/Eigenverft.WebLib.SerilogRelayReceiver.slnx
-       PlaceSolution BesideCsproj  → src/prj/Eigenverft.WebLib.SerilogRelayReceiver/Eigenverft.WebLib.SerilogRelayReceiver.slnx
-       PlaceSolution RepoRoot       → repo root, so src/prj/ and src/sln/. -->
   <Folder Name="/sln/Eigenverft.WebLib.SerilogRelayReceiver/">
     <File Path="Readme.md" />
+    <File Path="INITIAL-DESIGN-DIRECTION.md" />
   </Folder>
   <Folder Name="/prj/">
     <Project Path="../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/Eigenverft.WebLib.SerilogRelayReceiver.Tests.csproj" />
