@@ -84,10 +84,7 @@
   <PropertyGroup>
     <Authors>Eigenverft</Authors>
     <Owners>Eigenverft</Owners>
-    <Company>Eigenverft</Company>
-    <Copyright>Copyright © 2026 Eigenverft</Copyright>
     <PackageId>Eigenverft.WebLib.SerilogRelayReceiver</PackageId>
-    <Title>Eigenverft.WebLib.SerilogRelayReceiver</Title>
     <PackageTags>dotnet;aspnet-core;web;logging;serilog;relay;receiver;entity-framework-core;ef-core;eigenverft</PackageTags>
     <PackageProjectUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</PackageProjectUrl>
     <RepositoryUrl>https://github.com/eigenverft/Eigenverft.WebLib.Infrastructure</RepositoryUrl>
@@ -96,7 +93,6 @@
     <Description><![CDATA[ASP.NET Core receiver for Eigenverft SerilogRelay batches with provider-neutral Entity Framework Core persistence and custom handler support.]]></Description>
     <PackageReadmeFile>Readme.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <PackageIcon>Icon-128x128.png</PackageIcon>
     <!-- Read multiline release notes from a separate source file so this project file stays compact. -->
     <PackageReleaseNotes>$([System.IO.File]::ReadAllText("$(MSBuildProjectDirectory)\Properties\NugetMetadata\PackageReleaseNotes.txt"))</PackageReleaseNotes>
