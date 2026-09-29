@@ -90,8 +90,11 @@ Important model semantics:
 - `EventId` is indexed but deliberately **not unique**;
 - repeated delivery therefore creates another physical receive instead of being rejected or silently discarded;
 - the model also indexes `BatchId`, `ReceivedAtUtc`, and `(ApplicationId, ReceivedAtUtc)`.
+- payload text fields preserve `null` and empty strings as distinct values; `BatchTimestamp`, `Timestamp`, `Level`, `RenderMessage`, and `MessageTemplate` are nullable, as are the optional machine, tracing, exception, and property fields.
 
 The receiver does not ship provider-specific migrations. Because the entity is part of the host's DbContext model, the host's normal EF Core migration workflow owns schema creation and upgrades.
+
+Existing databases created with the earlier non-nullable model need a host-owned migration allowing `NULL` in `BatchTimestamp`, `Timestamp`, `Level`, `RenderMessage`, and `MessageTemplate`. Updating the package or calling `EnsureCreated()` does not change an existing table.
 
 For temporary/test databases, `EnsureCreated()` can be useful. Production databases that use migrations should use the host's normal migration workflow instead of mixing migrations with `EnsureCreated()`.
 
