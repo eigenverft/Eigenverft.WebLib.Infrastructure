@@ -98,6 +98,16 @@ Existing databases created with the earlier non-nullable model need a host-owned
 
 For temporary/test databases, `EnsureCreated()` can be useful. Production databases that use migrations should use the host's normal migration workflow instead of mixing migrations with `EnsureCreated()`.
 
+## Sender and receiver responsibilities
+
+This package is a matching receiver implementation, not a required peer of `Eigenverft.NetLib.SerilogRelay`. Either side can be implemented independently against the wire format and HTTP acknowledgment contract.
+
+The sender handles bounded local buffering, outage retries, backlog delivery during normal operation, and bounded shutdown delivery. Any HTTP 2xx allows it to release the acknowledged events locally. It does not require a receiver-side persistence receipt or negotiate storage and payload limits.
+
+The receiver owns its acceptance policy. The built-in EF Core handler saves every validated event before returning successfully. A custom handler or independently implemented receiver may forward, filter, or deliberately discard an event and still acknowledge it, for example when its policy excludes oversized events. Such acknowledgment is an intentional receiver decision; the sender will not retry those events. A non-2xx response keeps them pending for the sender's retry policy.
+
+The sender's configurable 4 MiB batch target does not impose a limit on this receiver. A single event above that target can arrive in its own batch. Host/proxy request limits and receiver acceptance policy remain host concerns.
+
 ## Durable acceptance semantics
 
 The built-in EF Core handler:
@@ -185,7 +195,7 @@ app.MapSerilogRelayReceiver<MyRelayBatchHandler>(
     "/api/v1/logs");
 ```
 
-A custom handler must complete its own durable-acceptance guarantees before returning successfully.
+A custom handler must complete its chosen acceptance policy before returning successfully. If that policy promises durable storage or queue handoff, it must fulfill that promise before acknowledgment. Intentional filtering or discarding also completes acceptance and allows the sender to release those events.
 
 ## Not part of the 1.0 contract
 
