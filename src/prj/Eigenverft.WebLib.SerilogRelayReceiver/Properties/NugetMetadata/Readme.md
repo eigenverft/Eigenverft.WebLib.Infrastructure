@@ -1,6 +1,6 @@
 # Eigenverft.WebLib.SerilogRelayReceiver
 
-ASP.NET Core receiver for `Eigenverft.NetLib.SerilogRelay` batches.
+ASP.NET Core receiver for [`Eigenverft.NetLib.SerilogRelay`](https://www.nuget.org/packages/Eigenverft.NetLib.SerilogRelay) batches.
 
 The package provides:
 
@@ -20,7 +20,7 @@ The package references the matching major version of `Microsoft.EntityFrameworkC
 ## Install
 
 ```bash
-dotnet add package Eigenverft.WebLib.SerilogRelayReceiver --version 1.0.0
+dotnet add package Eigenverft.WebLib.SerilogRelayReceiver
 ```
 
 Add the EF Core provider package selected by the host separately.
