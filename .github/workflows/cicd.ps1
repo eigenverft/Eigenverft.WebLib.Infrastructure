@@ -441,7 +441,7 @@ foreach ($SolutionProjectPath in $SolutionProjectPaths) {
             # Keep the coverage gate active by building the test invocation without CI path mapping.
             $TestCommonParameters = @($DotnetCommonParameters | Where-Object { $_ -ne '-p:ContinuousIntegrationBuild=true' })
             $TestCommonParameters += '-p:ContinuousIntegrationBuild=false'
-            Invoke-ProcessTyped -Executable "dotnet" -Arguments @("test", "$($ProjectFileInfo.FullName)", "-c", "Release", '-p:Stage=test' ) -CommonArguments $TestCommonParameters -CaptureOutput $false
+            $null = Invoke-ProcessTyped -Executable "dotnet" -Arguments @("test", "$($ProjectFileInfo.FullName)", "-c", "Release", '-p:Stage=test' ) -CommonArguments $TestCommonParameters -CaptureOutput $true
         }
 
         if ($ProjectProperties.IsPackable -eq $true)
