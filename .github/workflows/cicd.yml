@@ -20,13 +20,11 @@ on:
       - 'main'
       - 'hotfix'
       - 'release'
-      - 'develop'
       - 'bugfix'
       - 'master/**'
       - 'main/**'
       - 'hotfix/**'
       - 'release/**'
-      - 'develop/**'
       - 'bugfix/**'
   repository_dispatch:
     types: 
