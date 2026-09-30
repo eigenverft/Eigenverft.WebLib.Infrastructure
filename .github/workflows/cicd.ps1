@@ -601,7 +601,7 @@ if ($DeploymentChannel -in @("development"))
 
 if ($DeploymentChannel -in @('quality'))
 {
-    $PushToLocalSource = $false
+    $PushToLocalSource = $true
     $PushToGitHubSource = $false
     $PushToNuGetTest = $false
     $PushToNuGetOrg = $false
