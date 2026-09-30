@@ -6,6 +6,7 @@
 - Adds SerilogRelayReceivedEvent and ConfigureSerilogRelayReceiver() for host-owned DbContext model integration.
 - Adds AddSerilogRelayReceiverEntityFrameworkCore<TDbContext>() and MapSerilogRelayReceiverEntityFrameworkCore<TDbContext>(); the built-in handler uses a host-registered IDbContextFactory<TDbContext> and one isolated DbContext per batch.
 - Persists the complete batch with one SaveChangesAsync call and returns 204 only after durable handling completes.
+- Preserves null and empty payload text separately in the wire contract and EF Core storage. Existing databases require a host migration to make BatchTimestamp, Timestamp, Level, RenderMessage, and MessageTemplate nullable.
 - Keeps EventId non-unique so retries/repeat delivery are preserved as additional physical receives rather than rejected as conflicts.
 - Keeps durable work independent from client disconnect after validated handoff while allowing host shutdown to cancel in-flight handling with 503.
 - Supports batches containing multiple ApplicationId values and multiple endpoint mappings with independent options.

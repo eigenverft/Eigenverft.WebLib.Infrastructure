@@ -4,6 +4,8 @@
     <File Path="ARCHITECTURE.md" />
   </Folder>
   <Folder Name="/prj/">
+    <Project Path="../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Example/Eigenverft.WebLib.SerilogRelayReceiver.Example.csproj" />
+    <Project Path="../../prj/Eigenverft.WebLib.SerilogRelaySender.Example/Eigenverft.WebLib.SerilogRelaySender.Example.csproj" />
     <Project Path="../../prj/Eigenverft.WebLib.SerilogRelayReceiver.Tests/Eigenverft.WebLib.SerilogRelayReceiver.Tests.csproj" />
     <Project Path="../../prj/Eigenverft.WebLib.SerilogRelayReceiver/Eigenverft.WebLib.SerilogRelayReceiver.csproj" />
   </Folder>

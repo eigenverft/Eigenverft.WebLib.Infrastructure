@@ -214,14 +214,14 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                 primaryKey.Properties.Select(property => property.Name).ToArray());
 
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.BatchId), false, 36);
-            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.BatchTimestamp), false, 64);
+            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.BatchTimestamp), true, 64);
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.EventId), false, 36);
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.ApplicationId), false, 256);
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.MachineId), true, 256);
-            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.Timestamp), false, 64);
-            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.Level), false, 32);
-            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.RenderMessage), false, null);
-            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.MessageTemplate), false, null);
+            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.Timestamp), true, 64);
+            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.Level), true, 32);
+            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.RenderMessage), true, null);
+            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.MessageTemplate), true, null);
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.TraceId), true, 64);
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.SpanId), true, 32);
 

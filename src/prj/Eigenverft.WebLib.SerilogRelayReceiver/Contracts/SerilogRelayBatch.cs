@@ -20,7 +20,7 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
         /// <summary>
         /// Gets or sets the sender-generated batch timestamp.
         /// </summary>
-        public string Timestamp { get; set; } = string.Empty;
+        public string? Timestamp { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the number of log events declared by the sender.
@@ -66,22 +66,22 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
         /// <summary>
         /// Gets or sets the event timestamp serialized by the sender.
         /// </summary>
-        public string Timestamp { get; set; } = string.Empty;
+        public string? Timestamp { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the serialized Serilog level name.
         /// </summary>
-        public string Level { get; set; } = string.Empty;
+        public string? Level { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the rendered log message.
         /// </summary>
-        public string RenderMessage { get; set; } = string.Empty;
+        public string? RenderMessage { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the original Serilog message template.
         /// </summary>
-        public string MessageTemplate { get; set; } = string.Empty;
+        public string? MessageTemplate { get; set; } = string.Empty;
 
         /// <summary>
         /// Gets or sets the optional distributed-tracing trace identifier.

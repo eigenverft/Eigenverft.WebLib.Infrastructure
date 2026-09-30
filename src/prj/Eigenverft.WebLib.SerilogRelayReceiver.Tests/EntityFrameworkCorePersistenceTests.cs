@@ -64,7 +64,7 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
 
                 string firstBatchId = batch.BatchId;
                 string repeatedEventId = batch.Logs[0].EventId;
-                string originalMessage = batch.Logs[0].RenderMessage;
+                string? originalMessage = batch.Logs[0].RenderMessage;
                 DateTimeOffset beforeReceive = DateTimeOffset.UtcNow;
 
                 using HttpResponseMessage firstResponse =
@@ -125,6 +125,57 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
                 Assert.AreNotEqual(
                     repeatedRows[0].ReceiveId,
                     repeatedRows[1].ReceiveId);
+            }
+            finally
+            {
+                await DisposeApplicationAndDatabaseAsync(app, databasePath);
+            }
+        }
+
+        [TestMethod]
+        [DataRow(null)]
+        [DataRow("")]
+        public async Task EntityFrameworkCoreReceiverPreservesNullablePayloadFields(string? value)
+        {
+            string databasePath = CreateDatabasePath();
+            var control = new SaveControl();
+            WebApplication app = await CreateApplicationAsync(databasePath, control);
+
+            try
+            {
+                using HttpClient client = await StartClientAsync(app);
+                SerilogRelayBatch batch = CreateBatch("App.One");
+                SerilogRelayEvent logEvent = batch.Logs![0];
+                batch.Timestamp = value;
+                logEvent.Timestamp = value;
+                logEvent.Level = value;
+                logEvent.RenderMessage = value;
+                logEvent.MessageTemplate = value;
+                logEvent.MachineId = value;
+                logEvent.TraceId = value;
+                logEvent.SpanId = value;
+                logEvent.Exception = value;
+                logEvent.Properties = value;
+
+                using HttpResponseMessage response = await client.PostAsJsonAsync("/logs", batch);
+                Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+
+                List<SerilogRelayReceivedEvent> rows = await ReadRowsAsync(databasePath);
+                Assert.AreEqual(1, rows.Count);
+                SerilogRelayReceivedEvent row = rows[0];
+                Assert.AreEqual(batch.BatchId, row.BatchId);
+                Assert.AreEqual(logEvent.EventId, row.EventId);
+                Assert.AreEqual(logEvent.ApplicationId, row.ApplicationId);
+                Assert.AreEqual(value, row.BatchTimestamp);
+                Assert.AreEqual(value, row.Timestamp);
+                Assert.AreEqual(value, row.Level);
+                Assert.AreEqual(value, row.RenderMessage);
+                Assert.AreEqual(value, row.MessageTemplate);
+                Assert.AreEqual(value, row.MachineId);
+                Assert.AreEqual(value, row.TraceId);
+                Assert.AreEqual(value, row.SpanId);
+                Assert.AreEqual(value, row.Exception);
+                Assert.AreEqual(value, row.Properties);
             }
             finally
             {

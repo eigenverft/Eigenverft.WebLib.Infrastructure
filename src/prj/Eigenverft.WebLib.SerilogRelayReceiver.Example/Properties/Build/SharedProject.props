@@ -1,0 +1,6 @@
+<Project>
+  <!-- Shared project-to-extension properties. -->
+  <PropertyGroup>
+    <PublishDefaultFramework>net10.0</PublishDefaultFramework>
+  </PropertyGroup>
+</Project>

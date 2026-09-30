@@ -29,7 +29,7 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
                 .IsRequired();
             entity.Property(row => row.BatchTimestamp)
                 .HasMaxLength(64)
-                .IsRequired();
+                .IsRequired(false);
             entity.Property(row => row.EventId)
                 .HasMaxLength(36)
                 .IsRequired();
@@ -40,14 +40,14 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
                 .HasMaxLength(256);
             entity.Property(row => row.Timestamp)
                 .HasMaxLength(64)
-                .IsRequired();
+                .IsRequired(false);
             entity.Property(row => row.Level)
                 .HasMaxLength(32)
-                .IsRequired();
+                .IsRequired(false);
             entity.Property(row => row.RenderMessage)
-                .IsRequired();
+                .IsRequired(false);
             entity.Property(row => row.MessageTemplate)
-                .IsRequired();
+                .IsRequired(false);
             entity.Property(row => row.TraceId)
                 .HasMaxLength(64);
             entity.Property(row => row.SpanId)
