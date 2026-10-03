@@ -34,8 +34,11 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
                 .HasMaxLength(36)
                 .IsRequired();
             entity.Property(row => row.ApplicationId)
-                .HasMaxLength(256)
+                .HasMaxLength(255)
                 .IsRequired();
+            entity.Property(row => row.ApplicationVersion)
+                .HasMaxLength(255)
+                .IsRequired(false);
             entity.Property(row => row.MachineId)
                 .HasMaxLength(256);
             entity.Property(row => row.Timestamp)

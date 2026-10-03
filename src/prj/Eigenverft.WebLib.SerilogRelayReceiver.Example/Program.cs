@@ -37,7 +37,11 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Example
                 await database.Database.EnsureCreatedAsync();
             }
 
-            app.MapSerilogRelayReceiverEntityFrameworkCore<LoggingDbContext>("/api/v1/logs");
+            // The pinned receiver package predates the compatible 256-event default.
+            // Remove this override when updating to the receiver release with that default.
+            app.MapSerilogRelayReceiverEntityFrameworkCore<LoggingDbContext>(
+                "/api/v1/logs",
+                options => options.MaximumBatchEvents = 256);
 
             // Local-only inspection endpoint for the demo.
             app.MapGet("/demo/events", async (IDbContextFactory<LoggingDbContext> factory) =>

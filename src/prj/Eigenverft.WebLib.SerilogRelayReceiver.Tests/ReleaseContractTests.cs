@@ -52,6 +52,7 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
             AssertPublicProperties(
                 typeof(SerilogRelayEvent),
                 "ApplicationId:System.String",
+                "ApplicationVersion:System.String",
                 "EventId:System.String",
                 "Exception:System.String",
                 "Id:System.Int64",
@@ -73,6 +74,7 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
             AssertPublicProperties(
                 typeof(SerilogRelayReceivedEvent),
                 "ApplicationId:System.String",
+                "ApplicationVersion:System.String",
                 "BatchCount:System.Int32",
                 "BatchId:System.String",
                 "BatchTimestamp:System.String",
@@ -216,7 +218,8 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.BatchId), false, 36);
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.BatchTimestamp), true, 64);
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.EventId), false, 36);
-            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.ApplicationId), false, 256);
+            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.ApplicationId), false, 255);
+            AssertProperty(entity, nameof(SerilogRelayReceivedEvent.ApplicationVersion), true, 255);
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.MachineId), true, 256);
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.Timestamp), true, 64);
             AssertProperty(entity, nameof(SerilogRelayReceivedEvent.Level), true, 32);
