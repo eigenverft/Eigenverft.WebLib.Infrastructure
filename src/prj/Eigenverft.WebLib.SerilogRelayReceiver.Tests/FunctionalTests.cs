@@ -7,8 +7,10 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Eigenverft.NetLib.SerilogRelay;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -26,7 +28,7 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
         {
             var options = new SerilogRelayReceiverOptions();
 
-            Assert.AreEqual(100, options.MaximumBatchEvents);
+            Assert.AreEqual(256, options.MaximumBatchEvents);
             Assert.IsNull(options.BearerToken);
 
             options.BearerToken = "secret";
@@ -110,6 +112,193 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
             Assert.AreEqual(
                 "Every log event must contain a positive processId.",
                 SerilogRelayReceiverValidator.Validate(valid, 100));
+        }
+
+        [TestMethod]
+        public void ValidatorAcceptsMissingVersionsAnd255CharacterApplicationFields()
+        {
+            SerilogRelayBatch batch = CreateBatch(new string('a', 255));
+
+            Assert.IsNull(batch.Logs![0].ApplicationVersion);
+            Assert.IsNull(SerilogRelayReceiverValidator.Validate(batch, 100));
+
+            batch.Logs[0].ApplicationVersion = "1.2.3+commit-abc123";
+            Assert.IsNull(SerilogRelayReceiverValidator.Validate(batch, 100));
+
+            batch.Logs[0].ApplicationVersion = new string('v', 255);
+            Assert.IsNull(SerilogRelayReceiverValidator.Validate(batch, 100));
+            Assert.AreEqual(255, batch.Logs[0].ApplicationVersion!.Length);
+        }
+
+        [TestMethod]
+        [DataRow("")]
+        [DataRow(" ")]
+        [DataRow("\t\n")]
+        public void ValidatorRejectsBlankApplicationVersions(string applicationVersion)
+        {
+            SerilogRelayBatch batch = CreateBatch("App.One");
+            batch.Logs![0].ApplicationVersion = applicationVersion;
+
+            Assert.AreEqual(
+                "A supplied applicationVersion must contain 1 to 255 characters.",
+                SerilogRelayReceiverValidator.Validate(batch, 100));
+        }
+
+        [TestMethod]
+        [DataRow("applicationId", 256)]
+        [DataRow("applicationId", 257)]
+        [DataRow("applicationVersion", 256)]
+        [DataRow("applicationVersion", 257)]
+        public void ValidatorRejectsApplicationFieldsLongerThan255(string field, int length)
+        {
+            SerilogRelayBatch batch = CreateBatch("App.One");
+            string oversizedValue = new string('x', length);
+            if (field == "applicationId")
+                batch.Logs![0].ApplicationId = oversizedValue;
+            else
+                batch.Logs![0].ApplicationVersion = oversizedValue;
+
+            StringAssert.Contains(
+                SerilogRelayReceiverValidator.Validate(batch, 100)!,
+                field);
+        }
+
+        [TestMethod]
+        public async Task EndpointPreservesMixedOriginVersionsAndAcceptsMissingVersion()
+        {
+            BatchCapture capture = new BatchCapture();
+            await using WebApplication app = CreateApplication(capture, null, 100);
+            using HttpClient client = await StartClientAsync(app);
+
+            SerilogRelayBatch batch = CreateBatch("App.One", "App.One", "App.One");
+            batch.Logs![0].ApplicationVersion = "1.0.0+old-commit";
+            batch.Logs[1].ApplicationVersion = "2.0.0+new-commit";
+            var wireOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web)
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+
+            using HttpResponseMessage response =
+                await client.PostAsJsonAsync("/logs", batch, wireOptions);
+            Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+            Assert.AreEqual(string.Empty, await response.Content.ReadAsStringAsync());
+
+            SerilogRelayBatch received =
+                await capture.Received.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            CollectionAssert.AreEqual(
+                new string?[] { "1.0.0+old-commit", "2.0.0+new-commit", null },
+                received.Logs!.Select(logEvent => logEvent.ApplicationVersion).ToArray());
+        }
+
+        [TestMethod]
+        public async Task EndpointPreservesEffective255CharacterIdAndUnicodeVersion()
+        {
+            BatchCapture capture = new BatchCapture();
+            await using WebApplication app = CreateApplication(capture, null, 100);
+            using HttpClient client = await StartClientAsync(app);
+            string effectiveId = "_" + new string('a', 189) + "_" + new string('f', 64);
+            string version = new string('v', 253) + "\U0001F600";
+            SerilogRelayBatch batch = CreateBatch(effectiveId);
+            batch.Logs![0].ApplicationVersion = version;
+
+            using HttpResponseMessage response =
+                await client.PostAsJsonAsync("/logs", batch);
+            Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+
+            SerilogRelayBatch received =
+                await capture.Received.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.AreEqual(effectiveId, received.Logs![0].ApplicationId);
+            Assert.AreEqual(version, received.Logs[0].ApplicationVersion);
+        }
+
+        [TestMethod]
+        public async Task EndpointLeavesStorageLengthPolicyToCustomHandler()
+        {
+            BatchCapture capture = new BatchCapture();
+            await using WebApplication app = CreateApplication(capture, null, 100);
+            using HttpClient client = await StartClientAsync(app);
+            SerilogRelayBatch batch = CreateBatch("App.One");
+            string oversizedMetadata = new string('x', 300);
+            batch.Timestamp = oversizedMetadata;
+            SerilogRelayEvent logEvent = batch.Logs![0];
+            logEvent.MachineId = oversizedMetadata;
+            logEvent.Timestamp = oversizedMetadata;
+            logEvent.Level = oversizedMetadata;
+            logEvent.TraceId = oversizedMetadata;
+            logEvent.SpanId = oversizedMetadata;
+
+            using HttpResponseMessage response =
+                await client.PostAsJsonAsync("/logs", batch);
+            Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+
+            SerilogRelayBatch received =
+                await capture.Received.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            SerilogRelayEvent receivedEvent = received.Logs![0];
+            Assert.AreEqual(oversizedMetadata, received.Timestamp);
+            Assert.AreEqual(oversizedMetadata, receivedEvent.MachineId);
+            Assert.AreEqual(oversizedMetadata, receivedEvent.Timestamp);
+            Assert.AreEqual(oversizedMetadata, receivedEvent.Level);
+            Assert.AreEqual(oversizedMetadata, receivedEvent.TraceId);
+            Assert.AreEqual(oversizedMetadata, receivedEvent.SpanId);
+        }
+
+        [TestMethod]
+        public async Task EndpointRejectsInvalidVersionBeforeHandlingAnyEvent()
+        {
+            BatchCapture capture = new BatchCapture();
+            await using WebApplication app = CreateApplication(capture, null, 100);
+            using HttpClient client = await StartClientAsync(app);
+            SerilogRelayBatch batch = CreateBatch("App.One", "App.Two");
+            batch.Logs![1].ApplicationVersion = new string('v', 256);
+
+            using HttpResponseMessage response =
+                await client.PostAsJsonAsync("/logs", batch);
+
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            StringAssert.Contains(
+                await response.Content.ReadAsStringAsync(),
+                "applicationVersion");
+            Assert.IsFalse(capture.Received.Task.IsCompleted);
+        }
+
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
+        public async Task EndpointDefaultsAcceptSenderSpoolAndEmergencyBatchCounts(bool emergency)
+        {
+            BatchCapture capture = new BatchCapture();
+            var senderOptions = new SerilogRelayOptions();
+            int count = emergency
+                ? senderOptions.Delivery.EmergencyMaximumBatchEvents
+                : senderOptions.Delivery.MaximumBatchEvents;
+            await using WebApplication app = CreateApplication(capture, null, null);
+            using HttpClient client = await StartClientAsync(app);
+            SerilogRelayBatch batch = CreateBatch(
+                Enumerable.Repeat("App.One", count).ToArray());
+
+            using HttpResponseMessage response =
+                await client.PostAsJsonAsync("/logs", batch);
+
+            Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+            SerilogRelayBatch received =
+                await capture.Received.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.AreEqual(count, received.Logs!.Count);
+        }
+
+        [TestMethod]
+        public async Task EndpointDefaultsRejectBatchBeyondReceiverMaximum()
+        {
+            BatchCapture capture = new BatchCapture();
+            await using WebApplication app = CreateApplication(capture, null, null);
+            using HttpClient client = await StartClientAsync(app);
+            int count = new SerilogRelayReceiverOptions().MaximumBatchEvents + 1;
+            SerilogRelayBatch batch = CreateBatch(
+                Enumerable.Repeat("App.One", count).ToArray());
+
+            using HttpResponseMessage response =
+                await client.PostAsJsonAsync("/logs", batch);
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.IsFalse(capture.Received.Task.IsCompleted);
         }
 
         [TestMethod]
@@ -410,7 +599,7 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
         private static WebApplication CreateApplication(
             BatchCapture capture,
             string? bearerToken,
-            int maximumBatchEvents)
+            int? maximumBatchEvents)
         {
             WebApplicationBuilder builder = WebApplication.CreateBuilder();
             builder.WebHost.UseUrls("http://127.0.0.1:0");
@@ -418,13 +607,21 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver.Tests
             builder.Services.AddSerilogRelayReceiver<CapturingHandler>();
 
             WebApplication app = builder.Build();
-            app.MapSerilogRelayReceiver<CapturingHandler>(
-                "/logs",
-                options =>
-                {
-                    options.BearerToken = bearerToken;
-                    options.MaximumBatchEvents = maximumBatchEvents;
-                });
+            if (bearerToken is null && maximumBatchEvents is null)
+            {
+                app.MapSerilogRelayReceiver<CapturingHandler>("/logs");
+            }
+            else
+            {
+                app.MapSerilogRelayReceiver<CapturingHandler>(
+                    "/logs",
+                    options =>
+                    {
+                        options.BearerToken = bearerToken;
+                        if (maximumBatchEvents.HasValue)
+                            options.MaximumBatchEvents = maximumBatchEvents.Value;
+                    });
+            }
 
             return app;
         }

@@ -67,12 +67,12 @@ app.MapSerilogRelayReceiverEntityFrameworkCore<LoggingDbContext>(
     {
         options.BearerToken =
             builder.Configuration["SerilogRelay:BearerToken"];
-
-        options.MaximumBatchEvents = 100;
     });
 ```
 
 The built-in handler creates and disposes one isolated DbContext per accepted batch. Its `SaveChangesAsync` therefore cannot accidentally persist unrelated tracked changes from another request scope.
+
+The built-in EF Core handler fits bounded metadata to its supplied model before saving: batch/event timestamps and `TraceId` are limited to 64 UTF-16 code units, `MachineId` to 256, and `Level`/`SpanId` to 32. Oversized values retain their prefix without splitting a Unicode surrogate pair; `null` and empty strings remain distinct. This is the EF handler's storage policy. Custom handlers receive the original validated values and choose their own processing policy. `ApplicationId`, `ApplicationVersion`, event identifiers, and unbounded payload text retain their existing validation and storage semantics.
 
 Changing the host's `AddDbContextFactory` provider configuration is enough to use another EF Core provider. Provider packages, connection strings, migrations, retention, and database lifecycle remain host-owned.
 
@@ -92,8 +92,21 @@ Important model semantics:
 - `EventId` is indexed but deliberately **not unique**;
 - repeated delivery therefore creates another physical receive instead of being rejected or silently discarded;
 - the model also indexes `BatchId`, `ReceivedAtUtc`, and `(ApplicationId, ReceivedAtUtc)`.
+- `ApplicationVersion` stores the event creator's version, allows `NULL` for older senders, and has a 255 UTF-16 code unit maximum. A newer sender draining an older shared-spool entry does not replace its originating version.
 
-The receiver does not ship provider-specific migrations. Because the entity is part of the host's DbContext model, the host's normal EF Core migration workflow owns schema creation and upgrades.
+Application identity and version have a shared 255 UTF-16 code unit wire/storage limit.
+The current sender normalizes configured application IDs to ASCII. IDs longer than 255
+characters become `_` + the first 189 normalized characters + `_` + the complete normalized
+ID's lowercase SHA-256 hash (64 hexadecimal characters). That effective ID is recorded on
+events and used by its default spool directory. Application versions retain at most 255
+UTF-16 code units without splitting a surrogate pair. Both values are resolved at startup.
+
+The receiver validates the received values and does not normalize, shorten, or recompute
+either field, including when a newer process forwards an older event. Coordinate sender
+and receiver upgrades: older senders and existing spool rows can still contain 256-character
+values, which this receiver rejects with HTTP 400. Historical rows are not rewritten.
+
+The receiver does not ship provider-specific migrations. Because the entity is part of the host's DbContext model, the host's normal EF Core migration workflow owns schema creation and upgrades. Existing receiver databases need the nullable `ApplicationVersion` column before using this model; `EnsureCreated` does not upgrade an existing schema.
 
 For temporary/test databases, `EnsureCreated()` can be useful. Production databases that use migrations should use the host's normal migration workflow instead of mixing migrations with `EnsureCreated()`.
 
@@ -103,7 +116,7 @@ The built-in EF Core handler:
 
 - creates a fresh host-configured DbContext for each accepted batch;
 - maps every validated event to one `SerilogRelayReceivedEvent`;
-- preserves the current batch and event metadata;
+- preserves event identity and originating version, fitting bounded metadata to the supplied model;
 - adds receiver-side `ReceivedAtUtc`;
 - adds the complete batch to the DbContext;
 - calls `SaveChangesAsync` once;
@@ -138,16 +151,18 @@ After validation, durable handling receives the host application's stopping toke
 - a client disconnect after durable handoff does not by itself cancel persistence;
 - host shutdown can cancel in-flight durable work;
 - host-shutdown cancellation returns `503 Service Unavailable`;
-- successful durable completion returns `204 No Content`.
+- successful handler completion returns `204 No Content`.
 
 ## Endpoint options
 
 `SerilogRelayReceiverOptions` intentionally contains only:
 
 - `BearerToken`: optional exact bearer token; null/empty/whitespace disables token validation;
-- `MaximumBatchEvents`: maximum accepted event count, default `100`.
+- `MaximumBatchEvents`: maximum accepted event count, default `256`.
 
 Options belong to each mapped endpoint, so different endpoints can use different authentication and limits.
+
+The receiver's 256-event default accepts both matching sender defaults: up to 100 events per spool batch and 256 per direct emergency RAM batch, including during shutdown. No batch-limit override is required for the default pair. If either sender maximum changes, keep the receiver maximum at least as large as both sender maxima. These count limits are independent from the sender's JSON byte target and host/proxy request-size limits.
 
 ## Wire protocol behavior
 
@@ -159,14 +174,15 @@ The receiver validates:
 - `MaximumBatchEvents`;
 - no `null` entries in `Logs`;
 - canonical GUID `EventId`;
-- non-empty `ApplicationId`;
+- non-empty `ApplicationId` of at most 255 UTF-16 code units;
+- optional `ApplicationVersion` containing 1 to 255 UTF-16 code units when supplied;
 - positive `ProcessId`.
 
 SerilogRelay wire JSON is deserialized with receiver-owned ASP.NET Web-compatible JSON settings. Global host `HttpJsonOptions` therefore cannot silently change the relay protocol's naming or case behavior.
 
 HTTP results:
 
-- `204`: durable handling completed;
+- `204`: the selected handler completed its acceptance policy; only this status acknowledges processing to the sender.
 - `400`: malformed or protocol-invalid payload;
 - `401`: bearer authentication failed;
 - `415`: unsupported JSON media type or charset;
@@ -184,7 +200,7 @@ app.MapSerilogRelayReceiver<MyRelayBatchHandler>(
     "/api/v1/logs");
 ```
 
-A custom handler must complete its own durable-acceptance guarantees before returning successfully.
+A custom handler must complete its chosen acceptance policy before returning successfully. If that policy promises durable storage or queue handoff, it must fulfill that promise before acknowledgment. Intentional filtering or discarding also completes acceptance and allows the sender to release those events.
 
 ## Not part of the 1.0 contract
 

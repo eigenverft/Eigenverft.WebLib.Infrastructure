@@ -49,9 +49,16 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
         public string EventId { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the logical application identifier that produced the event.
+        /// Gets or sets the effective application identifier that produced the event, at most 255 UTF-16 code units.
         /// </summary>
         public string ApplicationId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Gets or sets the optional version of the application that created the event.
+        /// Null supports older senders; supplied versions must be non-blank and at most 255 UTF-16 code units.
+        /// This value belongs to the event creator, even if another process sends the event.
+        /// </summary>
+        public string? ApplicationVersion { get; set; }
 
         /// <summary>
         /// Gets or sets the optional machine identifier that produced the event.

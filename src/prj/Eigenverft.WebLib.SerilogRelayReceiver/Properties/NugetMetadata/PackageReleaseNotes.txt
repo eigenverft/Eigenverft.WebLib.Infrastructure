@@ -1,3 +1,11 @@
+Current changes
+
+- Preserves the event creator's optional ApplicationVersion in custom-handler input and EF Core storage, with a nullable 255-character field for older senders.
+- Validates ApplicationId and supplied ApplicationVersion against the shared 255 UTF-16 code unit contract before handling.
+- Defaults batch acceptance to 256 events, matching the sender's default spool and direct emergency batches, including during shutdown.
+- Fits bounded timestamp, machine, level, and tracing metadata to the supplied EF model without splitting Unicode surrogate pairs. Custom handlers receive the original validated values and own their acceptance policy.
+- Clarifies that HTTP 204 acknowledges completion of the selected handler's acceptance policy; the built-in EF handler returns it only after saving completes.
+
 1.0.0 establishes the first stable Eigenverft SerilogRelay receiver contract.
 
 - Targets .NET 8 and .NET 10.

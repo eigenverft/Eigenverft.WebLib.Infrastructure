@@ -21,3 +21,18 @@ Inspect the stored message in the second terminal:
 ```
 
 The result contains `Hello from the example`. Both programs use loopback without authentication. These projects are examples and are not packed or published.
+
+## Application metadata
+
+The demo's fixed application ID fits the current 255-character contract. The updated sender
+shortens longer normalized IDs with a readable prefix and SHA-256 suffix, and limits the
+originating application version to 255 UTF-16 code units without splitting a surrogate pair.
+The updated receiver validates both fields against that limit without changing their values.
+
+These examples use the NuGet versions pinned in their project files. The new shortening
+behavior and receiver version persistence become available here after those package
+references are updated to the corresponding published releases.
+
+The updated receiver accepts 256 events per batch by default, covering normal spool and
+emergency RAM batches. This demo retains an explicit 256-event override because its pinned
+receiver package predates that default. Remove the override with the matching package update.

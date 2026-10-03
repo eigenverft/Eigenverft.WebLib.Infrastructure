@@ -5,6 +5,7 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
     internal static class SerilogRelayReceiverValidator
     {
         internal const int CurrentProtocolVersion = 1;
+        private const int MaximumApplicationFieldLength = 255;
 
         internal static string? Validate(
             SerilogRelayBatch batch,
@@ -38,6 +39,17 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
 
                 if (string.IsNullOrWhiteSpace(logEvent.ApplicationId))
                     return "Every log event must contain a non-empty applicationId.";
+                if (logEvent.ApplicationId.Length > MaximumApplicationFieldLength)
+                    return "Every log event applicationId must not exceed 255 characters.";
+
+                if (logEvent.ApplicationVersion is not null)
+                {
+                    if (string.IsNullOrWhiteSpace(logEvent.ApplicationVersion)
+                        || logEvent.ApplicationVersion.Length > MaximumApplicationFieldLength)
+                    {
+                        return "A supplied applicationVersion must contain 1 to 255 characters.";
+                    }
+                }
 
                 if (logEvent.ProcessId <= 0)
                     return "Every log event must contain a positive processId.";
