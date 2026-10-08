@@ -87,6 +87,8 @@
 
   <!-- External dependencies -->
   <ItemGroup>
+    <!-- Exercise interoperability with the released sender, not a project copy. -->
+    <PackageReference Include="Eigenverft.NetLib.SerilogRelay" Version="1.0.0.10" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="4.4.1" />
     <PackageReference Include="MSTest.TestFramework" Version="4.4.1" />

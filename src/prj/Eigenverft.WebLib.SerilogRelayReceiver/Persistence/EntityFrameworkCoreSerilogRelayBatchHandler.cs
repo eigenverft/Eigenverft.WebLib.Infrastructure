@@ -38,19 +38,20 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
                     {
                         ProtocolVersion = batch.ProtocolVersion,
                         BatchId = batch.BatchId,
-                        BatchTimestamp = batch.Timestamp,
+                        BatchTimestamp = TruncateForStorage(batch.Timestamp, 64),
                         BatchCount = batch.Count,
                         SenderLocalId = logEvent.Id,
                         EventId = logEvent.EventId,
                         ApplicationId = logEvent.ApplicationId,
-                        MachineId = logEvent.MachineId,
+                        ApplicationVersion = logEvent.ApplicationVersion,
+                        MachineId = TruncateForStorage(logEvent.MachineId, 256),
                         ProcessId = logEvent.ProcessId,
-                        Timestamp = logEvent.Timestamp,
-                        Level = logEvent.Level,
+                        Timestamp = TruncateForStorage(logEvent.Timestamp, 64),
+                        Level = TruncateForStorage(logEvent.Level, 32),
                         RenderMessage = logEvent.RenderMessage,
                         MessageTemplate = logEvent.MessageTemplate,
-                        TraceId = logEvent.TraceId,
-                        SpanId = logEvent.SpanId,
+                        TraceId = TruncateForStorage(logEvent.TraceId, 64),
+                        SpanId = TruncateForStorage(logEvent.SpanId, 32),
                         Exception = logEvent.Exception,
                         Properties = logEvent.Properties,
                         ReceivedAtUtc = receivedAtUtc,
@@ -59,6 +60,19 @@ namespace Eigenverft.WebLib.SerilogRelayReceiver
 
             database.Set<SerilogRelayReceivedEvent>().AddRange(receivedEvents);
             await database.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private static string? TruncateForStorage(string? value, int maximumLength)
+        {
+            if (value is null || value.Length <= maximumLength)
+                return value;
+
+            int length = maximumLength;
+            // Keep a surrogate pair intact at the storage boundary.
+            if (char.IsHighSurrogate(value[length - 1]))
+                length--;
+
+            return value[..length];
         }
     }
 }

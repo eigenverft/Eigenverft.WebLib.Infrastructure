@@ -91,6 +91,13 @@ The built-in handler creates one isolated DbContext per accepted batch. This pre
 persistence from flushing unrelated changes tracked by another request scope.
 
 `ConfigureSerilogRelayReceiver()` adds `SerilogRelayReceivedEvent` to the host model.
+The event's optional `ApplicationVersion` is kept per row with a 255 UTF-16 code unit maximum. Existing
+events without version information leave this value null.
+
+The EF handler limits batch/event timestamps and `TraceId` to 64 UTF-16 code units, `MachineId`
+to 256, and `Level`/`SpanId` to 32 before saving to the supplied model. It keeps each value's
+prefix without splitting surrogate pairs. Protocol validation preserves the original values;
+custom handlers choose their own storage, filtering, truncation, or forwarding policy.
 
 For relational providers, the default table name is:
 
@@ -119,7 +126,7 @@ As a result:
 
 - a client disconnect after durable handoff does not by itself cancel accepted persistence;
 - host shutdown can cancel in-flight durable processing;
-- successful durable completion returns `204 No Content`;
+- successful handler completion returns `204 No Content`;
 - host-shutdown cancellation returns `503 Service Unavailable`.
 
 ## Wire protocol ownership
@@ -130,18 +137,25 @@ The receiver therefore uses receiver-owned ASP.NET Web-compatible JSON settings.
 `HttpJsonOptions` cannot silently change the relay protocol's property naming or case behavior.
 
 The receiver validates protocol version, batch identity, batch count, event identity,
-`ApplicationId`, `ProcessId`, and endpoint batch-size limits before durable handling begins.
+`ApplicationId` and optional `ApplicationVersion` lengths, `ProcessId`, and endpoint batch-size
+limits before durable handling begins. The default maximum is 256 events, accepting the matching sender's default spool and direct emergency batches, including during shutdown. Versions remain attached to their originating events even
+when another application version sends the batch.
 
 ## HTTP result semantics
 
 The receiver uses HTTP primarily as a transport-level success/failure signal:
 
-- `204`: durable handling completed;
+- `204`: the selected handler completed its acceptance policy;
 - `400`: malformed or protocol-invalid payload;
 - `401`: bearer authentication failed;
 - `415`: unsupported JSON media type or charset;
 - `503`: durable handling was cancelled because the host is stopping;
 - other `5xx`: unexpected receiver, handler, or storage failure.
+
+Only a completed HTTP 204 acknowledges processing to the sender. This confirms completion
+according to the selected handler's policy; it does not promise full-fidelity storage.
+The built-in EF handler acknowledges only after saving. Other HTTP statuses, including 200
+and 201, leave the events eligible for sender retries.
 
 Storage-specific duplicate or conflict states are not part of the sender protocol.
 
